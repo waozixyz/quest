@@ -1,0 +1,3 @@
+[submodule "vendor/clay"]
+	path = vendor/clay
+	url = https://github.com/nicbarker/clay.git
