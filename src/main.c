@@ -13,7 +13,7 @@
 #include "pages/routine.h"
 
 double windowWidth = 1024, windowHeight = 768;
-uint32_t ACTIVE_PAGE = 0;
+uint32_t ACTIVE_PAGE = 1;
 uint32_t ACTIVE_RENDERER_INDEX = 0;
 
 // Font IDs
@@ -107,6 +107,7 @@ CLAY_WASM_EXPORT("UpdateDrawFrame") Clay_RenderCommandArray UpdateDrawFrame(
     Clay_SetPointerState((Clay_Vector2) {mousePositionX, mousePositionY}, isMouseDown || isTouchDown);
     return CreateLayout();
 }
+
 
 int main() {
     return 0;

@@ -1,9 +1,18 @@
-# Makefile
-
 # Compiler and flags
-CC = clang
-WASM_FLAGS = -Wall -Werror -Os -DCLAY_WASM -mbulk-memory --target=wasm32 -nostdlib
-LINKER_FLAGS = -Wl,--strip-all -Wl,--export-dynamic -Wl,--no-entry -Wl,--export=__heap_base -Wl,--export=ACTIVE_RENDERER_INDEX -Wl,--initial-memory=6553600
+CC = emcc
+WASM_FLAGS = -Wall -Werror -Os -DCLAY_WASM -mbulk-memory --target=wasm32 
+LINKER_FLAGS = \
+    -Wl,--strip-all \
+    -Wl,--export-dynamic \
+    -Wl,--export=__heap_base \
+    -Wl,--export=ACTIVE_RENDERER_INDEX \
+    -s WASM=1 \
+    -s USE_PTHREADS=0 \
+    -s ASSERTIONS=1 \
+    -s ALLOW_MEMORY_GROWTH=1 \
+    -s EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]' \
+    -s EXPORTED_FUNCTIONS='["_main", "_printf"]' # Explicitly export main and printf
+
 INCLUDE_FLAGS = -I. -Iinclude
 
 # Directories
