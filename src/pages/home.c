@@ -2,8 +2,21 @@
 #include "../components/home_card.h"
 #include "../styles.h"
 
+const float SCREEN_BREAKPOINT = 768.0f;
+const int DEFAULT_PADDING = 32;
+
+void SetupCardGridLayout() {
+    CLAY_LAYOUT({
+        .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
+        .childGap = DEFAULT_PADDING,
+        .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
+    });
+}
+
 void RenderHomePage() {
     float screenWidth = (float)windowWidth;
+
+
     CLAY(CLAY_ID("HomeContainer"), 
         CLAY_LAYOUT({ 
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
@@ -30,41 +43,19 @@ void RenderHomePage() {
         }
 
         // Cards container
-        CLAY(CLAY_ID("CardGrid"), 
-            CLAY_LAYOUT({ 
-                .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
-                .childGap = 32,
-                .layoutDirection = CLAY_LEFT_TO_RIGHT,
-                .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
-            })
-        ) {
-            if (screenWidth < 768) {
+        CLAY(CLAY_ID("CardGrid"), SetupCardGridLayout()) {
+            if (screenWidth < SCREEN_BREAKPOINT) {
                 // Small screen layout - 2x2 grid
                 CLAY(CLAY_LAYOUT({
                     .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
                     .childGap = 32,
                     .layoutDirection = CLAY_TOP_TO_BOTTOM
                 })) {
-                    // First row
-                    CLAY(CLAY_LAYOUT({
-                        .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
-                        .childGap = 32,
-                        .layoutDirection = CLAY_LEFT_TO_RIGHT,
-                        .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
-                    })) {
-                        RenderHomeCard(0);
-                        RenderHomeCard(1);
-                    }
-                    
-                    // Second row
-                    CLAY(CLAY_LAYOUT({
-                        .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
-                        .childGap = 32,
-                        .layoutDirection = CLAY_LEFT_TO_RIGHT,
-                        .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
-                    })) {
-                        RenderHomeCard(2);
-                        RenderHomeCard(3);
+                    for (int row = 0; row < 2; ++row) {
+                        CLAY(SetupCardGridLayout()) {
+                            RenderHomeCard(row * 2);
+                            RenderHomeCard(row * 2 + 1);
+                        }
                     }
                 }
             } else {
