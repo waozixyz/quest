@@ -25,12 +25,28 @@ const uint32_t FONT_ID_TITLE_36 = 4;
 const uint32_t FONT_ID_MONOSPACE_24 = 5;
 
 // Colors
-const Clay_Color COLOR_LIGHT = (Clay_Color) {40, 35, 40, 255};
-const Clay_Color COLOR_LIGHT_HOVER = (Clay_Color) {55, 45, 55, 255};
-const Clay_Color COLOR_RED = (Clay_Color) {220, 53, 69, 255};
-const Clay_Color COLOR_RED_HOVER = (Clay_Color) {240, 73, 89, 255};
-const Clay_Color COLOR_ORANGE = (Clay_Color) {255, 245, 245, 255};
-const Clay_Color COLOR_BLUE = (Clay_Color) {150, 60, 80, 255};
+// Theme Colors
+const Clay_Color COLOR_BACKGROUND = (Clay_Color) {26, 15, 31, 255};  // #1a0f1f
+const Clay_Color COLOR_BACKGROUND_HOVER = (Clay_Color) {45, 26, 44, 255};  
+const Clay_Color COLOR_PRIMARY = (Clay_Color) {148, 47, 74, 255};    // #942f4a
+const Clay_Color COLOR_PRIMARY_HOVER = (Clay_Color) {177, 54, 88, 255}; // #b13658
+const Clay_Color COLOR_SECONDARY = (Clay_Color) {74, 38, 57, 255};   // #4a2639
+const Clay_Color COLOR_ACCENT = (Clay_Color) {255, 107, 151, 255};   // #ff6b97
+
+// UI Element Colors
+const Clay_Color COLOR_CARD = (Clay_Color) {45, 31, 51, 255};       // #2d1f33
+const Clay_Color COLOR_CARD_HOVER = (Clay_Color) {61, 42, 66, 255};  // #3d2a42
+const Clay_Color COLOR_PANEL = (Clay_Color) {45, 31, 51, 242};      // #2d1f33f2
+
+// State Colors
+const Clay_Color COLOR_SUCCESS = (Clay_Color) {76, 175, 80, 255};    // #4caf50
+const Clay_Color COLOR_WARNING = (Clay_Color) {255, 152, 0, 255};    // #ff9800
+const Clay_Color COLOR_ERROR = (Clay_Color) {244, 67, 54, 255};      // #f44336
+const Clay_Color COLOR_ERROR_HOVER = (Clay_Color) {255, 87, 74, 255}; // #ff574a
+const Clay_Color COLOR_INFO = (Clay_Color) {33, 150, 243, 255};      // #2196f3
+
+// Text Colors
+const Clay_Color COLOR_TEXT = (Clay_Color) {230, 221, 233, 255};     // #e6dde9
 
 void HandleNavInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
@@ -55,7 +71,7 @@ Clay_RenderCommandArray CreateLayout() {
             .layoutDirection = CLAY_TOP_TO_BOTTOM, 
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() } 
         }), 
-        CLAY_RECTANGLE({ .color = COLOR_LIGHT })
+        CLAY_RECTANGLE({ .color = COLOR_BACKGROUND })
     ) {
         RenderNavigationMenu();
         

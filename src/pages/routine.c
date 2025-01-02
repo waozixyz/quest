@@ -6,7 +6,7 @@ void RenderRoutinePage() {
         CLAY_TEXT_CONFIG({ 
             .fontSize = 36,
             .fontId = FONT_ID_TITLE_36,
-            .textColor = COLOR_ORANGE
+            .textColor = COLOR_TEXT
         })
     );
 }

@@ -1,6 +1,8 @@
 #ifndef HOME_PAGE_H
 #define HOME_PAGE_H
 
-void RenderHomePage(void);
+#include "../state.h"  
+
+void RenderHomePage();
 
 #endif

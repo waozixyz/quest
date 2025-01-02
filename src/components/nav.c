@@ -6,8 +6,8 @@ void RenderNavItem(const char* text, uint32_t pageId) {
     CLAY(CLAY_IDI("Nav", pageId), 
         CLAY_LAYOUT({ .padding = { 16, 8 } }), 
         CLAY_RECTANGLE({ 
-            .color = isActive ? COLOR_RED_HOVER : 
-                     (Clay_Hovered() ? COLOR_LIGHT_HOVER : COLOR_LIGHT),
+            .color = isActive ? COLOR_PRIMARY : 
+                     (Clay_Hovered() ? COLOR_PRIMARY_HOVER : COLOR_PANEL),
             .cornerRadius = CLAY_CORNER_RADIUS(5),
             .cursorPointer = true
         }),
@@ -17,31 +17,31 @@ void RenderNavItem(const char* text, uint32_t pageId) {
             case 0: CLAY_TEXT(CLAY_STRING("Home"), CLAY_TEXT_CONFIG({ 
                 .fontSize = 20,
                 .fontId = FONT_ID_BODY_24,
-                .textColor = COLOR_ORANGE,
+                .textColor = COLOR_TEXT,
                 .disablePointerEvents = true 
             })); break;
             case 1: CLAY_TEXT(CLAY_STRING("Habits"), CLAY_TEXT_CONFIG({ 
                 .fontSize = 20,
                 .fontId = FONT_ID_BODY_24,
-                .textColor = COLOR_ORANGE,
+                .textColor = COLOR_TEXT,
                 .disablePointerEvents = true 
             })); break;
             case 2: CLAY_TEXT(CLAY_STRING("Todos"), CLAY_TEXT_CONFIG({ 
                 .fontSize = 20,
                 .fontId = FONT_ID_BODY_24,
-                .textColor = COLOR_ORANGE,
+                .textColor = COLOR_TEXT,
                 .disablePointerEvents = true 
             })); break;
             case 3: CLAY_TEXT(CLAY_STRING("Timeline"), CLAY_TEXT_CONFIG({ 
                 .fontSize = 20,
                 .fontId = FONT_ID_BODY_24,
-                .textColor = COLOR_ORANGE,
+                .textColor = COLOR_TEXT,
                 .disablePointerEvents = true 
             })); break;
             case 4: CLAY_TEXT(CLAY_STRING("Routine"), CLAY_TEXT_CONFIG({ 
                 .fontSize = 20,
                 .fontId = FONT_ID_BODY_24,
-                .textColor = COLOR_ORANGE,
+                .textColor = COLOR_TEXT,
                 .disablePointerEvents = true 
             })); break;
         }
@@ -56,7 +56,7 @@ void RenderNavigationMenu() {
             .padding = { 16, 0 },
             .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
         }),
-        CLAY_RECTANGLE({ .color = COLOR_RED })
+        CLAY_RECTANGLE({ .color = COLOR_SECONDARY })
     ) {
         RenderNavItem("Home", 0);
         RenderNavItem("Habits", 1);

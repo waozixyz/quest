@@ -1,28 +1,43 @@
 #include "home_card.h"
 
 void RenderHomeCard(uint32_t index) {
+    float screenWidth = (float)windowWidth;
+
+    float cardWidthPercent = screenWidth < 768 ? 0.5f : 0.25f;
+
     CLAY(CLAY_IDI("HomeCard", index), 
         CLAY_LAYOUT({ 
-            .sizing = { CLAY_SIZING_PERCENT(0.25f), CLAY_SIZING_FIXED(200) },
+            .sizing = { CLAY_SIZING_PERCENT(cardWidthPercent), CLAY_SIZING_FIXED(200) },
             .padding = { 24, 24 },
             .childGap = 16,
             .layoutDirection = CLAY_TOP_TO_BOTTOM
         }),
         CLAY_RECTANGLE({ 
-            .color = Clay_Hovered() ? COLOR_LIGHT_HOVER : COLOR_LIGHT,
+            .color = Clay_Hovered() ? COLOR_CARD_HOVER : COLOR_CARD,
             .cornerRadius = CLAY_CORNER_RADIUS(10),
             .cursorPointer = true
+
         }),
-        CLAY_BORDER_OUTSIDE_RADIUS(2, COLOR_RED, 10),
+        CLAY_BORDER({
+            .top = Clay_Hovered() ? (Clay_Border){ .width = 2, .color = COLOR_PRIMARY } : (Clay_Border){ .width = 2, .color = COLOR_BACKGROUND },
+            .cornerRadius = { 
+                .topLeft = 10,    // match the rectangle's corner radius
+                .topRight = 10,   // match the rectangle's corner radius
+                .bottomLeft = 0, 
+                .bottomRight = 0 
+            }
+        }),
+        
         Clay_OnHover(HandleNavInteraction, index + 1)
     ) {
+        
         switch(index) {
             case 0: 
                 CLAY_TEXT(CLAY_STRING("Habits"), 
                     CLAY_TEXT_CONFIG({ 
                         .fontSize = 28,
                         .fontId = FONT_ID_TITLE_36,
-                        .textColor = COLOR_ORANGE
+                        .textColor = COLOR_TEXT
                     })
                 );
                 
@@ -30,7 +45,7 @@ void RenderHomeCard(uint32_t index) {
                     CLAY_TEXT_CONFIG({ 
                         .fontSize = 16,
                         .fontId = FONT_ID_BODY_16,
-                        .textColor = COLOR_ORANGE
+                        .textColor = COLOR_TEXT
                     })
                 );
                 break;
@@ -40,7 +55,7 @@ void RenderHomeCard(uint32_t index) {
                     CLAY_TEXT_CONFIG({ 
                         .fontSize = 28,
                         .fontId = FONT_ID_TITLE_36,
-                        .textColor = COLOR_ORANGE
+                        .textColor = COLOR_TEXT
                     })
                 );
                 
@@ -48,7 +63,7 @@ void RenderHomeCard(uint32_t index) {
                     CLAY_TEXT_CONFIG({ 
                         .fontSize = 16,
                         .fontId = FONT_ID_BODY_16,
-                        .textColor = COLOR_ORANGE
+                        .textColor = COLOR_TEXT
                     })
                 );
                 break;
@@ -58,7 +73,7 @@ void RenderHomeCard(uint32_t index) {
                     CLAY_TEXT_CONFIG({ 
                         .fontSize = 28,
                         .fontId = FONT_ID_TITLE_36,
-                        .textColor = COLOR_ORANGE
+                        .textColor = COLOR_TEXT
                     })
                 );
                 
@@ -66,7 +81,7 @@ void RenderHomeCard(uint32_t index) {
                     CLAY_TEXT_CONFIG({ 
                         .fontSize = 16,
                         .fontId = FONT_ID_BODY_16,
-                        .textColor = COLOR_ORANGE
+                        .textColor = COLOR_TEXT
                     })
                 );
                 break;
@@ -76,7 +91,7 @@ void RenderHomeCard(uint32_t index) {
                     CLAY_TEXT_CONFIG({ 
                         .fontSize = 28,
                         .fontId = FONT_ID_TITLE_36,
-                        .textColor = COLOR_ORANGE
+                        .textColor = COLOR_TEXT
                     })
                 );
                 
@@ -84,7 +99,7 @@ void RenderHomeCard(uint32_t index) {
                     CLAY_TEXT_CONFIG({ 
                         .fontSize = 16,
                         .fontId = FONT_ID_BODY_16,
-                        .textColor = COLOR_ORANGE
+                        .textColor = COLOR_TEXT
                     })
                 );
                 break;

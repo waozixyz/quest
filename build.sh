@@ -11,7 +11,7 @@ make clean && make all
 ROOT_DIR=$(pwd)
 
 # Start ran in build directory in background
-cd build/clay && ran &
+cd build/clay && ran -p 8000 &
 RAN_PID=$!
 
 # Go back to root for watching
