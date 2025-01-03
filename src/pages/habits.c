@@ -1,6 +1,7 @@
 #include "habits.h"
 #include "../styles.h"
 #include "../components/calendar_box.h"
+#include "../components/color_picker.h"
 #include <time.h>
 #include <emscripten.h>
 #include <stdio.h>
@@ -19,6 +20,27 @@ void ToggleHabitStateForDay(Clay_ElementId elementId, Clay_PointerData pointerIn
         #endif
     }
 }
+
+HabitCollection habit_collection = {0};
+
+void HandleColorChange(Clay_Color color, void* user_data) {
+    HabitCollection* habits = (HabitCollection*)user_data;
+    
+    // Ensure we have at least one habit
+    if (habits->habit_count == 0) {
+        // Initialize first habit if not exists
+        habits->habits = malloc(sizeof(HabitDefinition));
+        habits->habits_capacity = 1;
+        habits->habit_count = 1;
+    }
+    
+    // Update first habit's color
+    habits->habits[0].habit_color = color;
+    
+    // Optional: Save habit collection (implement this function)
+    // SaveHabitCollection(habits);
+}
+
 void RenderHabitsPage() {
     #ifdef __EMSCRIPTEN__
     LoadHabitStatesCollection(&habit_states);
@@ -40,6 +62,30 @@ void RenderHabitsPage() {
     int days_to_monday = start_date.tm_wday == 0 ? 6 : start_date.tm_wday - 1;
     start_date.tm_mday -= days_to_monday;
     mktime(&start_date);
+
+
+    if (habit_collection.habits == NULL) {
+        habit_collection.habits = malloc(sizeof(HabitDefinition) * 1);
+        habit_collection.habits_capacity = 1;
+        habit_collection.habit_count = 1;
+        
+        // Set initial color
+        habit_collection.habits[0].habit_color = COLOR_PRIMARY;
+    }
+
+    habit_color_picker = (ColorPickerState){0};
+
+
+    // Set initial color for the picker
+    if (habit_collection.habit_count > 0 && habit_collection.habits != NULL) {
+        habit_color_picker.selected_color = habit_collection.habits[0].habit_color;
+    } else {
+        habit_color_picker.selected_color = COLOR_PRIMARY;
+    }
+
+    // Set up callback for color changes
+    habit_color_picker.on_color_change = HandleColorChange;
+    habit_color_picker.user_data = &habit_collection;
 
     CLAY(CLAY_ID("HabitsContainer"), 
         CLAY_LAYOUT({ 
@@ -65,7 +111,7 @@ void RenderHabitsPage() {
                 })
             );
         }
-
+        RenderColorPicker(&habit_color_picker);
         CLAY(CLAY_ID("CalendarScrollContainer"),
             CLAY_LAYOUT({
                 .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() }
@@ -124,7 +170,8 @@ void RenderHabitsPage() {
                                 .is_past = is_past,
                                 .unique_index = unique_index,
                                 .is_completed = is_completed,
-                                .on_click = ToggleHabitStateForDay
+                                .on_click = ToggleHabitStateForDay,
+                                .custom_color = habit_collection.habits[0].habit_color
                             };
 
                             RenderCalendarBox(props);

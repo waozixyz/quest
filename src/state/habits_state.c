@@ -98,7 +98,6 @@ void SaveHabitStatesCollection(HabitStateCollection* collection) {
 }
 
 void LoadHabitStatesCollection(HabitStateCollection* collection) {
-    printf("Starting to load habit states collection\n");
     
     if (!collection) {  // Remove the states check since it's an array
         printf("Error: Invalid collection pointer\n");
@@ -107,17 +106,6 @@ void LoadHabitStatesCollection(HabitStateCollection* collection) {
     
     int count = JS_LoadHabitStates(collection->states);
     collection->count = (size_t)count;
-    
-    printf("Loaded %zu states\n", collection->count);
-    
-    // Print loaded states
-    for (size_t i = 0; i < collection->count; i++) {
-        printf("Loaded State[%zu]: date=%u, day_index=%u, completed=%d\n",
-               i,
-               collection->states[i].date,
-               collection->states[i].day_index,
-               collection->states[i].completed);
-    }
 }
 
 bool ToggleHabitState(HabitStateCollection* collection, uint32_t day_index) {
@@ -198,6 +186,5 @@ void LoadHabitStatesFromJSON(HabitStateCollection* collection, const char* filen
     }
     
     fclose(file);
-    printf("Loaded %zu habit states from %s\n", collection->count, filename);
 }
 #endif

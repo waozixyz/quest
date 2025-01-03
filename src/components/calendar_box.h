@@ -13,6 +13,7 @@ typedef struct {
     int unique_index;
     bool is_completed;
     void (*on_click)(Clay_ElementId, Clay_PointerData, intptr_t);
+    Clay_Color custom_color;
 } CalendarBoxProps;
 
 // Function to render a calendar box

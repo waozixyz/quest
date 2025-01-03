@@ -45,12 +45,6 @@ const Clay_Color COLOR_ERROR = (Clay_Color) {244, 67, 54, 255};      // #f44336
 const Clay_Color COLOR_ERROR_HOVER = (Clay_Color) {255, 87, 74, 255}; // #ff574a
 const Clay_Color COLOR_INFO = (Clay_Color) {33, 150, 243, 255};      // #2196f3
 
-// Box Colors
-const Clay_Color COLOR_BOX_HOVER = (Clay_Color) {94, 48, 77, 255};  // Slightly lighter version of COLOR_SECONDARY
-const Clay_Color COLOR_BOX_ACTIVE = (Clay_Color) {114, 58, 87, 255}; // Even lighter for click/active state
-const Clay_Color COLOR_BOX_COMPLETED_HOVER = (Clay_Color) {168, 57, 84, 255}; // Lighter version of COLOR_PRIMARY
-const Clay_Color COLOR_BOX_COMPLETED_ACTIVE = (Clay_Color) {188, 67, 94, 255}; // Even lighter completed state
-
 // Text Colors
 const Clay_Color COLOR_TEXT = (Clay_Color) {230, 221, 233, 255};     // #e6dde9
 
