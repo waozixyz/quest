@@ -32,7 +32,8 @@ if ! command -v inotifywait &> /dev/null; then
 fi
 
 # Watch for changes and rebuild
-echo "Watching for changes in $ROOT_DIR/src"
-while inotifywait -r -e modify "$ROOT_DIR/src"; do
+
+echo "Watching for changes in $ROOT_DIR/src, index.html, and Makefile"
+while inotifywait -r -e modify "$ROOT_DIR/src" "$ROOT_DIR/index.html" "$ROOT_DIR/Makefile"; do
     make clean && make all
 done

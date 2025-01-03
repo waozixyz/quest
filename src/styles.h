@@ -31,6 +31,13 @@ extern const Clay_Color COLOR_ERROR;
 extern const Clay_Color COLOR_ERROR_HOVER;
 extern const Clay_Color COLOR_INFO;
 
+// Box Colors
+extern const Clay_Color COLOR_BOX_HOVER;
+extern const Clay_Color COLOR_BOX_ACTIVE;
+extern const Clay_Color COLOR_BOX_COMPLETED_HOVER;
+extern const Clay_Color COLOR_BOX_COMPLETED_ACTIVE;
+
+
 // Text Colors
 extern const Clay_Color COLOR_TEXT;
 

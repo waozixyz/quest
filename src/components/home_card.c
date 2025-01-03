@@ -1,20 +1,5 @@
 #include "home_card.h"
 
-void SetupCardTitle() { 
-    CLAY_TEXT_CONFIG({ 
-        .fontSize = 28,
-        .fontId = FONT_ID_TITLE_36,
-        .textColor = COLOR_TEXT
-    });
-}
-
-void SetupCardBody() {
-    CLAY_TEXT_CONFIG({ 
-        .fontSize = 16,
-        .fontId = FONT_ID_BODY_16,
-        .textColor = COLOR_TEXT
-    });
-}
 
 const int CONER_RADIUS = 10;
 
@@ -23,16 +8,19 @@ void RenderHomeCard(uint32_t index) {
 
     float cardWidthPercent = screenWidth < 768 ? 0.5f : 0.25f;
 
+
     Clay_TextElementConfig card_title_config = *CLAY_TEXT_CONFIG({ 
         .fontSize = 28,
         .fontId = FONT_ID_TITLE_36,
-        .textColor = COLOR_TEXT
+        .textColor = COLOR_TEXT,
+        .disablePointerEvents = true  // Add this line
     });
 
     Clay_TextElementConfig card_body_config = *CLAY_TEXT_CONFIG({ 
         .fontSize = 16,
         .fontId = FONT_ID_BODY_16,
-        .textColor = COLOR_TEXT
+        .textColor = COLOR_TEXT,
+        .disablePointerEvents = true  // Add this line
     });
 
     CLAY(CLAY_IDI("HomeCard", index), 
