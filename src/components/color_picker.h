@@ -1,8 +1,9 @@
 #ifndef COLOR_PICKER_H
 #define COLOR_PICKER_H
-
+#include <stdio.h>
 #include "../../vendor/clay/clay.h"
 #include "../styles.h"
+#include "modal.h"
 
 // Predefined color palette with 255.0f scale
 static const Clay_Color COLOR_PALETTE[] = {
@@ -20,6 +21,6 @@ static const Clay_Color COLOR_PALETTE[] = {
 
 
 // Function prototypes
-void RenderColorPicker(Clay_Color current_color, void (*on_color_change)(Clay_Color));
+void RenderColorPicker(Clay_Color current_color, void (*on_color_change)(Clay_Color), Modal* modal);
 
 #endif // COLOR_PICKER_H

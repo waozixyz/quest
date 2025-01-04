@@ -7,6 +7,11 @@
 
 
 HabitStateCollection habit_states = {0};
+Modal color_picker_modal = {
+    .is_open = false,
+    .width = 300,
+    .height = 200
+};
 
 void ToggleHabitStateForDay(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
@@ -65,7 +70,7 @@ void RenderHabitsPage() {
             );
         }
 
-        RenderColorPicker(habit_states.color, HandleColorChange);
+        RenderColorPicker(habit_states.color, HandleColorChange, &color_picker_modal);
 
         CLAY(CLAY_ID("CalendarScrollContainer"),
             CLAY_LAYOUT({
