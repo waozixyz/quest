@@ -18,16 +18,8 @@ static const Clay_Color COLOR_PALETTE[] = {
 
 #define COLOR_PALETTE_SIZE (sizeof(COLOR_PALETTE) / sizeof(Clay_Color))
 
-typedef struct {
-    Clay_Color selected_color;
-    void (*on_color_change)(Clay_Color color, void* user_data);
-    void* user_data;
-} ColorPickerState;
-
-extern ColorPickerState habit_color_picker;
 
 // Function prototypes
-void RenderColorPicker(ColorPickerState* state);
-void InitializeColorPickerState(ColorPickerState* state, Clay_Color initial_color);
+void RenderColorPicker(Clay_Color current_color, void (*on_color_change)(Clay_Color));
 
 #endif // COLOR_PICKER_H

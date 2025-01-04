@@ -3,50 +3,27 @@
 #include "../components/calendar_box.h"
 #include "../components/color_picker.h"
 #include <time.h>
-#include <emscripten.h>
 #include <stdio.h>
 
+
 HabitStateCollection habit_states = {0};
+
 void ToggleHabitStateForDay(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
-    // Function works as is since it checks pointerInfo.state
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         uint32_t day_index = (uint32_t)userData;
         ToggleHabitState(&habit_states, day_index);
         
-        #ifdef __EMSCRIPTEN__
-        SaveHabitStatesCollection(&habit_states);
-        #else
-        SaveHabitStatesToJSON(&habit_states, "habit_states.json");
-        #endif
+        SaveHabitStates(&habit_states);
     }
 }
 
-HabitCollection habit_collection = {0};
-
-void HandleColorChange(Clay_Color color, void* user_data) {
-    HabitCollection* habits = (HabitCollection*)user_data;
-    
-    // Ensure we have at least one habit
-    if (habits->habit_count == 0) {
-        // Initialize first habit if not exists
-        habits->habits = malloc(sizeof(HabitDefinition));
-        habits->habits_capacity = 1;
-        habits->habit_count = 1;
-    }
-    
-    // Update first habit's color
-    habits->habits[0].habit_color = color;
-    
-    // Optional: Save habit collection (implement this function)
-    // SaveHabitCollection(habits);
+void HandleColorChange(Clay_Color new_color) {
+    habit_states.color = new_color;
+    SaveHabitStates(&habit_states);
 }
 
 void RenderHabitsPage() {
-    #ifdef __EMSCRIPTEN__
-    LoadHabitStatesCollection(&habit_states);
-    #else
-    LoadHabitStatesFromJSON(&habit_states, "habit_states.json");
-    #endif
+    LoadHabitStates(&habit_states);
 
     time_t now;
     time(&now);
@@ -62,30 +39,6 @@ void RenderHabitsPage() {
     int days_to_monday = start_date.tm_wday == 0 ? 6 : start_date.tm_wday - 1;
     start_date.tm_mday -= days_to_monday;
     mktime(&start_date);
-
-
-    if (habit_collection.habits == NULL) {
-        habit_collection.habits = malloc(sizeof(HabitDefinition) * 1);
-        habit_collection.habits_capacity = 1;
-        habit_collection.habit_count = 1;
-        
-        // Set initial color
-        habit_collection.habits[0].habit_color = COLOR_PRIMARY;
-    }
-
-    habit_color_picker = (ColorPickerState){0};
-
-
-    // Set initial color for the picker
-    if (habit_collection.habit_count > 0 && habit_collection.habits != NULL) {
-        habit_color_picker.selected_color = habit_collection.habits[0].habit_color;
-    } else {
-        habit_color_picker.selected_color = COLOR_PRIMARY;
-    }
-
-    // Set up callback for color changes
-    habit_color_picker.on_color_change = HandleColorChange;
-    habit_color_picker.user_data = &habit_collection;
 
     CLAY(CLAY_ID("HabitsContainer"), 
         CLAY_LAYOUT({ 
@@ -111,7 +64,9 @@ void RenderHabitsPage() {
                 })
             );
         }
-        RenderColorPicker(&habit_color_picker);
+
+        RenderColorPicker(habit_states.color, HandleColorChange);
+
         CLAY(CLAY_ID("CalendarScrollContainer"),
             CLAY_LAYOUT({
                 .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() }
@@ -171,7 +126,7 @@ void RenderHabitsPage() {
                                 .unique_index = unique_index,
                                 .is_completed = is_completed,
                                 .on_click = ToggleHabitStateForDay,
-                                .custom_color = habit_collection.habits[0].habit_color
+                                .custom_color = habit_states.color
                             };
 
                             RenderCalendarBox(props);

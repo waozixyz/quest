@@ -432,51 +432,65 @@ async function init() {
                 const isDst = new Date(date.getFullYear(), 6, 1).getTimezoneOffset() !== timezoneOffset;
                 memoryDataView.setInt32(tmPtr + 32, isDst ? 1 : 0, true);
             },
-            JS_SaveHabitStates: (statesPtr, count) => {
-                console.log(`JS_SaveHabitStates called with ptr: ${statesPtr}, count: ${count}`);
+            JS_SaveHabitStates: (statesPtr, count, r, g, b, a) => {
+                console.log(`JS_SaveHabitStates called with ptr: ${statesPtr}, count: ${count}, color: ${r},${g},${b},${a}`);
                 try {
                     const memory = new DataView(instance.exports.memory.buffer);
                     
-                    const habitStates = [];
+                    const habitData = {
+                        states: [],
+                        color: {r, g, b, a}
+                    };
+
                     for (let i = 0; i < count; i++) {
                         const offset = statesPtr + (i * 12); // 12 bytes per state
                         const date = memory.getUint32(offset, true);
                         const dayIndex = memory.getUint32(offset + 4, true);
                         const completed = memory.getUint8(offset + 8) !== 0;
                         
-                        habitStates.push({
+                        habitData.states.push({
                             date,
                             dayIndex,
                             completed
                         });
                     }
                     
-                    localStorage.setItem('habitStates', JSON.stringify(habitStates));
+                    localStorage.setItem('habitData', JSON.stringify(habitData));
+                    console.log('Saved habit data:', habitData);
                 } catch (error) {
                     console.error('Error in JS_SaveHabitStates:', error);
                 }
             },
 
-            JS_LoadHabitStates: (outStatesPtr) => {
+            JS_LoadHabitStates: (outStatesPtr, colorPtr) => {
                 try {
-                    const storedData = localStorage.getItem('habitStates');
+                    const storedData = localStorage.getItem('habitData');
                     if (!storedData) {
                         return 0;
                     }
 
-                    const habitStates = JSON.parse(storedData);
+                    const habitData = JSON.parse(storedData);
                     const memory = new DataView(instance.exports.memory.buffer);
                     
-                    for (let i = 0; i < habitStates.length; i++) {
+                    // Load states
+                    for (let i = 0; i < habitData.states.length; i++) {
                         const offset = outStatesPtr + (i * 12);
-                        const state = habitStates[i];
+                        const state = habitData.states[i];
 
                         memory.setUint32(offset, state.date, true);
                         memory.setUint32(offset + 4, state.dayIndex, true);
                         memory.setUint8(offset + 8, state.completed ? 1 : 0);
                     }
 
-                    return habitStates.length;
+                    // Load color
+                    if (habitData.color) {
+                        memory.setFloat32(colorPtr, habitData.color.r, true);
+                        memory.setFloat32(colorPtr + 4, habitData.color.g, true);
+                        memory.setFloat32(colorPtr + 8, habitData.color.b, true);
+                        memory.setFloat32(colorPtr + 12, habitData.color.a, true);
+                    }
+
+                    return habitData.states.length;
                 } catch (error) {
                     console.error('Error in JS_LoadHabitStates:', error);
                     return 0;

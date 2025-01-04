@@ -1,190 +1,208 @@
 #include <stdio.h>
 #include <string.h>
-#include <emscripten.h>
 #include "habits_state.h"
+#include "../styles.h"
 
-// JavaScript functions for storage
-EM_JS(void, JS_SaveHabitStates, (HabitState* states, int count), {
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+
+EM_JS(void, JS_SaveHabitStates, (const HabitState* states, int count, float r, float g, float b, float a), {
     try {
-        // Get pointer to memory
         const HEAP32 = new Int32Array(Module.HEAP8.buffer);
         const HEAPU8 = new Uint8Array(Module.HEAP8.buffer);
         
-        let habitStates = [];
-        const stateSize = 12; // size of HabitState struct
+        let habitData = {
+            states: [],
+            color: {r, g, b, a}
+        };
         
-        console.log('Starting to save states, count:', count);
-        console.log('States pointer:', states);
+        console.log('Saving color:', {r, g, b, a}); // Debug color values
+        
+        const stateSize = 12; // size of HabitState struct
         
         for (let i = 0; i < count; i++) {
             const offset = (states >> 2) + (i * (stateSize >> 2));
-            const date = HEAP32[offset];
-            const dayIndex = HEAP32[offset + 1];
-            const completed = HEAPU8[(offset << 2) + 8] !== 0;
-            
-            console.log(`Reading state ${i}:`, {offset, date, dayIndex, completed});
-            
-            habitStates.push({
-                date,
-                dayIndex,
-                completed
+            habitData.states.push({
+                date: HEAP32[offset],
+                dayIndex: HEAP32[offset + 1],
+                completed: HEAPU8[(offset << 2) + 8] !== 0
             });
         }
         
-        const jsonString = JSON.stringify(habitStates);
-        console.log('Saving to localStorage:', jsonString);
-        localStorage.setItem('habitStates', jsonString);
+        const jsonString = JSON.stringify(habitData);
+        console.log('Saving habitData:', habitData); // Debug full data
+        localStorage.setItem('habitData', jsonString);
     } catch (error) {
-        console.error('Error saving habit states:', error);
+        console.error('Error saving habit data:', error);
     }
 });
 
-EM_JS(int, JS_LoadHabitStates, (HabitState* outStates), {
+EM_JS(int, JS_LoadHabitStates, (HabitState* outStates, float* colorOut), {
     try {
-        let storedStates = localStorage.getItem('habitStates');
-        if (!storedStates) return 0;
+        const stored = localStorage.getItem('habitData');
+        if (!stored) return 0;
 
-        let parsedStates = JSON.parse(storedStates);
-        let count = parsedStates.length;
+        const data = JSON.parse(stored);
+        console.log('Loaded data from storage:', data); // Debug loaded data
+        
+        const states = data.states;
+        const count = states.length;
         
         const HEAP32 = new Int32Array(Module.HEAP8.buffer);
         const HEAPU8 = new Uint8Array(Module.HEAP8.buffer);
+        const HEAPF32 = new Float32Array(Module.HEAP8.buffer);
         const stateSize = 12;
 
+        // Load states
         for (let i = 0; i < count; i++) {
             const offset = (outStates >> 2) + (i * (stateSize >> 2));
-            HEAP32[offset] = parsedStates[i].date;
-            HEAP32[offset + 1] = parsedStates[i].dayIndex;
-            HEAPU8[(offset << 2) + 8] = parsedStates[i].completed ? 1 : 0;
+            HEAP32[offset] = states[i].date;
+            HEAP32[offset + 1] = states[i].dayIndex;
+            HEAPU8[(offset << 2) + 8] = states[i].completed ? 1 : 0;
+        }
+
+        // Load color
+        if (data.color) {
+            const colorOffset = colorOut >> 2;
+            HEAPF32[colorOffset] = data.color.r;
+            HEAPF32[colorOffset + 1] = data.color.g;
+            HEAPF32[colorOffset + 2] = data.color.b;
+            HEAPF32[colorOffset + 3] = data.color.a;
+            
+            console.log('Loading color:', data.color); // Debug color values
+            console.log('Color memory offset:', colorOffset);
         }
 
         return count;
     } catch (error) {
-        console.error('Error loading habit states:', error);
+        console.error('Error loading habit data:', error);
         return 0;
     }
 });
-void SaveHabitStatesCollection(HabitStateCollection* collection) {
-    printf("Starting to save habit states collection\n");
-    
-    if (!collection) {  // Remove the states check since it's an array
-        printf("Error: Invalid collection pointer\n");
-        return;
-    }
-    
-    if (collection->count <= 0 || collection->count > MAX_HABIT_STATES) {
-        printf("Error: Invalid count: %zu\n", collection->count);
-        return;
-    }
-    
-    printf("Saving %zu states\n", collection->count);
-    
-    // Print memory layout info
-    printf("Size of HabitState: %zu bytes\n", sizeof(HabitState));
-    printf("Collection address: %p\n", (void*)collection);
-    printf("States array address: %p\n", (void*)collection->states);
-    
-    // Print each state before saving
-    for (size_t i = 0; i < collection->count; i++) {
-        printf("State[%zu]: date=%u, day_index=%u, completed=%d\n",
-               i,
-               collection->states[i].date,
-               collection->states[i].day_index,
-               collection->states[i].completed);
-    }
-    
-    JS_SaveHabitStates(collection->states, (int)collection->count);
-    printf("Save completed\n");
+
+static void SaveHabitStatesWASM(const HabitStateCollection* collection) {
+    printf("Saving color: r=%f, g=%f, b=%f, a=%f\n",
+           collection->color.r,
+           collection->color.g,
+           collection->color.b,
+           collection->color.a);
+           
+    JS_SaveHabitStates(
+        collection->states,
+        (int)collection->count,
+        collection->color.r,
+        collection->color.g,
+        collection->color.b,
+        collection->color.a
+    );
 }
 
-void LoadHabitStatesCollection(HabitStateCollection* collection) {
-    
-    if (!collection) {  // Remove the states check since it's an array
-        printf("Error: Invalid collection pointer\n");
-        return;
-    }
-    
-    int count = JS_LoadHabitStates(collection->states);
-    collection->count = (size_t)count;
+static void LoadHabitStatesWASM(HabitStateCollection* collection) {
+    collection->count = (size_t)JS_LoadHabitStates(collection->states, &collection->color.r);
 }
 
-bool ToggleHabitState(HabitStateCollection* collection, uint32_t day_index) {
-    printf("Toggling habit state for day %u\n", day_index);
-    
-    // First, check if state already exists and toggle if found
-    for (size_t i = 0; i < collection->count; i++) {
-        if (collection->states[i].day_index == day_index) {
-            // If the state exists, toggle its completion
-            collection->states[i].completed = !collection->states[i].completed;
-            collection->states[i].date = time(NULL);
-            printf("Toggled existing state: completed=%d\n", collection->states[i].completed);
-            return true;
-        }
-    }
+#else
 
-    // If no existing state is found and it's not already completed, add a new completed state
-    if (collection->count < MAX_HABIT_STATES) {
-        HabitState* new_state = &collection->states[collection->count++];
-        new_state->day_index = day_index;
-        new_state->completed = true;
-        new_state->date = time(NULL);
-        printf("Added new state: day_index=%u, completed=true\n", day_index);
-        return true;
-    }
-
-    printf("Error: Cannot add new state, reached MAX_HABIT_STATES\n");
-    return false;
-}
-
-// File-based storage functions for non-WASM environments
-#ifndef __EMSCRIPTEN__
-void SaveHabitStatesToJSON(HabitStateCollection* collection, const char* filename) {
+static void SaveHabitStatesJSON(const HabitStateCollection* collection, const char* filename) {
     FILE* file = fopen(filename, "w");
-    if (!file) {
-        printf("Error: Could not open file %s for writing\n", filename);
-        return;
-    }
+    if (!file) return;
 
-    fprintf(file, "[\n");
+    fprintf(file, "{\n  \"color\": {\"r\": %f, \"g\": %f, \"b\": %f, \"a\": %f},\n", 
+        collection->color.r, collection->color.g, collection->color.b, collection->color.a);
+    
+    fprintf(file, "  \"states\": [\n");
     for (size_t i = 0; i < collection->count; i++) {
-        fprintf(file, "  {\n");
-        fprintf(file, "    \"date\": %u,\n", collection->states[i].date);
-        fprintf(file, "    \"dayIndex\": %u,\n", collection->states[i].day_index);
-        fprintf(file, "    \"completed\": %s\n", 
-                collection->states[i].completed ? "true" : "false");
-        fprintf(file, "  }%s\n", 
-                (i < collection->count - 1) ? "," : "");
+        fprintf(file, "    {\"date\": %u, \"dayIndex\": %u, \"completed\": %s}%s\n",
+            collection->states[i].date,
+            collection->states[i].day_index,
+            collection->states[i].completed ? "true" : "false",
+            i < collection->count - 1 ? "," : "");
     }
-    fprintf(file, "]\n");
+    fprintf(file, "  ]\n}\n");
     
     fclose(file);
-    printf("Saved habit states to %s\n", filename);
 }
 
-void LoadHabitStatesFromJSON(HabitStateCollection* collection, const char* filename) {
+static void LoadHabitStatesJSON(HabitStateCollection* collection, const char* filename) {
     FILE* file = fopen(filename, "r");
-    if (!file) {
-        printf("Error: Could not open file %s for reading\n", filename);
-        return;
-    }
+    if (!file) return;
 
+    // Reset collection
     collection->count = 0;
+    collection->color = (Clay_Color){0};
 
     char buffer[1024];
+    bool in_states = false;
+
     while (fgets(buffer, sizeof(buffer), file)) {
-        if (strstr(buffer, "\"dayIndex\"")) {
-            uint32_t day_index;
-            sscanf(buffer, "    \"dayIndex\": %u,", &day_index);
-            
+        if (strstr(buffer, "\"color\"")) {
+            sscanf(buffer, "  \"color\": {\"r\": %f, \"g\": %f, \"b\": %f, \"a\": %f}",
+                &collection->color.r, &collection->color.g, 
+                &collection->color.b, &collection->color.a);
+        }
+        else if (strstr(buffer, "\"dayIndex\"")) {
             if (collection->count < MAX_HABIT_STATES) {
                 HabitState* state = &collection->states[collection->count++];
-                state->day_index = day_index;
-                state->completed = true;
-                state->date = time(NULL);
+                sscanf(buffer, "    {\"date\": %u, \"dayIndex\": %u, \"completed\": %*s}",
+                    &state->date, &state->day_index);
+                state->completed = strstr(buffer, "true") != NULL;
             }
         }
     }
     
     fclose(file);
 }
+
 #endif
+
+// Public functions
+void SaveHabitStates(HabitStateCollection* collection) {
+    if (!collection || collection->count > MAX_HABIT_STATES) return;
+
+    #ifdef __EMSCRIPTEN__
+        SaveHabitStatesWASM(collection);
+    #else
+        SaveHabitStatesJSON(collection, "habits.json");
+    #endif
+}
+
+void LoadHabitStates(HabitStateCollection* collection) {
+    if (!collection) return;
+
+    #ifdef __EMSCRIPTEN__
+        LoadHabitStatesWASM(collection);
+    #else
+        LoadHabitStatesJSON(collection, "habits.json");
+    #endif
+
+    // Set default color if none loaded
+    if (collection->color.a == 0) {
+        collection->color = COLOR_PRIMARY;
+    }
+}
+
+bool ToggleHabitState(HabitStateCollection* collection, uint32_t day_index) {
+    if (!collection || collection->count >= MAX_HABIT_STATES) return false;
+    
+    // Check if state exists and toggle it
+    for (size_t i = 0; i < collection->count; i++) {
+        if (collection->states[i].day_index == day_index) {
+            collection->states[i].completed = !collection->states[i].completed;
+            collection->states[i].date = time(NULL);
+            return true;
+        }
+    }
+
+    // Add new state
+    HabitState* new_state = &collection->states[collection->count++];
+    new_state->day_index = day_index;
+    new_state->completed = true;
+    new_state->date = time(NULL);
+    return true;
+}
+
+void UpdateHabitColor(HabitStateCollection* collection, Clay_Color color) {
+    if (!collection) return;
+    collection->color = color;
+    SaveHabitStates(collection);
+}

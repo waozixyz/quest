@@ -2,29 +2,23 @@
 #include "../../vendor/clay/clay.h" 
 #include "color_picker.h"  
 
-ColorPickerState habit_color_picker = {0};
+static void (*g_color_change_callback)(Clay_Color) = NULL;
 
 
-void HandleColorSelection(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+static void HandleColorHover(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         size_t color_index = (size_t)userData;
-        
-        // Directly use the color index to update the selected color
-        if (color_index < COLOR_PALETTE_SIZE) {
-            habit_color_picker.selected_color = COLOR_PALETTE[color_index];
-            
-            // Trigger color change callback if set
-            if (habit_color_picker.on_color_change) {
-                habit_color_picker.on_color_change(
-                    habit_color_picker.selected_color,
-                    habit_color_picker.user_data
-                );
-            }
+        if (color_index < COLOR_PALETTE_SIZE && g_color_change_callback) {
+            g_color_change_callback(COLOR_PALETTE[color_index]);
         }
     }
 }
 
-void RenderColorPicker(ColorPickerState* state) {
+
+void RenderColorPicker(Clay_Color current_color, void (*on_color_change)(Clay_Color)) {
+    // Store the callback globally so the wrapper can access it
+    g_color_change_callback = on_color_change;
+
     CLAY(CLAY_ID("ColorPickerContainer"),
         CLAY_LAYOUT({
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) },
@@ -39,7 +33,7 @@ void RenderColorPicker(ColorPickerState* state) {
                 .sizing = { CLAY_SIZING_FIXED(40), CLAY_SIZING_FIXED(40) }
             }),
             CLAY_RECTANGLE({
-                .color = state->selected_color,
+                .color = current_color,
                 .cornerRadius = CLAY_CORNER_RADIUS(8)
             })
         );
@@ -61,8 +55,7 @@ void RenderColorPicker(ColorPickerState* state) {
                         .color = COLOR_PALETTE[i],
                         .cornerRadius = CLAY_CORNER_RADIUS(4)
                     }),
-                    // Pass combined state and index
-                    Clay_OnHover(HandleColorSelection, (intptr_t)i)
+                    Clay_OnHover(HandleColorHover, (intptr_t)i)
 
                 );
             }
