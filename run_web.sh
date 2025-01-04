@@ -5,7 +5,7 @@
 pkill ran
 
 # Initial build
-make clean && make all
+make clean && make BUILD_TYPE=web
 
 # Store current directory
 ROOT_DIR=$(pwd)
