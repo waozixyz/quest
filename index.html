@@ -432,70 +432,127 @@ async function init() {
                 const isDst = new Date(date.getFullYear(), 6, 1).getTimezoneOffset() !== timezoneOffset;
                 memoryDataView.setInt32(tmPtr + 32, isDst ? 1 : 0, true);
             },
-            JS_SaveHabitStates: (statesPtr, count, r, g, b, a) => {
-                console.log(`JS_SaveHabitStates called with ptr: ${statesPtr}, count: ${count}, color: ${r},${g},${b},${a}`);
+            JS_SaveHabits: (collectionPtr) => {
                 try {
                     const memory = new DataView(instance.exports.memory.buffer);
+                    const HABIT_SIZE = 12056;
+                    const HABIT_DAY_SIZE = 12;
+                    const MAX_HABITS = 10;
+
+                    const habitsCount = memory.getUint32(collectionPtr + (HABIT_SIZE * MAX_HABITS), true);
+                    const activeHabitId = memory.getUint32(collectionPtr + (HABIT_SIZE * MAX_HABITS) + 4, true);
                     
-                    const habitData = {
-                        states: [],
-                        color: {r, g, b, a}
+                    const habitsData = {
+                        habits: [],
+                        active_habit_id: activeHabitId
                     };
 
-                    for (let i = 0; i < count; i++) {
-                        const offset = statesPtr + (i * 12); // 12 bytes per state
-                        const date = memory.getUint32(offset, true);
-                        const dayIndex = memory.getUint32(offset + 4, true);
-                        const completed = memory.getUint8(offset + 8) !== 0;
+                    for (let i = 0; i < habitsCount; i++) {
+                        const habitOffset = collectionPtr + (i * HABIT_SIZE);
                         
-                        habitData.states.push({
-                            date,
-                            dayIndex,
-                            completed
-                        });
+                        // Read name
+                        let name = "";
+                        for (let j = 0; j < 32; j++) {
+                            const char = memory.getUint8(habitOffset + j);
+                            if (char === 0) break;
+                            name += String.fromCharCode(char);
+                        }
+
+                        const id = memory.getUint32(habitOffset + 32, true);
+                        const colorOffset = habitOffset + 36;
+                        const daysOffset = habitOffset + 52;
+                        const daysCount = memory.getUint32(habitOffset + 12052, true);
+
+                        const habit = {
+                            id,
+                            name,
+                            color: {
+                                r: memory.getFloat32(colorOffset, true),
+                                g: memory.getFloat32(colorOffset + 4, true),
+                                b: memory.getFloat32(colorOffset + 8, true),
+                                a: memory.getFloat32(colorOffset + 12, true)
+                            },
+                            calendar_days: []
+                        };
+
+                        for (let j = 0; j < daysCount; j++) {
+                            const dayOffset = daysOffset + (j * HABIT_DAY_SIZE);
+                            habit.calendar_days.push({
+                                date: memory.getUint32(dayOffset, true),
+                                day_index: memory.getUint32(dayOffset + 4, true),
+                                completed: memory.getUint8(dayOffset + 8) !== 0
+                            });
+                        }
+
+                        habitsData.habits.push(habit);
                     }
-                    
-                    localStorage.setItem('habitData', JSON.stringify(habitData));
-                    console.log('Saved habit data:', habitData);
+
+                    localStorage.setItem("habitsData", JSON.stringify(habitsData));
                 } catch (error) {
-                    console.error('Error in JS_SaveHabitStates:', error);
+                    console.error("Error in JS_SaveHabits:", error);
+                    console.error(error.stack);
                 }
             },
 
-            JS_LoadHabitStates: (outStatesPtr, colorPtr) => {
+            JS_LoadHabits: (collectionPtr) => {
                 try {
-                    const storedData = localStorage.getItem('habitData');
-                    if (!storedData) {
-                        return 0;
+                    const stored = localStorage.getItem("habitsData");
+                    if (!stored) {
+                        console.log("No stored habits data found");
+                        return;
                     }
 
-                    const habitData = JSON.parse(storedData);
+                    const habitsData = JSON.parse(stored);
                     const memory = new DataView(instance.exports.memory.buffer);
-                    
-                    // Load states
-                    for (let i = 0; i < habitData.states.length; i++) {
-                        const offset = outStatesPtr + (i * 12);
-                        const state = habitData.states[i];
+                    const HABIT_SIZE = 12056;
+                    const HABIT_DAY_SIZE = 12;
+                    const MAX_HABITS = 10;
 
-                        memory.setUint32(offset, state.date, true);
-                        memory.setUint32(offset + 4, state.dayIndex, true);
-                        memory.setUint8(offset + 8, state.completed ? 1 : 0);
+                    // Write habits count and active habit id
+                    memory.setUint32(collectionPtr + (HABIT_SIZE * MAX_HABITS), habitsData.habits.length, true);
+                    memory.setUint32(collectionPtr + (HABIT_SIZE * MAX_HABITS) + 4, habitsData.active_habit_id, true);
+
+
+                    // Write each habit
+                    for (let i = 0; i < habitsData.habits.length; i++) {
+                        const habit = habitsData.habits[i];
+                        const habitOffset = collectionPtr + (i * HABIT_SIZE);
+
+                        // Write name
+                        const encoder = new TextEncoder();
+                        const nameBytes = encoder.encode(habit.name);
+                        for (let j = 0; j < 32; j++) {
+                            memory.setUint8(habitOffset + j, j < nameBytes.length ? nameBytes[j] : 0);
+                        }
+
+                        // Write id
+                        memory.setUint32(habitOffset + 32, habit.id, true);
+
+                        // Write color
+                        const colorOffset = habitOffset + 36;
+                        memory.setFloat32(colorOffset, habit.color.r, true);
+                        memory.setFloat32(colorOffset + 4, habit.color.g, true);
+                        memory.setFloat32(colorOffset + 8, habit.color.b, true);
+                        memory.setFloat32(colorOffset + 12, habit.color.a, true);
+
+                        // Write calendar days
+                        const daysOffset = habitOffset + 52;
+                        for (let j = 0; j < habit.calendar_days.length; j++) {
+                            const day = habit.calendar_days[j];
+                            const dayOffset = daysOffset + (j * HABIT_DAY_SIZE);
+                            memory.setUint32(dayOffset, day.date, true);
+                            memory.setUint32(dayOffset + 4, day.day_index, true);
+                            memory.setUint8(dayOffset + 8, day.completed ? 1 : 0);
+                        }
+
+                        // Write days count
+                        memory.setUint32(habitOffset + 12052, habit.calendar_days.length, true);
                     }
-
-                    // Load color
-                    if (habitData.color) {
-                        memory.setFloat32(colorPtr, habitData.color.r, true);
-                        memory.setFloat32(colorPtr + 4, habitData.color.g, true);
-                        memory.setFloat32(colorPtr + 8, habitData.color.b, true);
-                        memory.setFloat32(colorPtr + 12, habitData.color.a, true);
-                    }
-
-                    return habitData.states.length;
                 } catch (error) {
-                    console.error('Error in JS_LoadHabitStates:', error);
-                    return 0;
+                    console.error("Error in JS_LoadHabits:", error);
+                    console.error(error.stack);
                 }
-            },
+            }
         },
         wasi_snapshot_preview1: {
             proc_exit: () => {},

@@ -53,7 +53,6 @@ static void RenderColorRow(size_t start_index, size_t end_index) {
         }
     }
 }
-
 static void RenderColorPaletteModal(void) {
     CLAY(CLAY_ID("ModalColorPalette"),
         CLAY_LAYOUT({
@@ -77,11 +76,14 @@ static void RenderColorPaletteModal(void) {
                 .layoutDirection = CLAY_TOP_TO_BOTTOM
             })
         ) {
-            // Render first row (first half of colors)
-            RenderColorRow(0, COLOR_PALETTE_SIZE / 2);
+            // First row
+            RenderColorRow(0, COLORS_PER_ROW);
             
-            // Render second row (second half of colors)
-            RenderColorRow(COLOR_PALETTE_SIZE / 2, COLOR_PALETTE_SIZE);
+            // Second row
+            RenderColorRow(COLORS_PER_ROW, COLORS_PER_ROW * 2);
+            
+            // Third row
+            RenderColorRow(COLORS_PER_ROW * 2, COLOR_PALETTE_SIZE);
         }
     }
 }

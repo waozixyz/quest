@@ -5,8 +5,7 @@
 #include <time.h>
 #include <stdio.h>
 
-
-HabitStateCollection habit_states = {0};
+HabitCollection habits = {0};
 Modal color_picker_modal = {
     .is_open = false,
     .width = 300,
@@ -16,19 +15,86 @@ Modal color_picker_modal = {
 void ToggleHabitStateForDay(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         uint32_t day_index = (uint32_t)userData;
-        ToggleHabitState(&habit_states, day_index);
-        
-        SaveHabitStates(&habit_states);
+        ToggleHabitDay(&habits, day_index);
+        SaveHabits(&habits);
     }
 }
 
 void HandleColorChange(Clay_Color new_color) {
-    habit_states.color = new_color;
-    SaveHabitStates(&habit_states);
+    UpdateHabitColor(&habits, new_color);
+}
+
+static void HandleTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        habits.active_habit_id = (uint32_t)userData;
+        SaveHabits(&habits);
+    }
+}
+
+static void HandleNewTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        AddNewHabit(&habits);
+    }
+}
+
+static void RenderHabitTab(const Habit* habit) {
+    bool isActive = habits.active_habit_id == habit->id;
+    
+    CLAY(CLAY_IDI("HabitTab", habit->id), 
+        CLAY_LAYOUT({ .padding = { 16, 8 } }), 
+        CLAY_RECTANGLE({ 
+            .color = isActive ? COLOR_PRIMARY : 
+                     (Clay_Hovered() ? COLOR_PRIMARY_HOVER : COLOR_PANEL),
+            .cornerRadius = CLAY_CORNER_RADIUS(5)
+        }),
+        Clay_OnHover(HandleTabInteraction, habit->id)
+    ) {
+        CLAY_TEXT(CLAY_STRING(habit->name), CLAY_TEXT_CONFIG({ 
+            .fontSize = 20,
+            .fontId = FONT_ID_BODY_24,
+            .textColor = COLOR_TEXT
+        }));
+    }
+}
+
+static void RenderHabitTabs() {
+    CLAY(CLAY_ID("HabitTabs"),
+        CLAY_LAYOUT({ 
+            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIXED(60) },
+            .childGap = 16,
+            .padding = { 16, 0 },
+            .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
+        }),
+        CLAY_RECTANGLE({ .color = COLOR_SECONDARY })
+    ) {
+        // Render existing habit tabs
+        for (size_t i = 0; i < habits.habits_count; i++) {
+            RenderHabitTab(&habits.habits[i]);
+        }
+
+        // Add "+" button for new habit
+        CLAY(CLAY_ID("NewHabitTab"),
+            CLAY_LAYOUT({ .padding = { 16, 8 } }), 
+            CLAY_RECTANGLE({ 
+                .color = Clay_Hovered() ? COLOR_PRIMARY_HOVER : COLOR_PANEL,
+                .cornerRadius = CLAY_CORNER_RADIUS(5)
+            }),
+            Clay_OnHover(HandleNewTabInteraction, 0)
+        ) {
+            CLAY_TEXT(CLAY_STRING("+"), CLAY_TEXT_CONFIG({ 
+                .fontSize = 24,
+                .fontId = FONT_ID_BODY_24,
+                .textColor = COLOR_TEXT
+            }));
+        }
+    }
 }
 
 void RenderHabitsPage() {
-    LoadHabitStates(&habit_states);
+    LoadHabits(&habits);
+
+    Habit* active_habit = GetActiveHabit(&habits);
+    if (!active_habit) return;
 
     time_t now;
     time(&now);
@@ -70,7 +136,11 @@ void RenderHabitsPage() {
             );
         }
 
-        RenderColorPicker(habit_states.color, HandleColorChange, &color_picker_modal);
+        // Habit tabs
+        RenderHabitTabs();
+
+        // Color picker for active habit
+        RenderColorPicker(active_habit->color, HandleColorChange, &color_picker_modal);
 
         CLAY(CLAY_ID("CalendarScrollContainer"),
             CLAY_LAYOUT({
@@ -114,11 +184,11 @@ void RenderHabitsPage() {
                             bool is_today = (current_timestamp == today_timestamp);
                             bool is_past = (current_timestamp < today_timestamp);
                             
-                            // Check if this day is completed
+                            // Check if this day is completed in active habit
                             bool is_completed = false;
-                            for (size_t i = 0; i < habit_states.count; i++) {
-                                if (habit_states.states[i].day_index == unique_index && 
-                                    habit_states.states[i].completed) {
+                            for (size_t i = 0; i < active_habit->days_count; i++) {
+                                if (active_habit->calendar_days[i].day_index == unique_index && 
+                                    active_habit->calendar_days[i].completed) {
                                     is_completed = true;
                                     break;
                                 }
@@ -131,7 +201,7 @@ void RenderHabitsPage() {
                                 .unique_index = unique_index,
                                 .is_completed = is_completed,
                                 .on_click = ToggleHabitStateForDay,
-                                .custom_color = habit_states.color
+                                .custom_color = active_habit->color
                             };
 
                             RenderCalendarBox(props);
