@@ -21,6 +21,7 @@
 double windowWidth = 1024, windowHeight = 768;
 uint32_t ACTIVE_PAGE = 0;
 uint32_t ACTIVE_RENDERER_INDEX = 0;
+bool pages_initialized = false;
 
 // Font IDs
 const uint32_t FONT_ID_BODY_16 = 0;
@@ -59,12 +60,23 @@ const Clay_Color COLOR_BORDER_FOCUSED = (Clay_Color) {148, 47, 74, 255}; // #942
 // Text Colors
 const Clay_Color COLOR_TEXT = (Clay_Color) {230, 221, 233, 255};     // #e6dde9
 const Clay_Color COLOR_TEXT_SECONDARY = (Clay_Color) {184, 168, 192, 255}; // #b8a8c0
+const Clay_Color COLOR_CURSOR = (Clay_Color){255, 107, 151, 255};           // Using COLOR_ACCENT for cursor
 
 void HandleNavInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         ACTIVE_PAGE = (uint32_t)userData;
     }
 }
+
+void InitializePages() {
+    if (pages_initialized) return;
+    
+    printf("Initializing pages...\n");
+    InitializeTodosPage();  // And any other page initializations
+    pages_initialized = true;
+    printf("Pages initialized\n");
+}
+
 
 void RenderCurrentPage() {
     switch(ACTIVE_PAGE) {
@@ -75,7 +87,22 @@ void RenderCurrentPage() {
         case 4: RenderRoutinePage(); break;
     }
 }
+void CleanupPages() {
+    printf("Cleaning up pages...\n");
+    CleanupTodosPage();
+    // Add other page cleanups here as needed:
+    // CleanupHabitsPage();
+    // CleanupTimelinePage();
+    // etc.
+    pages_initialized = false;
+    printf("Pages cleaned up\n");
+}
+
 Clay_RenderCommandArray CreateLayout() {
+    if (!pages_initialized) {
+        InitializePages();
+    }
+
     Clay_BeginLayout();
     
     CLAY(CLAY_ID("OuterContainer"), 
@@ -134,25 +161,48 @@ CLAY_WASM_EXPORT("UpdateDrawFrame") Clay_RenderCommandArray UpdateDrawFrame(
 #endif
 
 #ifdef CLAY_DESKTOP
+
+void HandlePageInput(InputEvent event) {
+    switch(ACTIVE_PAGE) {
+        case 0: /* HandleHomePageInput(event); */ break;
+        case 1: /* HandleHabitsPageInput(event); */ break;
+        case 2: HandleTodosPageInput(event); break;
+        case 3: /* HandleTimelinePageInput(event); */ break;
+        case 4: /* HandleRoutinePageInput(event); */ break;
+    }
+}
+
+
 void HandleSDLEvents(bool* running) {
     SDL_Event event;
+    static float last_time = 0;
+    float current_time = SDL_GetTicks() / 1000.0f;
+    float delta_time = current_time - last_time;
+    last_time = current_time;
+
+    InputEvent input_event = {0};
+    input_event.delta_time = delta_time;
+
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
             case SDL_QUIT:
                 *running = false;
                 break;
+
             case SDL_WINDOWEVENT:
                 if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
                     windowWidth = event.window.data1;
                     windowHeight = event.window.data2;
                 }
                 break;
+
             case SDL_MOUSEMOTION:
                 Clay_SetPointerState(
                     (Clay_Vector2){(float)event.motion.x, (float)event.motion.y},
                     (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_LMASK) != 0
                 );
                 break;
+
             case SDL_MOUSEBUTTONDOWN:
             case SDL_MOUSEBUTTONUP:
                 Clay_SetPointerState(
@@ -160,9 +210,33 @@ void HandleSDLEvents(bool* running) {
                     event.type == SDL_MOUSEBUTTONDOWN
                 );
                 break;
+
+            case SDL_KEYDOWN:
+                input_event.isTextInput = false;
+                if (event.key.keysym.sym == SDLK_BACKSPACE) {
+                    input_event.key = '\b';
+                } else if (event.key.keysym.sym == SDLK_LEFT) {
+                    input_event.key = 0x25;
+                } else if (event.key.keysym.sym == SDLK_RIGHT) {
+                    input_event.key = 0x27;
+                }
+                HandlePageInput(input_event);
+                break;
+
+            case SDL_TEXTINPUT:
+                input_event.isTextInput = true;
+                strncpy(input_event.text, event.text.text, sizeof(input_event.text) - 1);
+                HandlePageInput(input_event);
+                break;
         }
     }
+
+    // Update blink timer
+    input_event.isTextInput = false;
+    input_event.key = 0;
+    HandlePageInput(input_event);
 }
+
 #endif
 int main() {
     printf("Starting application...\n");
@@ -245,7 +319,9 @@ int main() {
     Clay_ErrorHandler errorHandler = { .errorHandlerFunction = NULL };
     Clay_Initialize(arena, (Clay_Dimensions){windowWidth, windowHeight}, errorHandler);
 
-    
+    InitializePages();
+
+
     bool running = true;
     while (running) {
         HandleSDLEvents(&running);
@@ -272,7 +348,7 @@ int main() {
 
         SDL_RenderPresent(renderer);
     }
-
+    CleanupPages();
     Clay_SDL2_CleanupRenderer();
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);

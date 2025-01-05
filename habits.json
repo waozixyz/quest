@@ -1,5 +1,5 @@
 {
-	"active_habit_id":	0,
+	"active_habit_id":	2,
 	"habits":	[{
 			"id":	0,
 			"name":	"Meditation",
@@ -59,6 +59,16 @@
 				"r":	0,
 				"g":	191,
 				"b":	255,
+				"a":	255
+			},
+			"calendar_days":	[]
+		}, {
+			"id":	3,
+			"name":	"Habit 4",
+			"color":	{
+				"r":	148,
+				"g":	47,
+				"b":	74,
 				"a":	255
 			},
 			"calendar_days":	[]

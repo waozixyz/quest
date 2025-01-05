@@ -2,23 +2,50 @@
 #include <string.h>
 #include <stdlib.h>
 
+#define CURSOR_BLINK_RATE 0.53f
+#define PADDING 8
+
 static void HandleTextInputClick(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     TextInput* input = (TextInput*)userData;
+    if (!input) return;
     
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         input->is_focused = true;
+        input->cursor_visible = true;
+        input->blink_timer = 0;
+        input->cursor_position = input->text_length;
     }
 }
 
 TextInput* CreateTextInput(void (*on_change)(const char* text)) {
     TextInput* input = (TextInput*)malloc(sizeof(TextInput));
-    memset(input, 0, sizeof(TextInput));
+    if (!input) return NULL;
+    
+    // Initialize all fields explicitly
+    input->text[0] = '\0';
+    input->text_length = 0;
+    input->cursor_position = 0;
+    input->is_focused = false;
     input->on_change = on_change;
+    input->blink_timer = 0;
+    input->cursor_visible = true;
+    
     return input;
 }
 
-void UpdateTextInput(TextInput* input, int key) {
-    if (!input->is_focused) return;
+void DestroyTextInput(TextInput* input) {
+    free(input);
+}
+
+void UpdateTextInput(TextInput* input, int key, float delta_time) {
+    if (!input || !input->is_focused) return;
+
+    // Update cursor blink
+    input->blink_timer += delta_time;
+    if (input->blink_timer >= CURSOR_BLINK_RATE) {
+        input->blink_timer -= CURSOR_BLINK_RATE;
+        input->cursor_visible = !input->cursor_visible;
+    }
 
     // Handle backspace
     if (key == '\b') {
@@ -36,6 +63,24 @@ void UpdateTextInput(TextInput* input, int key) {
         return;
     }
 
+    // Handle arrow keys
+    if (key == 0x25) { // Left arrow
+        if (input->cursor_position > 0) {
+            input->cursor_position--;
+            input->cursor_visible = true;
+            input->blink_timer = 0;
+        }
+        return;
+    }
+    if (key == 0x27) { // Right arrow
+        if (input->cursor_position < input->text_length) {
+            input->cursor_position++;
+            input->cursor_visible = true;
+            input->blink_timer = 0;
+        }
+        return;
+    }
+
     // Handle printable characters
     if (key >= 32 && key <= 126 && input->text_length < MAX_TEXT_INPUT_LENGTH - 1) {
         memmove(&input->text[input->cursor_position + 1], 
@@ -45,6 +90,8 @@ void UpdateTextInput(TextInput* input, int key) {
         input->text_length++;
         input->cursor_position++;
         input->text[input->text_length] = '\0';
+        input->cursor_visible = true;
+        input->blink_timer = 0;
         if (input->on_change) {
             input->on_change(input->text);
         }
@@ -52,41 +99,105 @@ void UpdateTextInput(TextInput* input, int key) {
 }
 
 void RenderTextInput(TextInput* input) {
+    if (!input) return;
+
     CLAY(CLAY_ID("TextInput"), 
         CLAY_LAYOUT({ 
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIXED(40) },
-            .padding = { 8, 8 }
+            .padding = { PADDING, PADDING }
         }),
         CLAY_RECTANGLE({ 
             .color = input->is_focused ? COLOR_BACKGROUND_FOCUSED : COLOR_BACKGROUND,
             .cornerRadius = CLAY_CORNER_RADIUS(4)
         }),
         CLAY_BORDER({
-            .left = { 1, input->is_focused ? COLOR_BORDER_FOCUSED : COLOR_BORDER },
-            .right = { 1, input->is_focused ? COLOR_BORDER_FOCUSED : COLOR_BORDER },
-            .top = { 1, input->is_focused ? COLOR_BORDER_FOCUSED : COLOR_BORDER },
-            .bottom = { 1, input->is_focused ? COLOR_BORDER_FOCUSED : COLOR_BORDER },
+            .left = { .width = 1, .color = input->is_focused ? COLOR_BORDER_FOCUSED : COLOR_BORDER },
+            .right = { .width = 1, .color = input->is_focused ? COLOR_BORDER_FOCUSED : COLOR_BORDER },
+            .top = { .width = 1, .color = input->is_focused ? COLOR_BORDER_FOCUSED : COLOR_BORDER },
+            .bottom = { .width = 1, .color = input->is_focused ? COLOR_BORDER_FOCUSED : COLOR_BORDER },
             .cornerRadius = CLAY_CORNER_RADIUS(4)
         }),
         Clay_OnHover(HandleTextInputClick, (intptr_t)input)
     ) {
-        // Render the text content
         if (input->text_length > 0) {
-            CLAY_TEXT(CLAY_STRING(input->text), CLAY_TEXT_CONFIG({
-                .textColor = COLOR_TEXT,
-                .fontSize = 16,
-                .wrapMode = CLAY_TEXT_WRAP_NONE
-            }));
-        }
+            // Render text before cursor
+            if (input->cursor_position > 0) {
+                Clay_String before_cursor = {
+                    .chars = input->text,
+                    .length = input->cursor_position
+                };
+                CLAY_TEXT(before_cursor, CLAY_TEXT_CONFIG({
+                    .textColor = COLOR_TEXT,
+                    .fontSize = 16,
+                    .wrapMode = CLAY_TEXT_WRAP_NONE
+                }));
+            }
 
-        // Render cursor when focused
-        if (input->is_focused) {
+            // Render cursor if focused and visible
+            if (input->is_focused && input->cursor_visible) {
+                CLAY(CLAY_ID("TextCursor"),
+                    CLAY_LAYOUT({
+                        .sizing = { CLAY_SIZING_FIXED(2), CLAY_SIZING_FIXED(20) }
+                    }),
+                    CLAY_RECTANGLE({ .color = COLOR_CURSOR })
+                ) {}
+            }
+
+            // Render text after cursor
+            if (input->cursor_position < input->text_length) {
+                Clay_String after_cursor = {
+                    .chars = &input->text[input->cursor_position],
+                    .length = input->text_length - input->cursor_position
+                };
+                CLAY_TEXT(after_cursor, CLAY_TEXT_CONFIG({
+                    .textColor = COLOR_TEXT,
+                    .fontSize = 16,
+                    .wrapMode = CLAY_TEXT_WRAP_NONE
+                }));
+            }
+        } else if (input->is_focused && input->cursor_visible) {
+            // Just render cursor if no text
             CLAY(CLAY_ID("TextCursor"),
                 CLAY_LAYOUT({
                     .sizing = { CLAY_SIZING_FIXED(2), CLAY_SIZING_FIXED(20) }
                 }),
-                CLAY_RECTANGLE({ .color = COLOR_TEXT })
+                CLAY_RECTANGLE({ .color = COLOR_CURSOR })
             ) {}
         }
     }
+}
+
+void SetTextInputText(TextInput* input, const char* text) {
+    if (!input || !text) return;
+    
+    size_t len = strlen(text);
+    if (len >= MAX_TEXT_INPUT_LENGTH) {
+        len = MAX_TEXT_INPUT_LENGTH - 1;
+    }
+    
+    memcpy(input->text, text, len);
+    input->text[len] = '\0';
+    input->text_length = len;
+    input->cursor_position = len;
+    
+    if (input->on_change) {
+        input->on_change(input->text);
+    }
+}
+
+void ClearTextInput(TextInput* input) {
+    if (!input) return;
+    
+    input->text[0] = '\0';
+    input->text_length = 0;
+    input->cursor_position = 0;
+    
+    if (input->on_change) {
+        input->on_change(input->text);
+    }
+}
+
+const char* GetTextInputText(const TextInput* input) {
+    if (!input) return "";
+    return input->text;
 }
