@@ -1,0 +1,66 @@
+{
+	"active_habit_id":	0,
+	"habits":	[{
+			"id":	0,
+			"name":	"Meditation",
+			"color":	{
+				"r":	255,
+				"g":	20,
+				"b":	147,
+				"a":	255
+			},
+			"calendar_days":	[{
+					"date":	1736039126,
+					"day_index":	5,
+					"completed":	true
+				}, {
+					"date":	1736039579,
+					"day_index":	4,
+					"completed":	false
+				}, {
+					"date":	1736039577,
+					"day_index":	2,
+					"completed":	false
+				}]
+		}, {
+			"id":	1,
+			"name":	"Habit 2",
+			"color":	{
+				"r":	205,
+				"g":	92,
+				"b":	92,
+				"a":	255
+			},
+			"calendar_days":	[{
+					"date":	1736039042,
+					"day_index":	3,
+					"completed":	false
+				}, {
+					"date":	1736039042,
+					"day_index":	4,
+					"completed":	false
+				}, {
+					"date":	1736039038,
+					"day_index":	2,
+					"completed":	false
+				}, {
+					"date":	1736039417,
+					"day_index":	0,
+					"completed":	true
+				}, {
+					"date":	1736039418,
+					"day_index":	1,
+					"completed":	false
+				}]
+		}, {
+			"id":	2,
+			"name":	"Habit 3",
+			"color":	{
+				"r":	0,
+				"g":	191,
+				"b":	255,
+				"a":	255
+			},
+			"calendar_days":	[]
+		}]
+}

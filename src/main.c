@@ -75,12 +75,9 @@ void RenderCurrentPage() {
         case 4: RenderRoutinePage(); break;
     }
 }
-
 Clay_RenderCommandArray CreateLayout() {
-    printf("BeginLayout...\n");
     Clay_BeginLayout();
     
-    printf("Creating outer container...\n");
     CLAY(CLAY_ID("OuterContainer"), 
         CLAY_LAYOUT({ 
             .layoutDirection = CLAY_TOP_TO_BOTTOM, 
@@ -88,23 +85,30 @@ Clay_RenderCommandArray CreateLayout() {
         }), 
         CLAY_RECTANGLE({ .color = COLOR_BACKGROUND })
     ) {
-        printf("Rendering navigation menu...\n");
         RenderNavigationMenu();
         
-        printf("Creating main content...\n");
         CLAY(CLAY_ID("MainContent"),
             CLAY_LAYOUT({ 
                 .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
                 .padding = { 16, 16 }
             })
         ) {
-            printf("Rendering current page...\n");
             RenderCurrentPage();
         }
     }
-    printf("EndLayout...\n");
-    return Clay_EndLayout();
+
+    Clay_RenderCommandArray commands = Clay_EndLayout();
+    
+
+    // Additional safety checks
+    if (commands.length > 0 && !commands.internalArray) {
+        fprintf(stderr, "ERROR: Render commands array is NULL despite having length\n");
+    }
+
+    return commands;
 }
+
+
 
 #ifdef CLAY_WASM
 CLAY_WASM_EXPORT("UpdateDrawFrame") Clay_RenderCommandArray UpdateDrawFrame(
@@ -164,20 +168,17 @@ int main() {
     printf("Starting application...\n");
     
 #ifdef CLAY_DESKTOP
-    printf("Initializing SDL...\n");
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         fprintf(stderr, "SDL initialization failed: %s\n", SDL_GetError());
         return 1;
     }
 
-    printf("Initializing TTF...\n");
     if (TTF_Init() < 0) {
         fprintf(stderr, "TTF initialization failed: %s\n", TTF_GetError());
         SDL_Quit();
         return 1;
     }
 
-    printf("Creating window...\n");
     SDL_Window* window = SDL_CreateWindow(
         "Clay App",
         SDL_WINDOWPOS_UNDEFINED,
@@ -194,7 +195,6 @@ int main() {
         return 1;
     }
 
-    printf("Creating renderer...\n");
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 
         SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     
@@ -206,10 +206,8 @@ int main() {
         return 1;
     }
 
-    printf("Setting up Clay...\n");
-    Clay_SDL2_InitRenderer();
+    Clay_SDL2_InitRenderer(renderer);
 
-    printf("Loading fonts...\n");
     if (!Clay_SDL2_LoadFont(FONT_ID_BODY_16, "fonts/Quicksand-Semibold.ttf", 16) ||
         !Clay_SDL2_LoadFont(FONT_ID_TITLE_56, "fonts/Calistoga-Regular.ttf", 56) ||
         !Clay_SDL2_LoadFont(FONT_ID_BODY_24, "fonts/Quicksand-Semibold.ttf", 24) ||
@@ -224,16 +222,29 @@ int main() {
         return 1;
     }
 
-    printf("Initializing Clay arena...\n");
     uint32_t minSize = Clay_MinMemorySize();
-    void* arenaMemory = malloc(minSize);
-    Clay_Arena arena = Clay_CreateArenaWithCapacityAndMemory(minSize, arenaMemory);
 
-    printf("Initializing Clay...\n");
+    // Allocate exactly the minimum size, or even slightly more
+    uint32_t recommendedSize = minSize + (minSize / 2);
+    void* arenaMemory = malloc(recommendedSize);
+
+    if (!arenaMemory) {
+        fprintf(stderr, "Failed to allocate memory for Clay arena\n");
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        TTF_Quit();
+        SDL_Quit();
+        return 1;
+    }
+
+    // Zero out the memory to ensure clean initialization
+    memset(arenaMemory, 0, recommendedSize);
+
+    Clay_Arena arena = Clay_CreateArenaWithCapacityAndMemory(recommendedSize, arenaMemory);
+
     Clay_ErrorHandler errorHandler = { .errorHandlerFunction = NULL };
     Clay_Initialize(arena, (Clay_Dimensions){windowWidth, windowHeight}, errorHandler);
 
-    printf("Starting main loop...\n");
     
     bool running = true;
     while (running) {
@@ -248,7 +259,15 @@ int main() {
         SDL_RenderClear(renderer);
 
         Clay_SetLayoutDimensions((Clay_Dimensions){windowWidth, windowHeight});
+        
         Clay_RenderCommandArray commands = CreateLayout();
+
+
+        // Basic safety check
+        if (commands.length == 0) {
+            fprintf(stderr, "WARNING: No render commands generated\n");
+        }
+
         Clay_SDL2_Render(renderer, commands);
 
         SDL_RenderPresent(renderer);

@@ -1,6 +1,7 @@
 #include "home.h"
 #include "../components/home_card.h"
 #include "../styles.h"
+#include <stdio.h>
 
 const float SCREEN_BREAKPOINT = 768.0f;
 const int DEFAULT_PADDING = 32;
@@ -12,10 +13,8 @@ void SetupCardGridLayout() {
         .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
     });
 }
-
-void RenderHomePage() {
+void RenderHomePage() {    
     float screenWidth = (float)windowWidth;
-
 
     CLAY(CLAY_ID("HomeContainer"), 
         CLAY_LAYOUT({ 

@@ -9,18 +9,19 @@ void RenderHomeCard(uint32_t index) {
     float cardWidthPercent = screenWidth < 768 ? 0.5f : 0.25f;
 
 
-    Clay_TextElementConfig card_title_config = *CLAY_TEXT_CONFIG({ 
+
+    Clay_TextElementConfig *card_title_config = CLAY_TEXT_CONFIG({ 
         .fontSize = 28,
         .fontId = FONT_ID_TITLE_36,
         .textColor = COLOR_TEXT,
-        .disablePointerEvents = true  // Add this line
+        .disablePointerEvents = true
     });
 
-    Clay_TextElementConfig card_body_config = *CLAY_TEXT_CONFIG({ 
+    Clay_TextElementConfig *card_body_config = CLAY_TEXT_CONFIG({ 
         .fontSize = 16,
         .fontId = FONT_ID_BODY_16,
         .textColor = COLOR_TEXT,
-        .disablePointerEvents = true  // Add this line
+        .disablePointerEvents = true
     });
 
     CLAY(CLAY_IDI("HomeCard", index), 
@@ -51,27 +52,27 @@ void RenderHomeCard(uint32_t index) {
         
         switch(index) {
             case 0: 
-                CLAY_TEXT(CLAY_STRING("Habits"), &card_title_config);
+                CLAY_TEXT(CLAY_STRING("Habits"), card_title_config);
                 
-                CLAY_TEXT(CLAY_STRING("Track and maintain your daily habits for better living"), &card_body_config);
+                CLAY_TEXT(CLAY_STRING("Track and maintain your daily habits for better living"), card_body_config);
                 break;
             
             case 1:
-                CLAY_TEXT(CLAY_STRING("Todos"), &card_title_config);
+                CLAY_TEXT(CLAY_STRING("Todos"), card_title_config);
                 
-                CLAY_TEXT(CLAY_STRING("Manage your tasks and stay organized"), &card_body_config);
+                CLAY_TEXT(CLAY_STRING("Manage your tasks and stay organized"), card_body_config);
                 break;
 
             case 2:
-                CLAY_TEXT(CLAY_STRING("Timeline"), &card_title_config);
+                CLAY_TEXT(CLAY_STRING("Timeline"), card_title_config);
                 
-                CLAY_TEXT(CLAY_STRING("View your life's journey and important moments"), &card_body_config);
+                CLAY_TEXT(CLAY_STRING("View your life's journey and important moments"), card_body_config);
                 break;
 
             case 3:
-                CLAY_TEXT(CLAY_STRING("Routine"), &card_title_config);
+                CLAY_TEXT(CLAY_STRING("Routine"), card_title_config);
                 
-                CLAY_TEXT(CLAY_STRING("Plan and track your daily routines"), &card_body_config);
+                CLAY_TEXT(CLAY_STRING("Plan and track your daily routines"), card_body_config);
                 break;
         }
     }

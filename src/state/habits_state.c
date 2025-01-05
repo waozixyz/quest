@@ -20,75 +20,134 @@ EM_JS(void, JS_LoadHabits, (HabitCollection* collection), {
 });
 
 #else
+#include "../../vendor/cJSON/cJSON.h"
+#include <stdlib.h>
 
-static void SaveHabitsJSON(const HabitCollection* collection, const char* filename) {
-    FILE* file = fopen(filename, "w");
-    if (!file) return;
+#define HABITS_FILE "habits.json"
 
-    fprintf(file, "{\n  \"active_habit_id\": %u,\n", collection->active_habit_id);
-    fprintf(file, "  \"habits\": [\n");
+static cJSON* HabitToJSON(const Habit* habit) {
+    cJSON* habitObj = cJSON_CreateObject();
+    cJSON_AddNumberToObject(habitObj, "id", habit->id);
+    cJSON_AddStringToObject(habitObj, "name", habit->name);
     
-    for (size_t i = 0; i < collection->habits_count; i++) {
-        const Habit* habit = &collection->habits[i];
-        
-        fprintf(file, "    {\n");
-        fprintf(file, "      \"id\": %u,\n", habit->id);
-        fprintf(file, "      \"name\": \"%s\",\n", habit->name);
-        fprintf(file, "      \"color\": {\"r\": %f, \"g\": %f, \"b\": %f, \"a\": %f},\n",
-            habit->color.r, habit->color.g, habit->color.b, habit->color.a);
-        
-        fprintf(file, "      \"calendar_days\": [\n");
-        for (size_t j = 0; j < habit->days_count; j++) {
-            fprintf(file, "        {\"date\": %u, \"day_index\": %u, \"completed\": %s}%s\n",
-                habit->calendar_days[j].date,
-                habit->calendar_days[j].day_index,
-                habit->calendar_days[j].completed ? "true" : "false",
-                j < habit->days_count - 1 ? "," : "");
-        }
-        fprintf(file, "      ]\n");
-        fprintf(file, "    }%s\n", i < collection->habits_count - 1 ? "," : "");
+    cJSON* color = cJSON_CreateObject();
+    cJSON_AddNumberToObject(color, "r", habit->color.r);
+    cJSON_AddNumberToObject(color, "g", habit->color.g);
+    cJSON_AddNumberToObject(color, "b", habit->color.b);
+    cJSON_AddNumberToObject(color, "a", habit->color.a);
+    cJSON_AddItemToObject(habitObj, "color", color);
+
+    cJSON* days = cJSON_CreateArray();
+    for (size_t i = 0; i < habit->days_count; i++) {
+        cJSON* day = cJSON_CreateObject();
+        cJSON_AddNumberToObject(day, "date", habit->calendar_days[i].date);
+        cJSON_AddNumberToObject(day, "day_index", habit->calendar_days[i].day_index);
+        cJSON_AddBoolToObject(day, "completed", habit->calendar_days[i].completed);
+        cJSON_AddItemToArray(days, day);
     }
-    
-    fprintf(file, "  ]\n}\n");
-    fclose(file);
+    cJSON_AddItemToObject(habitObj, "calendar_days", days);
+
+    return habitObj;
 }
 
-static void LoadHabitsJSON(HabitCollection* collection, const char* filename) {
-    FILE* file = fopen(filename, "r");
-    if (!file) return;
-
-    // Reset collection
-    memset(collection, 0, sizeof(HabitCollection));
+static void SaveHabitsJSON(const HabitCollection* collection) {
+    cJSON* root = cJSON_CreateObject();
+    cJSON_AddNumberToObject(root, "active_habit_id", collection->active_habit_id);
     
-    char buffer[1024];
-    Habit* current_habit = NULL;
-    
-    while (fgets(buffer, sizeof(buffer), file)) {
-        if (strstr(buffer, "\"active_habit_id\"")) {
-            sscanf(buffer, "  \"active_habit_id\": %u", &collection->active_habit_id);
-        }
-        else if (strstr(buffer, "\"id\"") && collection->habits_count < MAX_HABITS) {
-            current_habit = &collection->habits[collection->habits_count++];
-            sscanf(buffer, "      \"id\": %u", &current_habit->id);
-        }
-        else if (strstr(buffer, "\"name\"") && current_habit) {
-            sscanf(buffer, "      \"name\": \"%[^\"]\"", current_habit->name);
-        }
-        else if (strstr(buffer, "\"color\"") && current_habit) {
-            sscanf(buffer, "      \"color\": {\"r\": %f, \"g\": %f, \"b\": %f, \"a\": %f}",
-                &current_habit->color.r, &current_habit->color.g,
-                &current_habit->color.b, &current_habit->color.a);
-        }
-        else if (strstr(buffer, "\"date\"") && current_habit && 
-                 current_habit->days_count < MAX_CALENDAR_DAYS) {
-            HabitDay* day = &current_habit->calendar_days[current_habit->days_count++];
-            sscanf(buffer, "        {\"date\": %u, \"day_index\": %u, \"completed\": %*s}",
-                &day->date, &day->day_index);
-            day->completed = strstr(buffer, "true") != NULL;
-        }
+    cJSON* habits = cJSON_CreateArray();
+    for (size_t i = 0; i < collection->habits_count; i++) {
+        cJSON* habit = HabitToJSON(&collection->habits[i]);
+        cJSON_AddItemToArray(habits, habit);
     }
+    cJSON_AddItemToObject(root, "habits", habits);
+
+    char* jsonStr = cJSON_Print(root);
+    FILE* file = fopen(HABITS_FILE, "w");
+    if (file) {
+        fputs(jsonStr, file);
+        fclose(file);
+    }
+
+    free(jsonStr);
+    cJSON_Delete(root);
+}
+
+static void LoadHabitFromJSON(Habit* habit, cJSON* habitObj) {
+    habit->id = cJSON_GetObjectItem(habitObj, "id")->valueint;
+    strncpy(habit->name, cJSON_GetObjectItem(habitObj, "name")->valuestring, MAX_HABIT_NAME - 1);
     
+    cJSON* color = cJSON_GetObjectItem(habitObj, "color");
+    habit->color.r = cJSON_GetObjectItem(color, "r")->valuedouble;
+    habit->color.g = cJSON_GetObjectItem(color, "g")->valuedouble;
+    habit->color.b = cJSON_GetObjectItem(color, "b")->valuedouble;
+    habit->color.a = cJSON_GetObjectItem(color, "a")->valuedouble;
+
+    cJSON* days = cJSON_GetObjectItem(habitObj, "calendar_days");
+    habit->days_count = 0;
+    cJSON* day;
+    cJSON_ArrayForEach(day, days) {
+        if (habit->days_count >= MAX_CALENDAR_DAYS) break;
+        
+        HabitDay* habitDay = &habit->calendar_days[habit->days_count++];
+        habitDay->date = cJSON_GetObjectItem(day, "date")->valueint;
+        habitDay->day_index = cJSON_GetObjectItem(day, "day_index")->valueint;
+        habitDay->completed = cJSON_IsTrue(cJSON_GetObjectItem(day, "completed"));
+    }
+}
+
+static void CreateDefaultHabitsJSON() {
+    HabitCollection defaultCollection = {0};
+    Habit* default_habit = &defaultCollection.habits[0];
+    strncpy(default_habit->name, "Meditation", MAX_HABIT_NAME - 1);
+    default_habit->id = 0;
+    default_habit->color = COLOR_PRIMARY;
+    default_habit->days_count = 0;
+    defaultCollection.habits_count = 1;
+    defaultCollection.active_habit_id = 0;
+
+    SaveHabitsJSON(&defaultCollection);
+}
+
+static void LoadHabitsJSON(HabitCollection* collection) {
+    FILE* file = fopen(HABITS_FILE, "r");
+    if (!file) {
+        CreateDefaultHabitsJSON();
+        file = fopen(HABITS_FILE, "r");
+        if (!file) return;
+    }
+
+    // Get file size and read entire file
+    fseek(file, 0, SEEK_END);
+    long fsize = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    char* jsonStr = malloc(fsize + 1);
+    fread(jsonStr, 1, fsize, file);
+    jsonStr[fsize] = 0;
     fclose(file);
+
+    cJSON* root = cJSON_Parse(jsonStr);
+    free(jsonStr);
+
+    if (!root) {
+        const char* error_ptr = cJSON_GetErrorPtr();
+        if (error_ptr) {
+            fprintf(stderr, "Error parsing JSON: %s\n", error_ptr);
+        }
+        return;
+    }
+
+    memset(collection, 0, sizeof(HabitCollection));
+    collection->active_habit_id = cJSON_GetObjectItem(root, "active_habit_id")->valueint;
+
+    cJSON* habits = cJSON_GetObjectItem(root, "habits");
+    cJSON* habit;
+    cJSON_ArrayForEach(habit, habits) {
+        if (collection->habits_count >= MAX_HABITS) break;
+        LoadHabitFromJSON(&collection->habits[collection->habits_count++], habit);
+    }
+
+    cJSON_Delete(root);
 }
 
 #endif
@@ -99,7 +158,7 @@ void SaveHabits(HabitCollection* collection) {
     #ifdef __EMSCRIPTEN__
         JS_SaveHabits(collection);
     #else
-        SaveHabitsJSON(collection, "habits.json");
+        SaveHabitsJSON(collection);
     #endif
 }
 
@@ -110,7 +169,7 @@ void LoadHabits(HabitCollection* collection) {
     #ifdef __EMSCRIPTEN__
         JS_LoadHabits(collection);
     #else
-        LoadHabitsJSON(collection, "habits.json");
+        LoadHabitsJSON(collection);
     #endif
 
     // Initialize default habit if none exists
