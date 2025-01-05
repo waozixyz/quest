@@ -1,63 +1,87 @@
 #include "todos.h"
 
-// Global state for text inputs
-static TextInput* name_input = NULL;
-static TextInput* description_input = NULL;
+static TodoCollection todo_collection = {0};
+static TextInput* todo_input = NULL;
+static char* DAYS[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+static char* DAY_SYMBOLS[] = {"🌙", "♂", "☿", "♃", "♀", "♄", "☉"};
 
-static void OnNameChanged(const char* text) {
-    printf("Name changed: %s\n", text);
+static void OnTodoInputChanged(const char* text) {
+    // Handle input changes if needed
 }
 
-static void OnDescriptionChanged(const char* text) {
-    printf("Description changed: %s\n", text);
+static void OnTodoInputSubmit(const char* text) {
+    if (text[0] != '\0') {
+        AddTodo(&todo_collection, text);
+        ClearTextInput(todo_input);
+    }
 }
 
 void InitializeTodosPage() {
-    name_input = CreateTextInput(OnNameChanged);
-    description_input = CreateTextInput(OnDescriptionChanged);
-    
-    // Safety check
-    if (!name_input || !description_input) {
-        printf("Failed to initialize text inputs!\n");
-        return;
+    LoadTodos(&todo_collection);
+    todo_input = CreateTextInput(OnTodoInputChanged, OnTodoInputSubmit);
+}
+
+static void HandleTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        SetActiveDay(&todo_collection, DAYS[(int)userData]);
+        SaveTodos(&todo_collection);
     }
 }
 
-void HandleTodosPageInput(InputEvent event) {
-    if (!name_input || !description_input) return;
 
-    // Update blink timer for both inputs
-    if (event.delta_time > 0) {
-        UpdateTextInput(name_input, 0, event.delta_time);
-        UpdateTextInput(description_input, 0, event.delta_time);
+void RenderTodoTab(const char* day, const char* symbol, bool active, int index) {
+    char id_buffer[32];
+    snprintf(id_buffer, sizeof(id_buffer), "TodoTab_%s", day);
+    
+    CLAY(CLAY_IDI(id_buffer, index),
+        CLAY_LAYOUT({ 
+            .padding = { 16, 8 }, 
+            .childGap = 8,
+            .childAlignment = { CLAY_ALIGN_X_CENTER, CLAY_ALIGN_Y_CENTER }
+        }),
+        CLAY_BORDER({ .betweenChildren = { 1, COLOR_BORDER }}),
+        CLAY_RECTANGLE({ 
+            .color = active ? COLOR_SECONDARY : 
+                     (Clay_Hovered() ? COLOR_PRIMARY_HOVER : COLOR_BACKGROUND),
+            .cornerRadius = CLAY_CORNER_RADIUS(4)
+        }),
+        Clay_OnHover(HandleTabInteraction, index)
+    ) {
+        Clay_String symbol_str = { .chars = symbol, .length = strlen(symbol) };
+        Clay_String day_str = { .chars = day, .length = strlen(day) };
+        
+        CLAY_TEXT(symbol_str, 
+            CLAY_TEXT_CONFIG({ .fontSize = 24, .textColor = COLOR_TEXT }));
+        CLAY_TEXT(day_str, 
+            CLAY_TEXT_CONFIG({ .fontSize = 16, .textColor = COLOR_TEXT }));
     }
+}
 
-    // Handle actual input
-    if (event.isTextInput) {
-        if (name_input->is_focused) {
-            UpdateTextInput(name_input, event.text[0], event.delta_time);
-        }
-        if (description_input->is_focused) {
-            UpdateTextInput(description_input, event.text[0], event.delta_time);
-        }
-    } else {
-        // Handle special keys
-        if (name_input->is_focused) {
-            UpdateTextInput(name_input, event.key, event.delta_time);
-        }
-        if (description_input->is_focused) {
-            UpdateTextInput(description_input, event.key, event.delta_time);
-        }
+void RenderTodoItem(const Todo* todo, int index) {
+    char id_buffer[32];
+    snprintf(id_buffer, sizeof(id_buffer), "TodoItem_%d", todo->id);
+    
+    CLAY(CLAY_IDI(id_buffer, index),
+        CLAY_LAYOUT({ 
+            .padding = { 16, 8 },
+            .childGap = 16,
+            .childAlignment = { CLAY_ALIGN_X_LEFT, CLAY_ALIGN_Y_CENTER }
+        }),
+        CLAY_RECTANGLE({ 
+            .color = todo->completed ? COLOR_SUCCESS : COLOR_CARD,
+            .cornerRadius = CLAY_CORNER_RADIUS(4)
+        })
+    ) {
+        Clay_String todo_text = { .chars = todo->text, .length = strlen(todo->text) };
+        CLAY_TEXT(todo_text, 
+            CLAY_TEXT_CONFIG({ 
+                .fontSize = 16, 
+                .textColor = COLOR_TEXT 
+            }));
     }
 }
 
 void RenderTodosPage() {
-    // Add safety check at the start
-    if (!name_input || !description_input) {
-        // Render error message or return
-        return;
-    }
-
     CLAY(CLAY_ID("TodosContainer"), 
         CLAY_LAYOUT({ 
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
@@ -66,116 +90,59 @@ void RenderTodosPage() {
             .layoutDirection = CLAY_TOP_TO_BOTTOM
         })
     ) {
-        // Title
-        CLAY_TEXT(CLAY_STRING("Text Input Demo"), 
-            CLAY_TEXT_CONFIG({ 
-                .fontSize = 48,
-                .textColor = COLOR_TEXT
-            })
-        );
-
-        // Input card
-        CLAY(CLAY_ID("InputCard"),
-            CLAY_LAYOUT({
-                .sizing = { CLAY_SIZING_GROW({.max = 600}), CLAY_SIZING_FIT(0) },
-                .padding = { 24, 24 },
-                .childGap = 16,
-                .layoutDirection = CLAY_TOP_TO_BOTTOM
-            }),
-            CLAY_RECTANGLE({ 
-                .color = COLOR_CARD,
-                .cornerRadius = CLAY_CORNER_RADIUS(8)
-            })
-        ) {
-            // Name field
-            CLAY_TEXT(CLAY_STRING("Name:"), 
-                CLAY_TEXT_CONFIG({
-                    .fontSize = 16,
-                    .textColor = COLOR_TEXT
-                })
-            );
-            
-            if (name_input) {
-                RenderTextInput(name_input);
+        // Render tabs
+        CLAY(CLAY_LAYOUT({ 
+            .childGap = 8,
+            .layoutDirection = CLAY_LEFT_TO_RIGHT
+        })) {
+            for (int i = 0; i < 7; i++) {
+                RenderTodoTab(DAYS[i], DAY_SYMBOLS[i], 
+                    strcmp(DAYS[i], todo_collection.active_day) == 0, i);
             }
+        }
 
-            // Description field
-            CLAY_TEXT(CLAY_STRING("Description:"),
-                CLAY_TEXT_CONFIG({
-                    .fontSize = 16,
-                    .textColor = COLOR_TEXT
-                })
-            );
-            
-            if (description_input) {
-                RenderTextInput(description_input);
-            }
+        // Todo input
+        if (todo_input) {
+            RenderTextInput(todo_input, 1); // Use numeric ID instead of string
+        }
 
-            // Current values section
-            if (name_input && description_input) {
-                CLAY(CLAY_LAYOUT({ 
-                    .padding = { 16, 16 },
-                    .childGap = 8,
-                    .layoutDirection = CLAY_TOP_TO_BOTTOM
-                }),
-                CLAY_RECTANGLE({
-                    .color = COLOR_SECONDARY,
-                    .cornerRadius = CLAY_CORNER_RADIUS(4)
-                })) {
-                    // Display name value
-                    CLAY(CLAY_LAYOUT({ .childGap = 8 })) {
-                        CLAY_TEXT(CLAY_STRING("Name: "), 
-                            CLAY_TEXT_CONFIG({
-                                .fontSize = 14,
-                                .textColor = COLOR_TEXT_SECONDARY
-                            })
-                        );
-                        
-                        Clay_String name_str = {
-                            .chars = name_input->text,
-                            .length = name_input->text_length
-                        };
-                        CLAY_TEXT(name_str,
-                            CLAY_TEXT_CONFIG({
-                                .fontSize = 14,
-                                .textColor = COLOR_TEXT
-                            })
-                        );
-                    }
+        // Todo list
+        size_t todos_count;
+        Todo* todos = GetTodosByDay(&todo_collection, 
+                                  todo_collection.active_day, 
+                                  &todos_count);
 
-                    // Display description value
-                    CLAY(CLAY_LAYOUT({ .childGap = 8 })) {
-                        CLAY_TEXT(CLAY_STRING("Description: "),
-                            CLAY_TEXT_CONFIG({
-                                .fontSize = 14,
-                                .textColor = COLOR_TEXT_SECONDARY
-                            })
-                        );
-                        
-                        Clay_String desc_str = {
-                            .chars = description_input->text,
-                            .length = description_input->text_length
-                        };
-                        CLAY_TEXT(desc_str,
-                            CLAY_TEXT_CONFIG({
-                                .fontSize = 14,
-                                .textColor = COLOR_TEXT
-                            })
-                        );
-                    }
-                }
+        CLAY(CLAY_LAYOUT({ 
+            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
+            .childGap = 8,
+            .layoutDirection = CLAY_TOP_TO_BOTTOM
+        })) {
+            for (size_t i = 0; i < todos_count; i++) {
+                RenderTodoItem(&todos[i], (int)i);
             }
         }
     }
 }
 
-void CleanupTodosPage() {
-    if (name_input) {
-        DestroyTextInput(name_input);
-        name_input = NULL;
+void HandleTodosPageInput(InputEvent event) {
+    if (!todo_input) return;
+
+    // Update text input
+    if (event.delta_time > 0) {
+        UpdateTextInput(todo_input, 0, event.delta_time);
     }
-    if (description_input) {
-        DestroyTextInput(description_input);
-        description_input = NULL;
+
+    // Handle text input
+    if (event.isTextInput) {
+        UpdateTextInput(todo_input, event.text[0], event.delta_time);
+    } else {
+        UpdateTextInput(todo_input, event.key, event.delta_time);
+    }
+}
+
+void CleanupTodosPage() {
+    if (todo_input) {
+        DestroyTextInput(todo_input);
+        todo_input = NULL;
     }
 }

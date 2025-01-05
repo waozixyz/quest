@@ -6,6 +6,7 @@
 
 #include "styles.h"
 #include "components/nav.h"
+#include "components/text_input.h"
 #include "pages/home.h"
 #include "pages/habits.h"
 #include "pages/todos.h"
@@ -104,7 +105,7 @@ Clay_RenderCommandArray CreateLayout() {
     }
 
     Clay_BeginLayout();
-    
+
     CLAY(CLAY_ID("OuterContainer"), 
         CLAY_LAYOUT({ 
             .layoutDirection = CLAY_TOP_TO_BOTTOM, 

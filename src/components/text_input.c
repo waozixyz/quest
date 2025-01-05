@@ -5,19 +5,33 @@
 #define CURSOR_BLINK_RATE 0.53f
 #define PADDING 8
 
+static TextInput* focused_input = NULL;
+
 static void HandleTextInputClick(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     TextInput* input = (TextInput*)userData;
     if (!input) return;
     
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        // Unfocus currently focused input if different
+        if (focused_input && focused_input != input) {
+            UnfocusTextInput(focused_input);
+        }
+        
+        // Focus this input
         input->is_focused = true;
         input->cursor_visible = true;
         input->blink_timer = 0;
         input->cursor_position = input->text_length;
+        focused_input = input;
     }
 }
-
-TextInput* CreateTextInput(void (*on_change)(const char* text)) {
+void HandleGlobalClick(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME && focused_input) {
+        UnfocusTextInput(focused_input);
+        focused_input = NULL;
+    }
+}
+TextInput* CreateTextInput(void (*on_change)(const char* text), void (*on_submit)(const char* text)) {
     TextInput* input = (TextInput*)malloc(sizeof(TextInput));
     if (!input) return NULL;
     
@@ -27,6 +41,7 @@ TextInput* CreateTextInput(void (*on_change)(const char* text)) {
     input->cursor_position = 0;
     input->is_focused = false;
     input->on_change = on_change;
+    input->on_submit = on_submit;
     input->blink_timer = 0;
     input->cursor_visible = true;
     
@@ -47,6 +62,14 @@ void UpdateTextInput(TextInput* input, int key, float delta_time) {
         input->cursor_visible = !input->cursor_visible;
     }
 
+
+    if (key == '\r' || key == '\n') {
+        if (input->on_submit) {
+            input->on_submit(input->text);
+        }
+        return;
+    }
+    
     // Handle backspace
     if (key == '\b') {
         if (input->text_length > 0 && input->cursor_position > 0) {
@@ -98,10 +121,17 @@ void UpdateTextInput(TextInput* input, int key, float delta_time) {
     }
 }
 
-void RenderTextInput(TextInput* input) {
+void UnfocusTextInput(TextInput* input) {
+    if (!input) return;
+    input->is_focused = false;
+    input->cursor_visible = false;
+}
+
+
+void RenderTextInput(TextInput* input, uint32_t id) { 
     if (!input) return;
 
-    CLAY(CLAY_ID("TextInput"), 
+    CLAY(CLAY_IDI("TextInput", id), 
         CLAY_LAYOUT({ 
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIXED(40) },
             .padding = { PADDING, PADDING }

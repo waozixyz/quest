@@ -12,29 +12,18 @@ typedef struct {
     size_t cursor_position;
     bool is_focused;
     void (*on_change)(const char* text);
+    void (*on_submit)(const char* text); 
     float blink_timer;
     bool cursor_visible;
 } TextInput;
 
-// Create a new text input with optional onChange callback
-TextInput* CreateTextInput(void (*on_change)(const char* text));
-
-// Free memory allocated for text input
+TextInput* CreateTextInput(void (*on_change)(const char* text), void (*on_submit)(const char* text));
 void DestroyTextInput(TextInput* input);
-
-// Update text input state based on keyboard input and update cursor blink
 void UpdateTextInput(TextInput* input, int key, float delta_time);
-
-// Render the text input using Clay
-void RenderTextInput(TextInput* input);
-
-// Set the text programmatically
+void RenderTextInput(TextInput* input, uint32_t id);
 void SetTextInputText(TextInput* input, const char* text);
-
-// Clear the text input
 void ClearTextInput(TextInput* input);
-
-// Get the current text
 const char* GetTextInputText(const TextInput* input);
-
+void UnfocusTextInput(TextInput* input);
+void HandleGlobalClick(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData);
 #endif
