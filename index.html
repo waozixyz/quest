@@ -493,7 +493,130 @@ async function init() {
                     console.error(error.stack);
                 }
             },
+            JS_SaveTodos: (collectionPtr) => {
+                try {
+                    const memory = new DataView(instance.exports.memory.buffer);
+                    const TODO_SIZE = 1052; // Assuming similar structure to habits
+                    const MAX_TODOS = 50;
 
+                    const todosCount = memory.getUint32(collectionPtr + (TODO_SIZE * MAX_TODOS), true);
+                    
+                    const todosData = {
+                        todos: [],
+                        active_day: ""
+                    };
+
+                    // Read active day
+                    const activeDayOffset = collectionPtr + (TODO_SIZE * MAX_TODOS) + 4;
+                    let activeDay = "";
+                    for (let j = 0; j < 10; j++) {
+                        const char = memory.getUint8(activeDayOffset + j);
+                        if (char === 0) break;
+                        activeDay += String.fromCharCode(char);
+                    }
+                    todosData.active_day = activeDay;
+
+                    for (let i = 0; i < todosCount; i++) {
+                        const todoOffset = collectionPtr + (i * TODO_SIZE);
+                        
+                        // Read text
+                        let text = "";
+                        for (let j = 0; j < 256; j++) {
+                            const char = memory.getUint8(todoOffset + j);
+                            if (char === 0) break;
+                            text += String.fromCharCode(char);
+                        }
+
+                        const id = memory.getUint32(todoOffset + 256, true);
+                        const position = memory.getUint32(todoOffset + 260, true);
+                        const completed = memory.getUint8(todoOffset + 264) !== 0;
+                        const createdAt = Number(memory.getBigUint64(todoOffset + 268, true));
+                        
+                        // Read day
+                        let day = "";
+                        for (let j = 0; j < 10; j++) {
+                            const char = memory.getUint8(todoOffset + 276 + j);
+                            if (char === 0) break;
+                            day += String.fromCharCode(char);
+                        }
+
+                        const todo = {
+                            id,
+                            text,
+                            position,
+                            completed,
+                            created_at: createdAt,
+                            day
+                        };
+
+                        todosData.todos.push(todo);
+                    }
+
+                    localStorage.setItem("todosData", JSON.stringify(todosData));
+                } catch (error) {
+                    console.error("Error in JS_SaveTodos:", error);
+                    console.error(error.stack);
+                }
+            },
+
+            JS_LoadTodos: (collectionPtr) => {
+                try {
+                    const stored = localStorage.getItem("todosData");
+                    if (!stored) {
+                        console.log("No stored todos data found");
+                        return;
+                    }
+
+                    const todosData = JSON.parse(stored);
+                    const memory = new DataView(instance.exports.memory.buffer);
+                    const TODO_SIZE = 1052;
+                    const MAX_TODOS = 50;
+
+                    // Write todos count
+                    memory.setUint32(collectionPtr + (TODO_SIZE * MAX_TODOS), todosData.todos.length, true);
+
+                    // Write active day
+                    const activeDayOffset = collectionPtr + (TODO_SIZE * MAX_TODOS) + 4;
+                    const encoder = new TextEncoder();
+                    const activeDayBytes = encoder.encode(todosData.active_day);
+                    for (let j = 0; j < 10; j++) {
+                        memory.setUint8(activeDayOffset + j, j < activeDayBytes.length ? activeDayBytes[j] : 0);
+                    }
+
+                    // Write each todo
+                    for (let i = 0; i < todosData.todos.length; i++) {
+                        const todo = todosData.todos[i];
+                        const todoOffset = collectionPtr + (i * TODO_SIZE);
+
+                        // Write text
+                        const textBytes = encoder.encode(todo.text);
+                        for (let j = 0; j < 256; j++) {
+                            memory.setUint8(todoOffset + j, j < textBytes.length ? textBytes[j] : 0);
+                        }
+
+                        // Write id
+                        memory.setUint32(todoOffset + 256, todo.id, true);
+
+                        // Write position
+                        memory.setUint32(todoOffset + 260, todo.position, true);
+
+                        // Write completed
+                        memory.setUint8(todoOffset + 264, todo.completed ? 1 : 0);
+
+                        // Write created_at
+                        memory.setBigUint64(todoOffset + 268, BigInt(todo.created_at), true);
+
+                        // Write day
+                        const dayBytes = encoder.encode(todo.day);
+                        for (let j = 0; j < 10; j++) {
+                            memory.setUint8(todoOffset + 276 + j, j < dayBytes.length ? dayBytes[j] : 0);
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error in JS_LoadTodos:", error);
+                    console.error(error.stack);
+                }
+            },
             JS_LoadHabits: (collectionPtr) => {
                 try {
                     const stored = localStorage.getItem("habitsData");

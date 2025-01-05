@@ -5,16 +5,9 @@
 #include <emscripten.h>
 
 
-// Declare the JavaScript functions using the correct Emscripten macro syntax
-EM_JS(void, JS_SaveHabits, (const HabitCollection* collection), {
-    // The actual implementation is in JavaScript
-    // This is just a declaration for the C code
-});
+EM_JS(void, JS_SaveHabits, (const HabitCollection* collection), {});
 
-EM_JS(void, JS_LoadHabits, (HabitCollection* collection), {
-    // The actual implementation is in JavaScript
-    // This is just a declaration for the C code
-});
+EM_JS(void, JS_LoadHabits, (HabitCollection* collection), {});
 
 #else
 #include "../../vendor/cJSON/cJSON.h"
