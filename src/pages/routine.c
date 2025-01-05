@@ -1,5 +1,4 @@
-#include "routine.h"
-#include "../styles.h"
+#include "pages/routine.h"
 
 void RenderRoutinePage() {
     CLAY_TEXT(CLAY_STRING("Routine Page - Coming Soon"), 

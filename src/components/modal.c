@@ -1,4 +1,4 @@
-#include "modal.h"
+#include "components/modal.h"
 
 static void HandleBackdropClick(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {

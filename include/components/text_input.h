@@ -3,6 +3,8 @@
 
 #include "../../vendor/clay/clay.h"
 #include "../styles.h"
+#include <string.h>
+#include <stdlib.h>
 
 #define MAX_TEXT_INPUT_LENGTH 256
 

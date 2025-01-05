@@ -1,8 +1,12 @@
 # Build configuration
 BUILD_TYPE ?= web
 
-# Common flags and directories
-INCLUDE_FLAGS = -I. -Iinclude
+
+INCLUDE_DIR = include
+INCLUDE_FLAGS = -I$(INCLUDE_DIR)
+
+BUILD_DIR = build/clay
+SRC_DIR = src
 
 ifeq ($(BUILD_TYPE),web)
     # Web target configuration
@@ -27,19 +31,14 @@ else
     CC = clang
     CFLAGS = -Wall -Werror -O2 -DCLAY_DESKTOP
     LINKER_FLAGS = -lSDL2 -lSDL2_image -lSDL2_ttf -lm
-    INCLUDE_FLAGS += -I/usr/include/SDL2  
-        INCLUDE_FLAGS += -I/usr/include/SDL2 -Ivendor/cJSON  
+    INCLUDE_FLAGS += -I/usr/include/SDL2 -Ivendor/cJSON  
 
     TARGET = $(BUILD_DIR)/game
     # Include all source files for desktop
     SRCS = $(shell find $(SRC_DIR) -name "*.c")
     SRCS += vendor/cJSON/cJSON.c
-
 endif
 
-BUILD_DIR = build/clay
-SRC_DIR = src
-INCLUDE_DIR = include
 
 # Generate object files from sources
 OBJS = $(SRCS:%.c=$(BUILD_DIR)/%.o)

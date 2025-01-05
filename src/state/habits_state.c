@@ -1,8 +1,5 @@
 // habits_state.c
-#include <stdio.h>
-#include <string.h>
-#include "habits_state.h"
-#include "../styles.h"
+#include "state/habits_state.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>

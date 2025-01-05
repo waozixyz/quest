@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "../../vendor/clay/clay.h" 
-#include "color_picker.h"  
+#include "components/color_picker.h"  
 
 // Static variables
 static void (*g_color_change_callback)(Clay_Color) = NULL;

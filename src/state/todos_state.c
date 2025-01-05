@@ -1,6 +1,4 @@
-#include "todos_state.h"
-#include <string.h>
-#include <stdio.h>
+#include "state/todos_state.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>

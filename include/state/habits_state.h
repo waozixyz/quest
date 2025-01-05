@@ -5,6 +5,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <time.h>
+#include <stdio.h>
+#include <string.h>
+#include "../styles.h"
 #include "../../vendor/clay/clay.h"
 #include "../components/text_input.h"
 

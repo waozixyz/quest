@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include "../../vendor/clay/clay.h"
 #include "../styles.h"
+#include <stdio.h>
+#include <math.h>
 
 // Struct to hold calendar box configuration
 typedef struct {

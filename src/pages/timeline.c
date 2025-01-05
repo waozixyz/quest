@@ -1,5 +1,4 @@
-#include "timeline.h"
-#include "../styles.h"
+#include "pages/timeline.h"
 
 void RenderTimelinePage() {
     CLAY_TEXT(CLAY_STRING("Timeline Page - Coming Soon"), 

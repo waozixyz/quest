@@ -1,6 +1,4 @@
-#include "text_input.h"
-#include <string.h>
-#include <stdlib.h>
+#include "components/text_input.h"
 
 #define CURSOR_BLINK_RATE 0.53f
 #define PADDING 8

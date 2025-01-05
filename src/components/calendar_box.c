@@ -1,6 +1,4 @@
-#include "calendar_box.h"
-#include <stdio.h>
-#include <math.h>
+#include "components/calendar_box.h"
 
 static const Clay_String DAY_STRINGS[32] = {
     {1, "0"}, {1, "1"}, {1, "2"}, {1, "3"}, {1, "4"}, 

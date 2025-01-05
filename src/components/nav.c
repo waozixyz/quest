@@ -1,4 +1,4 @@
-#include "nav.h"
+#include "components/nav.h"
 
 void RenderNavItem(const char* text, uint32_t pageId) {
     bool isActive = ACTIVE_PAGE == pageId;

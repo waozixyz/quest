@@ -6,7 +6,8 @@
 #include <time.h>
 #include <stdlib.h>
 #include "../../vendor/clay/clay.h"
-
+#include <string.h>
+#include <stdio.h>
 
 #define MAX_TODO_TEXT 256
 #define MAX_TODOS_PER_DAY 100

@@ -1,4 +1,4 @@
-#include "habits.h"
+#include "pages/habits.h"
 
 HabitCollection habits = {0};
 Modal color_picker_modal = {

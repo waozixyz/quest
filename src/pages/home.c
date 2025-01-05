@@ -1,7 +1,5 @@
-#include "home.h"
-#include "../components/home_card.h"
-#include "../styles.h"
-#include <stdio.h>
+#include "pages/home.h"
+#include "components/home_card.h"
 
 const float SCREEN_BREAKPOINT = 768.0f;
 const int DEFAULT_PADDING = 32;
