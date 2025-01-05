@@ -166,11 +166,24 @@ void LoadHabits(HabitCollection* collection) {
     if (!collection) return;
 
 
+    // Save the text input pointer and edit state before loading
+    TextInput* saved_input = collection->habit_name_input;
+    bool saved_editing_state = collection->is_editing_new_habit;
+    uint32_t saved_active_id = collection->active_habit_id;
+
+
     #ifdef __EMSCRIPTEN__
         JS_LoadHabits(collection);
     #else
         LoadHabitsJSON(collection);
     #endif
+
+
+    // Restore the saved values
+    collection->habit_name_input = saved_input;
+    collection->is_editing_new_habit = saved_editing_state;
+    collection->active_habit_id = saved_active_id;
+
 
     // Initialize default habit if none exists
     if (collection->habits_count == 0) {

@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <time.h>
 #include "../../vendor/clay/clay.h"
+#include "../components/text_input.h"
 
 #define MAX_CALENDAR_DAYS 1000
 #define MAX_HABITS 10
@@ -33,6 +34,8 @@ typedef struct {
     Habit habits[MAX_HABITS];
     size_t habits_count;
     uint32_t active_habit_id;
+    bool is_editing_new_habit;
+    TextInput* habit_name_input;
 } HabitCollection;
 
 // Public API

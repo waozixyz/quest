@@ -73,7 +73,8 @@ void InitializePages() {
     if (pages_initialized) return;
     
     printf("Initializing pages...\n");
-    InitializeTodosPage();  // And any other page initializations
+    InitializeHabitsPage();
+    InitializeTodosPage();
     pages_initialized = true;
     printf("Pages initialized\n");
 }
@@ -90,9 +91,9 @@ void RenderCurrentPage() {
 }
 void CleanupPages() {
     printf("Cleaning up pages...\n");
+    CleanupHabitsPage();
     CleanupTodosPage();
     // Add other page cleanups here as needed:
-    // CleanupHabitsPage();
     // CleanupTimelinePage();
     // etc.
     pages_initialized = false;
@@ -166,7 +167,7 @@ CLAY_WASM_EXPORT("UpdateDrawFrame") Clay_RenderCommandArray UpdateDrawFrame(
 void HandlePageInput(InputEvent event) {
     switch(ACTIVE_PAGE) {
         case 0: /* HandleHomePageInput(event); */ break;
-        case 1: /* HandleHabitsPageInput(event); */ break;
+        case 1: HandleHabitsPageInput(event); break;
         case 2: HandleTodosPageInput(event); break;
         case 3: /* HandleTimelinePageInput(event); */ break;
         case 4: /* HandleRoutinePageInput(event); */ break;

@@ -1,9 +1,4 @@
 #include "habits.h"
-#include "../styles.h"
-#include "../components/calendar_box.h"
-#include "../components/color_picker.h"
-#include <time.h>
-#include <stdio.h>
 
 HabitCollection habits = {0};
 Modal color_picker_modal = {
@@ -11,6 +6,26 @@ Modal color_picker_modal = {
     .width = 300,
     .height = 200
 };
+
+static void HandleHabitNameSubmit(const char* text) {
+    if (text[0] != '\0') {
+        // Find the active habit and update its name
+        for (size_t i = 0; i < habits.habits_count; i++) {
+            if (habits.habits[i].id == habits.active_habit_id) {
+                strncpy(habits.habits[i].name, text, sizeof(habits.habits[i].name) - 1);
+                habits.habits[i].name[sizeof(habits.habits[i].name) - 1] = '\0';
+                break;
+            }
+        }
+        habits.is_editing_new_habit = false;
+        SaveHabits(&habits);
+        ClearTextInput(habits.habit_name_input);
+    }
+}
+void InitializeHabitsPage() {
+    LoadHabits(&habits);
+    habits.habit_name_input = CreateTextInput(NULL, HandleHabitNameSubmit);
+}
 
 void ToggleHabitStateForDay(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
@@ -24,42 +39,148 @@ void HandleColorChange(Clay_Color new_color) {
     UpdateHabitColor(&habits, new_color);
 }
 
-static void HandleTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+static void HandleConfirmButtonClick(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
-        habits.active_habit_id = (uint32_t)userData;
-        SaveHabits(&habits);
+        HandleHabitNameSubmit(GetTextInputText(habits.habit_name_input));
     }
 }
 
 static void HandleNewTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         AddNewHabit(&habits);
+        habits.is_editing_new_habit = true;
+        habits.active_habit_id = habits.habits[habits.habits_count - 1].id;
     }
 }
 
+static void HandleTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    static uint32_t last_click_id = 0;
+    static time_t last_click_time = 0;
+    static const float DOUBLE_CLICK_TIME = 0.3f; // 300ms for double click
+
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        uint32_t habit_id = (uint32_t)userData;
+        time_t current_time = time(NULL);
+        
+        // Check for double click
+        if (habit_id == last_click_id && 
+            (difftime(current_time, last_click_time) < DOUBLE_CLICK_TIME)) {
+            habits.is_editing_new_habit = true;
+            habits.active_habit_id = habit_id;
+            if (habits.habit_name_input) {
+                // Find the habit and set its name as current input text
+                for (size_t i = 0; i < habits.habits_count; i++) {
+                    if (habits.habits[i].id == habit_id) {
+                        SetTextInputText(habits.habit_name_input, habits.habits[i].name);
+                        break;
+                    }
+                }
+            } else {
+                printf("Error: habit_name_input is NULL\n");
+            }
+        
+        } else {
+            // Single click - just set active
+            habits.is_editing_new_habit = false;
+            habits.active_habit_id = habit_id;
+            SaveHabits(&habits);
+        }
+
+        last_click_id = habit_id;
+        last_click_time = current_time;
+    }
+}
+
+void HandleHabitsPageInput(InputEvent event) {
+    if (!habits.habit_name_input) return;
+
+    // Only process input if we're editing a new habit
+    if (!habits.is_editing_new_habit) return;
+    
+    // Update text input
+    if (event.delta_time > 0) {
+        UpdateTextInput(habits.habit_name_input, 0, event.delta_time);
+    }
+
+    // Handle text input
+    if (event.isTextInput) {
+        UpdateTextInput(habits.habit_name_input, event.text[0], event.delta_time);
+    } else {
+        UpdateTextInput(habits.habit_name_input, event.key, event.delta_time);
+    }
+}
 static void RenderHabitTab(const Habit* habit) {
     bool isActive = habits.active_habit_id == habit->id;
-    
-    CLAY(CLAY_IDI("HabitTab", habit->id), 
-        CLAY_LAYOUT({ .padding = { 16, 8 } }), 
-        CLAY_RECTANGLE({ 
-            .color = isActive ? COLOR_PRIMARY : 
+    bool isEditing = habits.is_editing_new_habit && isActive;
+
+    CLAY(CLAY_IDI("HabitTab", habit->id),
+        CLAY_LAYOUT({
+            .padding = { 16, 8 },
+            .childGap = 8,
+            .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
+            .sizing = { CLAY_SIZING_FIT({ .min = 150 }), CLAY_SIZING_FIT(0) } // Add minimum width
+        }),
+        CLAY_RECTANGLE({
+            .color = isActive ? COLOR_PRIMARY :
                      (Clay_Hovered() ? COLOR_PRIMARY_HOVER : COLOR_PANEL),
             .cornerRadius = CLAY_CORNER_RADIUS(5)
         }),
         Clay_OnHover(HandleTabInteraction, habit->id)
     ) {
-        CLAY_TEXT(CLAY_STRING(habit->name), CLAY_TEXT_CONFIG({ 
-            .fontSize = 20,
-            .fontId = FONT_ID_BODY_24,
-            .textColor = COLOR_TEXT
-        }));
+        if (isEditing) {
+            // Container for input and confirm button
+            CLAY(CLAY_LAYOUT({
+                .childGap = 8,
+                .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
+                .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) }
+            })) {
+                // Text input with proper sizing
+                CLAY(CLAY_LAYOUT({
+                    .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) }
+                })) {
+                    RenderTextInput(habits.habit_name_input, habit->id);
+                }
+
+                // Confirm button
+                CLAY(CLAY_IDI("ConfirmHabitName", habit->id),
+                    CLAY_LAYOUT({
+                        .sizing = { CLAY_SIZING_FIXED(32), CLAY_SIZING_FIXED(32) },
+                        .childAlignment = { CLAY_ALIGN_X_CENTER, CLAY_ALIGN_Y_CENTER }
+                    }),
+                    CLAY_RECTANGLE({
+                        .color = Clay_Hovered() ? COLOR_SUCCESS : COLOR_SECONDARY,
+                        .cornerRadius = CLAY_CORNER_RADIUS(4)
+                    }),
+                    Clay_OnHover(HandleConfirmButtonClick, 0)
+                ) {
+                    CLAY_TEXT(CLAY_STRING("✓"), CLAY_TEXT_CONFIG({
+                        .fontSize = 20,
+                        .fontId = FONT_ID_BODY_24,
+                        .textColor = COLOR_TEXT
+                    }));
+                }
+            }
+        } else {
+            CLAY_TEXT(CLAY_STRING(habit->name), CLAY_TEXT_CONFIG({
+                .fontSize = 20,
+                .fontId = FONT_ID_BODY_24,
+                .textColor = COLOR_TEXT
+            }));
+        }
     }
 }
 
+// Add cleanup for the text input
+void CleanupHabitsPage() {
+    if (habits.habit_name_input) {
+        DestroyTextInput(habits.habit_name_input);
+        habits.habit_name_input = NULL;
+    }
+}
 static void RenderHabitTabs() {
     CLAY(CLAY_ID("HabitTabs"),
-        CLAY_LAYOUT({ 
+        CLAY_LAYOUT({
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIXED(60) },
             .childGap = 16,
             .padding = { 16, 0 },
@@ -74,14 +195,14 @@ static void RenderHabitTabs() {
 
         // Add "+" button for new habit
         CLAY(CLAY_ID("NewHabitTab"),
-            CLAY_LAYOUT({ .padding = { 16, 8 } }), 
-            CLAY_RECTANGLE({ 
+            CLAY_LAYOUT({ .padding = { 16, 8 } }),
+            CLAY_RECTANGLE({
                 .color = Clay_Hovered() ? COLOR_PRIMARY_HOVER : COLOR_PANEL,
                 .cornerRadius = CLAY_CORNER_RADIUS(5)
             }),
             Clay_OnHover(HandleNewTabInteraction, 0)
         ) {
-            CLAY_TEXT(CLAY_STRING("+"), CLAY_TEXT_CONFIG({ 
+            CLAY_TEXT(CLAY_STRING("+"), CLAY_TEXT_CONFIG({
                 .fontSize = 24,
                 .fontId = FONT_ID_BODY_24,
                 .textColor = COLOR_TEXT
@@ -99,7 +220,7 @@ void RenderHabitsPage() {
     time_t now;
     time(&now);
     struct tm *local_time = localtime(&now);
-    
+
     struct tm today_midnight = *local_time;
     today_midnight.tm_hour = 0;
     today_midnight.tm_min = 0;
@@ -111,8 +232,8 @@ void RenderHabitsPage() {
     start_date.tm_mday -= days_to_monday;
     mktime(&start_date);
 
-    CLAY(CLAY_ID("HabitsContainer"), 
-        CLAY_LAYOUT({ 
+    CLAY(CLAY_ID("HabitsContainer"),
+        CLAY_LAYOUT({
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
             .padding = { 32, 32 },
             .childGap = 32,
@@ -127,8 +248,8 @@ void RenderHabitsPage() {
                 .padding = { 0, 32 }
             })
         ) {
-            CLAY_TEXT(CLAY_STRING("Habits Calendar"), 
-                CLAY_TEXT_CONFIG({ 
+            CLAY_TEXT(CLAY_STRING("Habits Calendar"),
+                CLAY_TEXT_CONFIG({
                     .fontSize = 48,
                     .fontId = FONT_ID_TITLE_56,
                     .textColor = COLOR_TEXT
@@ -148,7 +269,7 @@ void RenderHabitsPage() {
             }),
             CLAY_SCROLL({ .vertical = true })
         ) {
-            CLAY(CLAY_ID("CalendarGrid"), 
+            CLAY(CLAY_ID("CalendarGrid"),
                 CLAY_LAYOUT({
                     .sizing = { CLAY_SIZING_FIT(0), CLAY_SIZING_GROW() },
                     .childGap = 32,
@@ -183,11 +304,11 @@ void RenderHabitsPage() {
                             time_t current_timestamp = mktime(&current);
                             bool is_today = (current_timestamp == today_timestamp);
                             bool is_past = (current_timestamp < today_timestamp);
-                            
+
                             // Check if this day is completed in active habit
                             bool is_completed = false;
                             for (size_t i = 0; i < active_habit->days_count; i++) {
-                                if (active_habit->calendar_days[i].day_index == unique_index && 
+                                if (active_habit->calendar_days[i].day_index == unique_index &&
                                     active_habit->calendar_days[i].completed) {
                                     is_completed = true;
                                     break;
@@ -205,7 +326,7 @@ void RenderHabitsPage() {
                             };
 
                             RenderCalendarBox(props);
-                            
+
                             current.tm_mday++;
                             unique_index++;
                         }
