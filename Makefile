@@ -60,6 +60,7 @@ $(BUILD_DIR)/%.o: %.c
 copy_assets:
 ifeq ($(BUILD_TYPE),web)
 	cp index.html $(BUILD_DIR)/index.html
+	cp manifest.json $(BUILD_DIR)/manifest.json
 endif
 	cp -r fonts/ $(BUILD_DIR)/fonts
 	cp -r images/ $(BUILD_DIR)/images

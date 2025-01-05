@@ -1,6 +1,5 @@
 # myQuest
-
-A personal life management application focused on visualization and habit tracking.
+A personal life management app focused on habit tracking, task organization, and life visualization tools.
 
 ## Features
 
