@@ -20,6 +20,7 @@ android/captures/
 android/app/src/main/jniLibs/
 android/app/libs/
 android/app/.cxx/
+android/app/src/main/assets
 
 # IDE specific
 .idea/

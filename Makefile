@@ -5,6 +5,7 @@ BUILD_DIR = build/clay
 SRC_DIR = src
 NDK_PATH ?= /opt/android-ndk
 SDK_PATH ?= /opt/android-sdk
+ANDROID_ABIS ?= armeabi-v7a arm64-v8a x86 x86_64
 
 ifeq ($(BUILD_TYPE),web)
 	CC = emcc
@@ -23,25 +24,20 @@ ifeq ($(BUILD_TYPE),web)
 	TARGET = $(BUILD_DIR)/index.wasm
 	SRCS = $(shell find $(SRC_DIR) -name "*.c" ! -path "$(SRC_DIR)/renderers/*")
 else ifeq ($(BUILD_TYPE),android)
-	CC = $(NDK_PATH)/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
-	CFLAGS = -Wall -Werror -O2 -DCLAY_MOBILE -fPIC
-	INCLUDE_FLAGS += \
-		-I$(NDK_PATH)/sources/android/native_app_glue \
-		-I$(NDK_PATH)/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include \
-		-I$(NDK_PATH)/sources/android \
-		-Ivendor/cJSON \
-		-Ivendor/SDL/include \
-		-Ivendor/SDL_image/include \
-    	-Ivendor/SDL_ttf
-		
-	LINKER_FLAGS = -shared -landroid -llog -lm \
-		-L$(BUILD_DIR)/../android/app/src/main/jniLibs/arm64-v8a \
-		-Wl,-rpath-link,$(BUILD_DIR)/../android/app/src/main/jniLibs/arm64-v8a \
-		-Landroid/app/src/main/jniLibs/arm64-v8a \
-		-lSDL2 -lSDL2_image -lSDL2_ttf
-	TARGET = android/app/src/main/jniLibs/arm64-v8a/libmain.so
-	SRCS = $(shell find $(SRC_DIR) -name "*.c")
-	SRCS += vendor/cJSON/cJSON.c
+    CFLAGS = -Wall -Werror -O2 -DCLAY_MOBILE -fPIC
+    INCLUDE_FLAGS += \
+        -I$(NDK_PATH)/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include \
+        -Ivendor/cJSON \
+        -Ivendor/SDL/include \
+        -Ivendor/SDL_image/include \
+        -Ivendor/SDL_ttf
+
+    LINKER_FLAGS = -shared -landroid -llog -lm \
+        -L$(dir $(TARGET)) \
+        -lSDL2 -lSDL2_image -lSDL2_ttf
+
+    SRCS = $(shell find $(SRC_DIR) -name "*.c")
+    SRCS += vendor/cJSON/cJSON.c
 else ifeq ($(BUILD_TYPE),desktop)
 	CC = clang
 	CFLAGS = -Wall -Werror -O2 -DCLAY_DESKTOP
@@ -84,60 +80,84 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 build-sdl-android:
-	cd vendor/SDL && \
-	mkdir -p build-android && \
-	cd build-android && \
-	cmake .. \
-		-DCMAKE_TOOLCHAIN_FILE=$(NDK_PATH)/build/cmake/android.toolchain.cmake \
-		-DANDROID_ABI=arm64-v8a \
-		-DANDROID_PLATFORM=android-21 \
-		-DBUILD_SHARED_LIBS=ON && \
-	make
-	mkdir -p android/app/src/main/jniLibs/arm64-v8a/
-	cp vendor/SDL/build-android/libSDL2.so android/app/src/main/jniLibs/arm64-v8a/
+	@for abi in $(ANDROID_ABIS) ; do \
+		echo "Building SDL for $$abi" && \
+		mkdir -p vendor/SDL/build-android-$$abi && \
+		(cd vendor/SDL/build-android-$$abi && \
+		cmake .. \
+			-DCMAKE_TOOLCHAIN_FILE=$(NDK_PATH)/build/cmake/android.toolchain.cmake \
+			-DANDROID_ABI=$$abi \
+			-DANDROID_PLATFORM=android-21 \
+			-DBUILD_SHARED_LIBS=ON && \
+		make) && \
+		mkdir -p android/app/src/main/jniLibs/$$abi/ && \
+		cp vendor/SDL/build-android-$$abi/libSDL2.so android/app/src/main/jniLibs/$$abi/ ; \
+	done
 
 build-sdl-image-android: build-sdl-android
-	cd vendor/SDL_image && \
-	mkdir -p build-android && \
-	cd build-android && \
-	cmake .. \
-		-DCMAKE_TOOLCHAIN_FILE=$(NDK_PATH)/build/cmake/android.toolchain.cmake \
-		-DANDROID_ABI=arm64-v8a \
-		-DANDROID_PLATFORM=android-21 \
-		-DSDL2_DIR=../../SDL/build-android \
-		-DSDL2_INCLUDE_DIR=../../SDL/include \
-		-DSDL2_LIBRARY=../../SDL/build-android/libSDL2.so \
-		-DSDL2_PATH=../../SDL \
-		-DSDL2IMAGE_AVIF=OFF \
-		-DSDL2IMAGE_WEBP=OFF \
-		-DSDL2IMAGE_TIFF=OFF && \
-	make
-	cp vendor/SDL_image/build-android/libSDL2_image.so android/app/src/main/jniLibs/arm64-v8a/
+	@for abi in $(ANDROID_ABIS) ; do \
+		echo "Building SDL_image for $$abi" && \
+		mkdir -p vendor/SDL_image/build-android-$$abi && \
+		(cd vendor/SDL_image/build-android-$$abi && \
+		cmake .. \
+			-DCMAKE_TOOLCHAIN_FILE=$(NDK_PATH)/build/cmake/android.toolchain.cmake \
+			-DANDROID_ABI=$$abi \
+			-DANDROID_PLATFORM=android-21 \
+			-DSDL2_DIR=../../SDL/build-android-$$abi \
+			-DSDL2_INCLUDE_DIR=../../SDL/include \
+			-DSDL2_LIBRARY=../../SDL/build-android-$$abi/libSDL2.so \
+			-DSDL2IMAGE_AVIF=OFF \
+			-DSDL2IMAGE_WEBP=OFF \
+			-DSDL2IMAGE_TIFF=OFF && \
+		make) && \
+		cp vendor/SDL_image/build-android-$$abi/libSDL2_image.so android/app/src/main/jniLibs/$$abi/ ; \
+	done
 
 build-sdl-ttf-android: build-sdl-image-android
-	cd vendor/SDL_ttf && \
-	mkdir -p build-android && \
-	cd build-android && \
-	cmake .. \
-		-DCMAKE_TOOLCHAIN_FILE=$(NDK_PATH)/build/cmake/android.toolchain.cmake \
-		-DANDROID_ABI=arm64-v8a \
-		-DANDROID_PLATFORM=android-21 \
-		-DSDL2_DIR=../../SDL/build-android \
-		-DSDL2_INCLUDE_DIR=../../SDL/include \
-		-DSDL2_LIBRARY=../../SDL/build-android/libSDL2.so \
-		-DSDL2_PATH=../../SDL \
-		-DBUILD_SHARED_LIBS=ON \
-		-DSDL2TTF_SAMPLES=OFF && \
-	make
-	cp vendor/SDL_ttf/build-android/libSDL2_ttf.so android/app/src/main/jniLibs/arm64-v8a/
+	@for abi in $(ANDROID_ABIS) ; do \
+		echo "Building SDL_ttf for $$abi" && \
+		mkdir -p vendor/SDL_ttf/build-android-$$abi && \
+		(cd vendor/SDL_ttf/build-android-$$abi && \
+		cmake .. \
+			-DCMAKE_TOOLCHAIN_FILE=$(NDK_PATH)/build/cmake/android.toolchain.cmake \
+			-DANDROID_ABI=$$abi \
+			-DANDROID_PLATFORM=android-21 \
+			-DSDL2_DIR=../../SDL/build-android-$$abi \
+			-DSDL2_INCLUDE_DIR=../../SDL/include \
+			-DSDL2_LIBRARY=../../SDL/build-android-$$abi/libSDL2.so \
+			-DBUILD_SHARED_LIBS=ON \
+			-DSDL2TTF_SAMPLES=OFF && \
+		make) && \
+		cp vendor/SDL_ttf/build-android-$$abi/libSDL2_ttf.so android/app/src/main/jniLibs/$$abi/ ; \
+	done
+
+build-android-abi:
+	rm -rf $(BUILD_DIR)
+	$(eval CC = $(NDK_PATH)/toolchains/llvm/prebuilt/linux-x86_64/bin/$(TARGET_TRIPLE)-clang)
+	@echo "Building for ABI: $(TARGET_ABI) using compiler: $(CC)"
+	$(MAKE) all BUILD_TYPE=android CC="$(CC)"
 
 build-android: build-sdl-ttf-android
-	$(MAKE) all BUILD_TYPE=android
+	@for abi in $(ANDROID_ABIS) ; do \
+		case $$abi in \
+			"armeabi-v7a") \
+				TARGET_TRIPLE="armv7a-linux-androideabi21" ;; \
+			"arm64-v8a") \
+				TARGET_TRIPLE="aarch64-linux-android21" ;; \
+			"x86") \
+				TARGET_TRIPLE="i686-linux-android21" ;; \
+			"x86_64") \
+				TARGET_TRIPLE="x86_64-linux-android21" ;; \
+		esac ; \
+		$(MAKE) build-android-abi TARGET_TRIPLE=$$TARGET_TRIPLE TARGET_ABI=$$abi TARGET=android/app/src/main/jniLibs/$$abi/libmain.so ; \
+	done
 	cd android && ./gradlew assembleDebug
 
+# Update clean target
 clean-android:
-	rm -rf vendor/SDL/build-android
-	rm -rf vendor/SDL_image/build-android
+	rm -rf vendor/SDL/build-android-*
+	rm -rf vendor/SDL_image/build-android-*
+	rm -rf vendor/SDL_ttf/build-android-*
 	rm -rf android/app/build
 	rm -rf android/app/src/main/jniLibs
 
