@@ -7,6 +7,9 @@ BUILD_DIR = build/clay
 SRC_DIR = src
 
 
+NDK_PATH ?= /opt/android-ndk
+SDK_PATH ?= /opt/android-sdk
+
 ifeq ($(BUILD_TYPE),web)
     # Web target configuration
     CC = emcc
@@ -26,22 +29,23 @@ ifeq ($(BUILD_TYPE),web)
     # Exclude desktop folder for web builds
     SRCS = $(shell find $(SRC_DIR) -name "*.c" ! -path "$(SRC_DIR)/desktop/*")
 else ifeq ($(BUILD_TYPE),android)
-    # Android target configuration
-    NDK_PATH ?= /opt/android-ndk
-    SDK_PATH ?= /opt/android-sdk
-    
     CC = $(NDK_PATH)/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
     CFLAGS = -Wall -Werror -O2 -DCLAY_MOBILE
     
     INCLUDE_FLAGS += \
         -I$(NDK_PATH)/sources/android/native_app_glue \
         -I$(NDK_PATH)/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include \
-        -I/usr/include/SDL2 -Ivendor/cJSON
+        -I/usr/include/SDL2 \
+        -Ivendor/cJSON \
+        -Ivendor/SDL/include \
+        -Ivendor/SDL_image/include
     
-    LINKER_FLAGS = -shared -lSDL2 -lSDL2_image -lSDL2_ttf -landroid -llog -lm
+    LINKER_FLAGS = -shared -landroid -llog -lm \
+        -L$(BUILD_DIR)/android/app/src/main/jniLibs/arm64-v8a \
+        -lSDL2 -lSDL2_image
     
-    TARGET = $(BUILD_DIR)/android/jniLibs/arm64-v8a/libmain.so
-    # Include all source files plus Android glue
+    TARGET = android/app/src/main/jniLibs/arm64-v8a/libmain.so
+    
     SRCS = $(shell find $(SRC_DIR) -name "*.c")
     SRCS += $(NDK_PATH)/sources/android/native_app_glue/android_native_app_glue.c
     SRCS += vendor/cJSON/cJSON.c
@@ -88,13 +92,52 @@ endif
 clean:
 	rm -rf $(BUILD_DIR)
 
+.PHONY: build-sdl-android
+build-sdl-android:
+	cd vendor/SDL && \
+	mkdir -p build-android && \
+	cd build-android && \
+	cmake .. \
+		-DCMAKE_TOOLCHAIN_FILE=$(NDK_PATH)/build/cmake/android.toolchain.cmake \
+		-DANDROID_ABI=arm64-v8a \
+		-DANDROID_PLATFORM=android-21 && \
+	make
+	mkdir -p android/app/src/main/jniLibs/arm64-v8a/
+	cp vendor/SDL/build-android/libSDL2.so android/app/src/main/jniLibs/arm64-v8a/
+
+.PHONY: build-sdl-image-android
+build-sdl-image-android: build-sdl-android
+	cd vendor/SDL_image && \
+	mkdir -p build-android && \
+	cd build-android && \
+	cmake .. \
+		-DCMAKE_TOOLCHAIN_FILE=$(NDK_PATH)/build/cmake/android.toolchain.cmake \
+		-DANDROID_ABI=arm64-v8a \
+		-DANDROID_PLATFORM=android-21 \
+		-DSDL2_DIR=../../SDL/build-android \
+		-DSDL2_INCLUDE_DIR=../../SDL/include \
+		-DSDL2_LIBRARY=../../SDL/build-android/libSDL2.so \
+		-DSDL2_PATH=../../SDL \
+		-DSDL2IMAGE_AVIF=OFF \
+		-DSDL2IMAGE_WEBP=OFF \
+		-DSDL2IMAGE_TIFF=OFF && \
+	make
+	cp vendor/SDL_image/build-android/libSDL2_image.so android/app/src/main/jniLibs/arm64-v8a/
+
+# Update build-android target to depend on SDL libraries
 .PHONY: build-android
-build-android:
-	# First build the C library
+build-android: build-sdl-image-android
 	$(MAKE) BUILD_TYPE=android
-	# Then build the APK
 	cd android && ./gradlew assembleDebug
-    
+
+# Add a clean-android target
+.PHONY: clean-android
+clean-android:
+	rm -rf vendor/SDL/build-android
+	rm -rf vendor/SDL_image/build-android
+	rm -rf android/app/build
+	rm -rf android/app/src/main/jniLibs
+
 # Help target
 .PHONY: help
 help:
