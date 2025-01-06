@@ -1,3 +1,53 @@
-build/
+# App data
 habits.json
 todos.json
+
+# Build directories
+build/
+out/
+
+# Android specific
+android/.gradle/
+android/local.properties
+android/.idea/
+android/app/build/
+android/build/
+android/app/release/
+android/*.iml
+android/app/*.iml
+android/.DS_Store
+android/captures/
+android/app/src/main/jniLibs/
+android/app/libs/
+android/app/.cxx/
+
+# IDE specific
+.idea/
+*.iml
+.vscode/
+.vs/
+*.swp
+*.swo
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Compiled files
+*.o
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+*.class
+*.apk
+*.aab
+
+# Logs and databases
+*.log
+*.sqlite
+*.db
+
+# Generated files
+*.generated.*

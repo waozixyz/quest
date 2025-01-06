@@ -1,12 +1,11 @@
 # Build configuration
 BUILD_TYPE ?= web
 
-
 INCLUDE_DIR = include
 INCLUDE_FLAGS = -I$(INCLUDE_DIR)
-
 BUILD_DIR = build/clay
 SRC_DIR = src
+
 
 ifeq ($(BUILD_TYPE),web)
     # Web target configuration
@@ -26,6 +25,26 @@ ifeq ($(BUILD_TYPE),web)
     TARGET = $(BUILD_DIR)/index.wasm
     # Exclude desktop folder for web builds
     SRCS = $(shell find $(SRC_DIR) -name "*.c" ! -path "$(SRC_DIR)/desktop/*")
+else ifeq ($(BUILD_TYPE),android)
+    # Android target configuration
+    NDK_PATH ?= /opt/android-ndk
+    SDK_PATH ?= /opt/android-sdk
+    
+    CC = $(NDK_PATH)/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
+    CFLAGS = -Wall -Werror -O2 -DCLAY_MOBILE
+    
+    INCLUDE_FLAGS += \
+        -I$(NDK_PATH)/sources/android/native_app_glue \
+        -I$(NDK_PATH)/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include \
+        -I/usr/include/SDL2 -Ivendor/cJSON
+    
+    LINKER_FLAGS = -shared -lSDL2 -lSDL2_image -lSDL2_ttf -landroid -llog -lm
+    
+    TARGET = $(BUILD_DIR)/android/jniLibs/arm64-v8a/libmain.so
+    # Include all source files plus Android glue
+    SRCS = $(shell find $(SRC_DIR) -name "*.c")
+    SRCS += $(NDK_PATH)/sources/android/native_app_glue/android_native_app_glue.c
+    SRCS += vendor/cJSON/cJSON.c
 else
     # Desktop target configuration
     CC = clang
@@ -38,7 +57,6 @@ else
     SRCS = $(shell find $(SRC_DIR) -name "*.c")
     SRCS += vendor/cJSON/cJSON.c
 endif
-
 
 # Generate object files from sources
 OBJS = $(SRCS:%.c=$(BUILD_DIR)/%.o)
@@ -70,6 +88,13 @@ endif
 clean:
 	rm -rf $(BUILD_DIR)
 
+.PHONY: build-android
+build-android:
+	# First build the C library
+	$(MAKE) BUILD_TYPE=android
+	# Then build the APK
+	cd android && ./gradlew assembleDebug
+    
 # Help target
 .PHONY: help
 help:
