@@ -3,8 +3,37 @@
 static TodoCollection todo_collection = {0};
 static TextInput* todo_input = NULL;
 static char* DAYS[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
-static char* DAY_SYMBOLS[] = {"🌙", "♂", "☿", "♃", "♀", "♄", "☉"};
 
+#ifdef __EMSCRIPTEN__
+#define ICON_PATH "/images/icons/"
+
+typedef struct {
+    Clay_String url;
+    Clay_Dimensions dimensions;
+} DaySymbol;
+
+#else
+#define ICON_PATH "images/icons/"
+
+typedef struct {
+    Clay_String url;
+    Clay_Dimensions dimensions;
+} DaySymbol;
+
+static SDL_Texture* day_symbols_textures[7] = {NULL};
+
+
+#endif
+
+static DaySymbol DAY_SYMBOLS[] = {
+    {.url = CLAY_STRING(ICON_PATH "moon.png"), .dimensions = {55, 55}},
+    {.url = CLAY_STRING(ICON_PATH "mars.png"), .dimensions = {60, 60}},
+    {.url = CLAY_STRING(ICON_PATH "mercury.png"), .dimensions = {55, 55}},
+    {.url = CLAY_STRING(ICON_PATH "jupiter.png"), .dimensions = {55, 55}},
+    {.url = CLAY_STRING(ICON_PATH "venus.png"), .dimensions = {55, 55}},
+    {.url = CLAY_STRING(ICON_PATH "saturn.png"), .dimensions = {60, 60}},
+    {.url = CLAY_STRING(ICON_PATH "sun.png"), .dimensions = {55, 55}}
+};
 static void OnTodoInputChanged(const char* text) {
     // Handle input changes if needed
 }
@@ -16,9 +45,53 @@ static void OnTodoInputSubmit(const char* text) {
     }
 }
 
-void InitializeTodosPage() {
+#ifdef __EMSCRIPTEN__
+void InitializeTodosPage(void) {
     LoadTodos(&todo_collection);
     todo_input = CreateTextInput(OnTodoInputChanged, OnTodoInputSubmit);
+}
+#else
+void InitializeTodosPage(SDL_Renderer* renderer) {
+    LoadTodos(&todo_collection);
+    todo_input = CreateTextInput(OnTodoInputChanged, OnTodoInputSubmit);
+
+    for (int i = 0; i < 7; i++) {
+        if (day_symbols_textures[i]) {
+            SDL_DestroyTexture(day_symbols_textures[i]);
+            day_symbols_textures[i] = NULL;
+        }
+
+        SDL_Surface* surface = IMG_Load(DAY_SYMBOLS[i].url.chars);
+        if (!surface) {
+            fprintf(stderr, "Failed to load image %s: %s\n", DAY_SYMBOLS[i].url.chars, IMG_GetError());
+            continue;
+        }
+
+        SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+        SDL_FreeSurface(surface);
+
+        day_symbols_textures[i] = texture;
+        fprintf(stderr, "Texture %d initialized: %p\n", i, (void*)texture);
+    }
+}
+
+#endif
+
+
+void HandleTodosPageInput(InputEvent event) {
+    if (!todo_input) return;
+
+    // Update text input
+    if (event.delta_time > 0) {
+        UpdateTextInput(todo_input, 0, event.delta_time);
+    }
+
+    // Handle text input
+    if (event.isTextInput) {
+        UpdateTextInput(todo_input, event.text[0], event.delta_time);
+    } else {
+        UpdateTextInput(todo_input, event.key, event.delta_time);
+    }
 }
 
 static void HandleTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
@@ -28,10 +101,8 @@ static void HandleTabInteraction(Clay_ElementId elementId, Clay_PointerData poin
     }
 }
 
-
-void RenderTodoTab(const char* day, const char* symbol, bool active, int index) {
+void RenderTodoTab(const char* day, const DaySymbol* symbol, bool active, int index) {
     char id_buffer[32];
-    snprintf(id_buffer, sizeof(id_buffer), "TodoTab_%s", day);
     
     CLAY(CLAY_IDI(id_buffer, index),
         CLAY_LAYOUT({ 
@@ -47,11 +118,27 @@ void RenderTodoTab(const char* day, const char* symbol, bool active, int index) 
         }),
         Clay_OnHover(HandleTabInteraction, index)
     ) {
-        Clay_String symbol_str = { .chars = symbol, .length = strlen(symbol) };
+        CLAY(CLAY_LAYOUT({ 
+            .sizing = { 
+                CLAY_SIZING_FIXED(24), 
+                CLAY_SIZING_FIXED(24)
+            }
+        }),
+        #ifdef __EMSCRIPTEN__
+        CLAY_IMAGE({ 
+            .sourceDimensions = symbol->dimensions,
+            .sourceURL = symbol->url
+        })
+        #else
+        CLAY_IMAGE({ 
+            .sourceDimensions = symbol->dimensions,
+            .imageData = day_symbols_textures[index]
+            
+        })
+        #endif
+        ){}
+
         Clay_String day_str = { .chars = day, .length = strlen(day) };
-        
-        CLAY_TEXT(symbol_str, 
-            CLAY_TEXT_CONFIG({ .fontSize = 24, .textColor = COLOR_TEXT }));
         CLAY_TEXT(day_str, 
             CLAY_TEXT_CONFIG({ .fontSize = 16, .textColor = COLOR_TEXT }));
     }
@@ -96,14 +183,14 @@ void RenderTodosPage() {
             .layoutDirection = CLAY_LEFT_TO_RIGHT
         })) {
             for (int i = 0; i < 7; i++) {
-                RenderTodoTab(DAYS[i], DAY_SYMBOLS[i], 
+                RenderTodoTab(DAYS[i], &DAY_SYMBOLS[i], 
                     strcmp(DAYS[i], todo_collection.active_day) == 0, i);
             }
         }
 
         // Todo input
         if (todo_input) {
-            RenderTextInput(todo_input, 1); // Use numeric ID instead of string
+            RenderTextInput(todo_input, 1);
         }
 
         // Todo list
@@ -124,23 +211,17 @@ void RenderTodosPage() {
     }
 }
 
-void HandleTodosPageInput(InputEvent event) {
-    if (!todo_input) return;
-
-    // Update text input
-    if (event.delta_time > 0) {
-        UpdateTextInput(todo_input, 0, event.delta_time);
-    }
-
-    // Handle text input
-    if (event.isTextInput) {
-        UpdateTextInput(todo_input, event.text[0], event.delta_time);
-    } else {
-        UpdateTextInput(todo_input, event.key, event.delta_time);
-    }
-}
-
 void CleanupTodosPage() {
+    #ifndef __EMSCRIPTEN__
+    fprintf(stderr, "Cleaning up Todos Page Textures\n");
+
+    for (int i = 0; i < 7; i++) {
+        if (day_symbols_textures[i]) {
+            SDL_DestroyTexture(day_symbols_textures[i]);
+            day_symbols_textures[i] = NULL;
+        }
+    }
+    #endif
     if (todo_input) {
         DestroyTextInput(todo_input);
         todo_input = NULL;

@@ -2,6 +2,11 @@
 #include "desktop/clay_sdl_renderer.h"
 #include <unistd.h>
 
+// Global cursor variables
+static SDL_Cursor* defaultCursor = NULL;
+static SDL_Cursor* pointerCursor = NULL;
+static SDL_Cursor* currentCursor = NULL;
+
 
 typedef struct {
     uint32_t fontId;
@@ -9,6 +14,32 @@ typedef struct {
 } SDL2_Font;
 
 static SDL2_Font SDL2_fonts[32];
+
+
+void Clay_SDL2_InitCursors() {
+    // Create default arrow cursor
+    defaultCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+    
+    // Create hand pointer cursor
+    pointerCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+
+    currentCursor = defaultCursor;
+    SDL_SetCursor(currentCursor);
+}
+
+
+void Clay_SDL2_CleanupCursors() {
+    if (defaultCursor) {
+        SDL_FreeCursor(defaultCursor);
+        defaultCursor = NULL;
+    }
+    if (pointerCursor) {
+        SDL_FreeCursor(pointerCursor);
+        pointerCursor = NULL;
+    }
+    currentCursor = NULL;
+}
+
 static Clay_Dimensions SDL2_MeasureText(Clay_String *text, Clay_TextElementConfig *config)
 {    
     // Validate font
@@ -64,7 +95,7 @@ static Clay_Dimensions SDL2_MeasureText(Clay_String *text, Clay_TextElementConfi
 void Clay_SDL2_InitRenderer(SDL_Renderer *renderer) {
     Clay_SetMeasureTextFunction(SDL2_MeasureText);
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-
+    Clay_SDL2_InitCursors();
 }
 
 bool Clay_SDL2_LoadFont(uint32_t fontId, const char* fontPath, int fontSize) {
@@ -94,18 +125,29 @@ void Clay_SDL2_CleanupRenderer(void) {
             SDL2_fonts[i].font = NULL;
         }
     }
+    Clay_SDL2_CleanupCursors();
+
 }
+
+SDL_Cursor* Clay_SDL2_GetCurrentCursor() {
+    return currentCursor;
+}
+
 
 SDL_Rect currentClippingRectangle;
 
-void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderCommands)
-{
+void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderCommands) {
     if (!renderer) {
         fprintf(stderr, "Error: Renderer is NULL\n");
         return;
     }
-    for (uint32_t i = 0; i < renderCommands.length; i++)
-    {
+
+    bool hasPointerElement = false;
+
+    int mouseX, mouseY;
+    SDL_GetMouseState(&mouseX, &mouseY);
+
+    for (uint32_t i = 0; i < renderCommands.length; i++) {
         Clay_RenderCommand *renderCommand = Clay_RenderCommandArray_Get(&renderCommands, i);
         
         // Add null checks
@@ -113,7 +155,6 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
             fprintf(stderr, "Error: Render command is NULL at index %u\n", i);
             continue;
         }
-
         Clay_BoundingBox boundingBox = renderCommand->boundingBox;
 
         switch (renderCommand->commandType)
@@ -124,9 +165,16 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
                     fprintf(stderr, "Error: Rectangle config is NULL\n");
                     continue;
                 }
+                            
+                if (config->cursorPointer == true && 
+                    mouseX >= boundingBox.x && mouseX <= boundingBox.x + boundingBox.width &&
+                    mouseY >= boundingBox.y && mouseY <= boundingBox.y + boundingBox.height) {
+                    hasPointerElement = true;
+                }
+
                 Clay_Color color = config->color;
                 SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND); 
+                SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND); 
                 SDL_FRect rect = (SDL_FRect) {
                         .x = boundingBox.x,
                         .y = boundingBox.y,
@@ -199,7 +247,27 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
                 free(cloned);
                 break;
             }
+            case CLAY_RENDER_COMMAND_TYPE_IMAGE: {                
+                Clay_ImageElementConfig *imageConfig = renderCommand->config.imageElementConfig;
 
+                SDL_Texture* texture = (SDL_Texture*)imageConfig->imageData;
+
+                // Additional SDL-specific texture validation
+                int width = 0, height = 0;
+                Uint32 format = 0;
+                SDL_QueryTexture(texture, &format, NULL, &width, &height);
+
+                SDL_FRect destination = {
+                    .x = boundingBox.x,
+                    .y = boundingBox.y,
+                    .w = boundingBox.width,
+                    .h = boundingBox.height
+                };
+
+                SDL_RenderCopyF(renderer, texture, NULL, &destination);
+  
+                break;
+            }
             case CLAY_RENDER_COMMAND_TYPE_BORDER: {
                 Clay_BorderElementConfig *config = renderCommand->config.borderElementConfig;
                 if (!config) {
@@ -298,6 +366,13 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
                 exit(1);
             }
         }
+    }
+        
+    // Update cursor based on interactive elements
+    SDL_Cursor* targetCursor = hasPointerElement ? pointerCursor : defaultCursor;
+    if (targetCursor != currentCursor) {
+        currentCursor = targetCursor;
+        SDL_SetCursor(currentCursor);
     }
 }
 

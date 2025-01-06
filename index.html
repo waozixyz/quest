@@ -857,11 +857,13 @@ function renderLoopHTML() {
                 if (linkContents.length > 0) {
                     element.href = linkContents;
                 }
+                element.style.cursor = 'default';
 
                 if (linkContents.length > 0 || config.cursorPointer.value) {
                     element.style.pointerEvents = 'all';
                     element.style.cursor = 'pointer';
                 }
+                
                 elementData.previousMemoryConfig = configMemory;
                 let color = config.color;
                 element.style.backgroundColor = `rgba(${color.r.value}, ${color.g.value}, ${color.b.value}, ${color.a.value / 255})`;

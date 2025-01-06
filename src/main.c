@@ -1,7 +1,5 @@
-#define CLAY_EXTEND_CONFIG_RECTANGLE Clay_String link; bool cursorPointer;
-#define CLAY_EXTEND_CONFIG_IMAGE Clay_String sourceURL;
-#define CLAY_EXTEND_CONFIG_TEXT bool disablePointerEvents;
 #define CLAY_IMPLEMENTATION
+#include "clay_extensions.h"
 #include "../vendor/clay/clay.h"
 
 #include "styles.h"
@@ -13,7 +11,7 @@
 #include "pages/timeline.h"
 #include "pages/routine.h"
 
-#ifdef CLAY_DESKTOP
+#ifndef __EMSCRIPTEN__
 #include <SDL.h>
 #include <SDL_ttf.h>
 #include "desktop/clay_sdl_renderer.h"
@@ -69,9 +67,10 @@ void HandleNavInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo
     }
 }
 
+#ifdef __EMSCRIPTEN__
+
 void InitializePages() {
     if (pages_initialized) return;
-    
     printf("Initializing pages...\n");
     InitializeHabitsPage();
     InitializeTodosPage();
@@ -79,7 +78,19 @@ void InitializePages() {
     printf("Pages initialized\n");
 }
 
+#else
 
+void InitializePages(SDL_Renderer* renderer) {
+    if (pages_initialized) return;
+    
+    printf("Initializing pages...\n");
+    InitializeHabitsPage();
+    InitializeTodosPage(renderer);
+    pages_initialized = true;
+    printf("Pages initialized\n");
+}
+
+#endif
 void RenderCurrentPage() {
     switch(ACTIVE_PAGE) {
         case 0: RenderHomePage(); break;
@@ -101,9 +112,12 @@ void CleanupPages() {
 }
 
 Clay_RenderCommandArray CreateLayout() {
+    #ifdef __EMSCRIPTEN__
+
     if (!pages_initialized) {
         InitializePages();
     }
+    #endif
 
     Clay_BeginLayout();
 
@@ -162,8 +176,7 @@ CLAY_WASM_EXPORT("UpdateDrawFrame") Clay_RenderCommandArray UpdateDrawFrame(
 }
 #endif
 
-#ifdef CLAY_DESKTOP
-
+#ifndef __EMSCRIPTEN__
 void HandlePageInput(InputEvent event) {
     switch(ACTIVE_PAGE) {
         case 0: /* HandleHomePageInput(event); */ break;
@@ -243,7 +256,9 @@ void HandleSDLEvents(bool* running) {
 int main() {
     printf("Starting application...\n");
     
-#ifdef CLAY_DESKTOP
+#ifdef __EMSCRIPTEN__
+    return 0;
+#else
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         fprintf(stderr, "SDL initialization failed: %s\n", SDL_GetError());
         return 1;
@@ -321,8 +336,7 @@ int main() {
     Clay_ErrorHandler errorHandler = { .errorHandlerFunction = NULL };
     Clay_Initialize(arena, (Clay_Dimensions){windowWidth, windowHeight}, errorHandler);
 
-    InitializePages();
-
+    InitializePages(renderer);
 
     bool running = true;
     while (running) {
@@ -356,8 +370,6 @@ int main() {
     SDL_DestroyWindow(window);
     TTF_Quit();
     SDL_Quit();
-    return 0;
-#else
     return 0;
 #endif
 }

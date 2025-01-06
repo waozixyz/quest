@@ -2,12 +2,7 @@
 #define HOME_CARD_H
 
 #include <stdint.h>
-
-// Clay configuration
-#define CLAY_EXTEND_CONFIG_RECTANGLE Clay_String link; bool cursorPointer;
-#define CLAY_EXTEND_CONFIG_IMAGE Clay_String sourceURL;
-#define CLAY_EXTEND_CONFIG_TEXT bool disablePointerEvents;
-
+#include "../clay_extensions.h"
 #include "../../vendor/clay/clay.h"
 #include "../state.h"
 #include "../styles.h"
