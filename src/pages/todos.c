@@ -1,4 +1,5 @@
 #include "pages/todos.h"
+#include "utils.h"
 
 static TodoCollection todo_collection = {0};
 static TextInput* todo_input = NULL;
@@ -61,7 +62,7 @@ void InitializeTodosPage(SDL_Renderer* renderer) {
             day_symbols_textures[i] = NULL;
         }
 
-        SDL_Surface* surface = IMG_Load(DAY_SYMBOLS[i].url.chars);
+        SDL_Surface* surface = IMG_Load(get_image_path(DAY_SYMBOLS[i].url.chars));
         if (!surface) {
             fprintf(stderr, "Failed to load image %s: %s\n", DAY_SYMBOLS[i].url.chars, IMG_GetError());
             continue;

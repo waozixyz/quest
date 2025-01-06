@@ -9,8 +9,6 @@
 #include "../clay_extensions.h"
 #include "../../vendor/clay/clay.h"
 
-
-
 // Cursor management functions
 void Clay_SDL2_InitCursors();
 void Clay_SDL2_CleanupCursors();

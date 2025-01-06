@@ -10,13 +10,17 @@
 #include "pages/todos.h"
 #include "pages/timeline.h"
 #include "pages/routine.h"
+#include "utils.h"
+#include <unistd.h> 
 
 #ifndef __EMSCRIPTEN__
 #include <SDL.h>
 #include <SDL_ttf.h>
-#include "desktop/clay_sdl_renderer.h"
-#endif
+#include "renderers/clay_sdl_renderer.h"
+#else 
+#include <SDL_Log.h>
 
+#endif
 double windowWidth = 1024, windowHeight = 768;
 uint32_t ACTIVE_PAGE = 0;
 uint32_t ACTIVE_RENDERER_INDEX = 0;
@@ -71,11 +75,11 @@ void HandleNavInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo
 
 void InitializePages() {
     if (pages_initialized) return;
-    printf("Initializing pages...\n");
+    SDL_Log("Initializing pages...\n");
     InitializeHabitsPage();
     InitializeTodosPage();
     pages_initialized = true;
-    printf("Pages initialized\n");
+    SDL_Log("Pages initialized\n");
 }
 
 #else
@@ -83,11 +87,11 @@ void InitializePages() {
 void InitializePages(SDL_Renderer* renderer) {
     if (pages_initialized) return;
     
-    printf("Initializing pages...\n");
+    SDL_Log("Initializing pages...\n");
     InitializeHabitsPage();
     InitializeTodosPage(renderer);
     pages_initialized = true;
-    printf("Pages initialized\n");
+    SDL_Log("Pages initialized\n");
 }
 
 #endif
@@ -101,14 +105,14 @@ void RenderCurrentPage() {
     }
 }
 void CleanupPages() {
-    printf("Cleaning up pages...\n");
+    SDL_Log("Cleaning up pages...\n");
     CleanupHabitsPage();
     CleanupTodosPage();
     // Add other page cleanups here as needed:
     // CleanupTimelinePage();
     // etc.
     pages_initialized = false;
-    printf("Pages cleaned up\n");
+    SDL_Log("Pages cleaned up\n");
 }
 
 Clay_RenderCommandArray CreateLayout() {
@@ -145,7 +149,7 @@ Clay_RenderCommandArray CreateLayout() {
 
     // Additional safety checks
     if (commands.length > 0 && !commands.internalArray) {
-        fprintf(stderr, "ERROR: Render commands array is NULL despite having length\n");
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "ERROR: Render commands array is NULL despite having length\n");
     }
 
     return commands;
@@ -253,91 +257,76 @@ void HandleSDLEvents(bool* running) {
 }
 
 #endif
-int main() {
-    printf("Starting application...\n");
-    
-#ifdef __EMSCRIPTEN__
-    return 0;
-#else
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        fprintf(stderr, "SDL initialization failed: %s\n", SDL_GetError());
-        return 1;
-    }
 
-    if (TTF_Init() < 0) {
-        fprintf(stderr, "TTF initialization failed: %s\n", TTF_GetError());
-        SDL_Quit();
-        return 1;
-    }
+// Common initialization and loop logic
 
-    SDL_Window* window = SDL_CreateWindow(
-        "Clay App",
-        SDL_WINDOWPOS_UNDEFINED,
-        SDL_WINDOWPOS_UNDEFINED,
-        windowWidth,
-        windowHeight,
-        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
-    );
-
-    if (!window) {
-        fprintf(stderr, "Window creation failed: %s\n", SDL_GetError());
-        TTF_Quit();
-        SDL_Quit();
-        return 1;
-    }
-
-    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 
-        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-    
-    if (!renderer) {
-        fprintf(stderr, "Renderer creation failed: %s\n", SDL_GetError());
-        SDL_DestroyWindow(window);
-        TTF_Quit();
-        SDL_Quit();
-        return 1;
-    }
-
+void RunGameLoop(SDL_Window* window, SDL_Renderer* renderer) {    SDL_Log("RunGameLoop started\n");
+    SDL_Log("Initializing SDL2 renderer...\n");
     Clay_SDL2_InitRenderer(renderer);
+    SDL_Log("SDL2 renderer initialized\n");
 
-    if (!Clay_SDL2_LoadFont(FONT_ID_BODY_16, "fonts/Quicksand-Semibold.ttf", 16) ||
-        !Clay_SDL2_LoadFont(FONT_ID_TITLE_56, "fonts/Calistoga-Regular.ttf", 56) ||
-        !Clay_SDL2_LoadFont(FONT_ID_BODY_24, "fonts/Quicksand-Semibold.ttf", 24) ||
-        !Clay_SDL2_LoadFont(FONT_ID_BODY_36, "fonts/Quicksand-Semibold.ttf", 36) ||
-        !Clay_SDL2_LoadFont(FONT_ID_TITLE_36, "fonts/Calistoga-Regular.ttf", 36) ||
-        !Clay_SDL2_LoadFont(FONT_ID_MONOSPACE_24, "fonts/Calistoga-Regular.ttf", 24)) {
-        fprintf(stderr, "Font loading failed\n");
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(window);
-        TTF_Quit();
-        SDL_Quit();
-        return 1;
+    if (TTF_Init() == -1) {
+        SDL_Log("SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError());
+        // Handle error appropriately
+        return;
     }
+
+    // Load fonts with new helper function
+    if (!load_font(FONT_ID_BODY_16, "Quicksand-Semibold.ttf", 16)) {
+        SDL_Log("Failed to load BODY_16 font\n");
+        return;
+    }
+    SDL_Log("Loaded BODY_16 font\n");
+
+    if (!load_font(FONT_ID_TITLE_56, "Calistoga-Regular.ttf", 56)) {
+        SDL_Log("Failed to load TITLE_56 font\n");
+        return;
+    }
+    SDL_Log("Loaded TITLE_56 font\n");
+
+    if (!load_font(FONT_ID_BODY_24, "Quicksand-Semibold.ttf", 24)) {
+        SDL_Log("Failed to load BODY_24 font\n");
+        return;
+    }
+    SDL_Log("Loaded BODY_24 font\n");
+
+    if (!load_font(FONT_ID_BODY_36, "Quicksand-Semibold.ttf", 36)) {
+        SDL_Log("Failed to load BODY_36 font\n");
+        return;
+    }
+    SDL_Log("Loaded BODY_36 font\n");
+
+    if (!load_font(FONT_ID_TITLE_36, "Calistoga-Regular.ttf", 36)) {
+        SDL_Log("Failed to load TITLE_36 font\n");
+        return;
+    }
+    SDL_Log("Loaded TITLE_36 font\n");
+
+    if (!load_font(FONT_ID_MONOSPACE_24, "Calistoga-Regular.ttf", 24)) {
+        SDL_Log("Failed to load MONOSPACE_24 font\n");
+        return;
+    }
+    SDL_Log("Loaded MONOSPACE_24 font\n");
+
 
     uint32_t minSize = Clay_MinMemorySize();
-
-    // Allocate exactly the minimum size, or even slightly more
     uint32_t recommendedSize = minSize + (minSize / 2);
+    
     void* arenaMemory = malloc(recommendedSize);
-
     if (!arenaMemory) {
-        fprintf(stderr, "Failed to allocate memory for Clay arena\n");
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(window);
-        TTF_Quit();
-        SDL_Quit();
-        return 1;
+        SDL_Log("Failed to allocate %u bytes for Clay arena\n", recommendedSize);
+        return;
     }
+    SDL_Log("Successfully allocated %u bytes for Clay arena\n", recommendedSize);
 
-    // Zero out the memory to ensure clean initialization
     memset(arenaMemory, 0, recommendedSize);
-
     Clay_Arena arena = Clay_CreateArenaWithCapacityAndMemory(recommendedSize, arenaMemory);
-
     Clay_ErrorHandler errorHandler = { .errorHandlerFunction = NULL };
     Clay_Initialize(arena, (Clay_Dimensions){windowWidth, windowHeight}, errorHandler);
 
     InitializePages(renderer);
 
+    // Main Game Loop
     bool running = true;
     while (running) {
         HandleSDLEvents(&running);
@@ -351,25 +340,168 @@ int main() {
         SDL_RenderClear(renderer);
 
         Clay_SetLayoutDimensions((Clay_Dimensions){windowWidth, windowHeight});
-        
         Clay_RenderCommandArray commands = CreateLayout();
 
-
-        // Basic safety check
         if (commands.length == 0) {
-            fprintf(stderr, "WARNING: No render commands generated\n");
+            SDL_LogError(SDL_LOG_CATEGORY_ERROR, "WARNING: No render commands generated\n");
         }
 
         Clay_SDL2_Render(renderer, commands);
-
         SDL_RenderPresent(renderer);
     }
+
     CleanupPages();
     Clay_SDL2_CleanupRenderer();
+    free(arenaMemory);
+    TTF_Quit();
+}
+
+
+#if defined(__EMSCRIPTEN__)
+int main() {
+   return 0;
+}
+#elif defined(CLAY_MOBILE)
+int SDL_main(int argc, char* argv[]) {
+    SDL_Log("SDL_main: ENTERED - Extremely Verbose Mode");
+    SDL_Log("SDL_main: argc = %d", argc);
+
+    // Log all arguments
+    for (int i = 0; i < argc; i++) {
+        SDL_Log("SDL_main: argv[%d] = %s", i, argv ? argv[i] : "NULL");
+    }
+
+    // Early Android state initialization logging
+    SDL_Log("SDL_main: Initializing Android state");
+    
+    // Detailed SDL initialization checks
+    SDL_Log("SDL_main: Checking SDL initialization");
+    Uint32 sdl_init_flags = SDL_WasInit(SDL_INIT_EVERYTHING);
+    SDL_Log("SDL_main: Currently initialized SDL subsystems: 0x%x", sdl_init_flags);
+
+    // Force initialize all SDL subsystems if not already done
+    if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
+            "SDL_main: CRITICAL - Failed to initialize SDL: %s", 
+            SDL_GetError());
+        return -1;
+    }
+
+    // Extensive video system information
+    SDL_Log("SDL_main: Video system information:");
+    SDL_Log("Number of video drivers: %d", SDL_GetNumVideoDrivers());
+    for (int i = 0; i < SDL_GetNumVideoDrivers(); i++) {
+        SDL_Log("Video driver %d: %s", i, SDL_GetVideoDriver(i));
+    }
+
+    // Try multiple window retrieval strategies
+    SDL_Window* window = NULL;
+    int wait_attempts = 0;
+    while (!window && wait_attempts < 50) {
+        // First, check if we can create a window directly
+        window = SDL_CreateWindow(
+            "MyQuest", 
+            SDL_WINDOWPOS_UNDEFINED, 
+            SDL_WINDOWPOS_UNDEFINED, 
+            1080, 2220,  // Use device dimensions from logs
+            SDL_WINDOW_SHOWN | SDL_WINDOW_BORDERLESS
+        );
+
+        if (!window) {
+            SDL_Log("SDL_main: Window creation attempt %d failed: %s", 
+                    wait_attempts, SDL_GetError());
+            SDL_Delay(100);
+            wait_attempts++;
+        }
+    }
+
+    if (!window) {
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
+            "SDL_main: CRITICAL - Failed to create window after %d attempts", 
+            wait_attempts);
+        return -1;
+    }
+
+    SDL_Log("SDL_main: Window created successfully");
+
+    // Log window details
+    int width, height;
+    SDL_GetWindowSize(window, &width, &height);
+    SDL_Log("SDL_main: Window size - width: %d, height: %d", width, height);
+
+    // Create renderer
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 
+        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    
+    if (!renderer) {
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
+            "SDL_main: Failed to create renderer: %s", 
+            SDL_GetError());
+        SDL_DestroyWindow(window);
+        return -1;
+    }
+
+    SDL_Log("SDL_main: Renderer created successfully");
+
+    // Run game loop
+    RunGameLoop(window, renderer);
+
+    // Cleanup
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
-    TTF_Quit();
     SDL_Quit();
+
+    SDL_Log("SDL_main: COMPLETED SUCCESSFULLY");
     return 0;
-#endif
 }
+
+
+#else
+int main() {
+   if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+       SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL initialization failed: %s\n", SDL_GetError());
+       return 1;
+   }
+
+   if (TTF_Init() < 0) {
+       SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "TTF initialization failed: %s\n", TTF_GetError());
+       SDL_Quit();
+       return 1;
+   }
+
+   SDL_Window* window = SDL_CreateWindow(
+       "Clay App",
+       SDL_WINDOWPOS_UNDEFINED,
+       SDL_WINDOWPOS_UNDEFINED,
+       windowWidth,
+       windowHeight,
+       SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
+   );
+
+   if (!window) {
+       SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Window creation failed: %s\n", SDL_GetError());
+       TTF_Quit();
+       SDL_Quit();
+       return 1;
+   }
+
+   SDL_Renderer* renderer = SDL_CreateRenderer(window, -1,
+       SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+
+   if (!renderer) {
+       SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Renderer creation failed: %s\n", SDL_GetError());
+       SDL_DestroyWindow(window);
+       TTF_Quit();
+       SDL_Quit();
+       return 1;
+   }
+
+   RunGameLoop(window, renderer);
+
+   SDL_DestroyRenderer(renderer);
+   SDL_DestroyWindow(window);
+   TTF_Quit();
+   SDL_Quit();
+   return 0;
+}
+#endif

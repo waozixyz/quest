@@ -14,8 +14,8 @@
 #ifdef __EMSCRIPTEN__
 #define CLAY_EXTEND_CONFIG_IMAGE Clay_String sourceURL;
 #else
-#include <SDL2/SDL_image.h>
-#include <SDL2/SDL.h>
+#include <SDL_image.h>
+#include <SDL.h>
 #endif
 
 #ifdef __EMSCRIPTEN__

@@ -1,5 +1,5 @@
 // clay_sdl_renderer.c
-#include "desktop/clay_sdl_renderer.h"
+#include "renderers/clay_sdl_renderer.h"
 #include <unistd.h>
 
 // Global cursor variables

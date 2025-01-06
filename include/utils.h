@@ -1,0 +1,45 @@
+#ifndef UTILS_H
+#define UTILS_H
+
+#include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
+
+#ifndef __EMSCRIPTEN__
+
+#include <SDL.h>
+#include <SDL_ttf.h>
+#endif
+
+#if defined(CLAY_MOBILE)
+#include <pthread.h>
+#include <android/asset_manager.h>
+#include <android/asset_manager_jni.h>
+#include <jni.h>
+
+
+typedef struct {
+    SDL_Window* window;
+    AAssetManager* assetManager; 
+    pthread_mutex_t mutex;
+    bool initialized;
+} AndroidState;
+
+extern AndroidState g_android_state;
+
+// JNI method declaration
+extern JNIEXPORT void JNICALL 
+Java_xyz_waozi_myquest_MainActivity_nativeSetAssetManager(
+    JNIEnv* env, jclass clazz, jobject asset_manager);
+#endif
+
+extern TTF_Font* loadedFonts[];
+
+const char* get_asset_path(const char* filename);
+const char* get_font_path(const char* filename);
+const char* get_image_path(const char* filename);
+bool load_font(uint32_t font_id, const char* filename, int size);
+SDL_Surface* load_image(const char* filename);
+bool Clay_SDL2_LoadFontRW(uint32_t fontId, SDL_RWops* rw, int fontSize);
+
+#endif // UTILS_H

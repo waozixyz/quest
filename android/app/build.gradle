@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace 'xyz.waozi.myquest'
-    compileSdk 33
+    compileSdk 34
 
     defaultConfig {
         applicationId "xyz.waozi.myquest"
         minSdk 21
-        targetSdk 33
+        targetSdk 34
         versionCode 1
         versionName "1.0"
     }
@@ -25,7 +25,7 @@ android {
     
     sourceSets {
         main {
-            jniLibs.srcDirs = ['libs']
+            jniLibs.srcDirs = ['src/main/jniLibs']
             java.srcDirs += 'src/main/kotlin'
         }
     }
@@ -41,6 +41,10 @@ android {
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.10.0'
+    implementation "androidx.startup:startup-runtime:1.1.1"
+    implementation files('libs/SDL2-2.31.0.aar')
 }

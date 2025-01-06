@@ -12,3 +12,7 @@
 	path = vendor/SDL
 	url = https://github.com/libsdl-org/SDL.git
 	branch = SDL2
+[submodule "vendor/SDL_ttf"]
+	path = vendor/SDL_ttf
+	url = https://github.com/libsdl-org/SDL_ttf.git
+	branch = SDL2
