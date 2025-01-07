@@ -1,5 +1,3 @@
-#include <stdio.h>
-#include "../../vendor/clay/clay.h" 
 #include "components/color_picker.h"  
 
 // Static variables
@@ -107,7 +105,8 @@ void RenderColorPicker(Clay_Color current_color, void (*on_color_change)(Clay_Co
             }),
             CLAY_RECTANGLE({
                 .color = current_color,
-                .cornerRadius = CLAY_CORNER_RADIUS(8)
+                .cornerRadius = CLAY_CORNER_RADIUS(8),
+                .cursorPointer = true
             }),
             Clay_OnHover(HandleCurrentColorClick, (intptr_t)modal)
         );

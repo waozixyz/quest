@@ -257,7 +257,10 @@ void RenderDatePicker(time_t current_date, void (*on_date_change)(time_t), Modal
     ) {
         CLAY(CLAY_ID("DateDisplay"),
             CLAY_LAYOUT({ .padding = { 10, 5 }}),
-            CLAY_RECTANGLE({ .color = COLOR_SECONDARY }),
+            CLAY_RECTANGLE({
+                .color = COLOR_SECONDARY,
+                .cursorPointer = true
+            }),
             Clay_OnHover(HandleDateClick, (intptr_t)modal)
         ) {
             Clay_String date_obj = { .chars = date_str, .length = strlen(date_str) };

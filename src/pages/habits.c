@@ -263,23 +263,6 @@ void RenderHabitsPage() {
             .layoutDirection = CLAY_TOP_TO_BOTTOM
         })
     ) {
-        // Title
-        CLAY(CLAY_ID("HabitsPageTitle"),
-            CLAY_LAYOUT({
-                .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) },
-                .childAlignment = { .x = CLAY_ALIGN_X_CENTER },
-                .padding = { 0, 32 }
-            })
-        ) {
-            CLAY_TEXT(CLAY_STRING("Habits Calendar"),
-                CLAY_TEXT_CONFIG({
-                    .fontSize = 48,
-                    .fontId = FONT_ID_TITLE_56,
-                    .textColor = COLOR_TEXT
-                })
-            );
-        }
-
         // Habit tabs
         RenderHabitTabs();
         // Color picker and date picker on the same row
@@ -295,9 +278,38 @@ void RenderHabitsPage() {
             RenderColorPicker(active_habit->color, HandleColorChange, &color_picker_modal);
             RenderDatePicker(habits.calendar_start_date, HandleDateChange, &date_picker_modal);
         }
+        static const char *day_labels[] = {"S", "M", "T", "W", "T", "F", "S"};
+
+        CLAY(CLAY_ID("DayLabels"), 
+            CLAY_LAYOUT({
+                .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
+                .childAlignment = { .x = CLAY_ALIGN_X_CENTER}
+            })
+        ) {
+            Clay_TextElementConfig *day_label_config = CLAY_TEXT_CONFIG({
+                .fontSize = 20,
+                .fontId = FONT_ID_BODY_24,
+                .textColor = COLOR_TEXT
+            });
+
+            for (int i = 0; i < sizeof(day_labels) / sizeof(day_labels[0]); i++) {
+                CLAY(CLAY_IDI("DayLabel", i),
+                    CLAY_LAYOUT({
+                        .sizing = { CLAY_SIZING_FIXED(80), CLAY_SIZING_FIT(0) }, 
+                        .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
+                    })) { 
+                        Clay_String day_str = {
+                            .length = strlen(day_labels[i]),
+                            .chars = day_labels[i]
+                        };
+                        CLAY_TEXT(day_str, day_label_config); 
+                    }           
+            }
+        }
         CLAY(CLAY_ID("CalendarScrollContainer"),
             CLAY_LAYOUT({
-                .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() }
+                .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
+                .childAlignment = { .x = CLAY_ALIGN_X_CENTER}
             }),
             CLAY_SCROLL({ .vertical = true })
         ) {
