@@ -8,11 +8,14 @@
 	path = vendor/SDL_image
 	url = https://github.com/libsdl-org/SDL_image.git
 	branch = SDL2
+	ignore = dirty
 [submodule "vendor/SDL"]
 	path = vendor/SDL
 	url = https://github.com/libsdl-org/SDL.git
 	branch = SDL2
+	ignore = dirty
 [submodule "vendor/SDL_ttf"]
 	path = vendor/SDL_ttf
 	url = https://github.com/libsdl-org/SDL_ttf.git
 	branch = SDL2
+    ignore = dirty
