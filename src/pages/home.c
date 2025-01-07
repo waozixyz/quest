@@ -1,9 +1,6 @@
 #include "pages/home.h"
 #include "components/home_card.h"
 
-const float SCREEN_BREAKPOINT = 768.0f;
-const int DEFAULT_PADDING = 32;
-
 void SetupCardGridLayout() {
     CLAY_LAYOUT({
         .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
@@ -41,7 +38,7 @@ void RenderHomePage() {
 
         // Cards container
         CLAY(CLAY_ID("CardGrid"), SetupCardGridLayout()) {
-            if (screenWidth < SCREEN_BREAKPOINT) {
+            if (screenWidth < screenBreakpoint) {
                 // Small screen layout - 2x2 grid
                 CLAY(CLAY_LAYOUT({
                     .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },

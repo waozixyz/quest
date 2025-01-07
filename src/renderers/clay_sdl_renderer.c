@@ -10,6 +10,21 @@ static SDL_Cursor* pointerCursor = NULL;
 static SDL_Cursor* currentCursor = NULL;
 
 
+static float renderScaleFactor = 1.0f;
+
+void Clay_SDL2_SetRenderScale(float scale) {
+    renderScaleFactor = scale;
+}
+
+// Helper function to scale a rectangle
+static SDL_FRect ScaleBoundingBox(Clay_BoundingBox box) {
+    return (SDL_FRect) {
+        .x = box.x * renderScaleFactor,
+        .y = box.y * renderScaleFactor,
+        .w = box.width * renderScaleFactor,
+        .h = box.height * renderScaleFactor
+    };
+}
 
 void Clay_SDL2_InitCursors() {
     // Create default arrow cursor
@@ -114,29 +129,36 @@ static void RenderScrollbar(
     int mouseX,
     int mouseY,
     Clay_ScrollElementConfig *config,
-    Clay_ElementId elementId  // Add this parameter
+    Clay_ElementId elementId
 ) {
-    const float scrollbar_size = 10;
+    const float scrollbar_size = 10 * renderScaleFactor;  // Scale scrollbar size
+    
+    // Scale mouse coordinates for hit testing
+    float scaledMouseX = mouseX;  // Already scaled in main render function
+    float scaledMouseY = mouseY;  // Already scaled in main render function
     
     // Get scroll data for proper thumb positioning
     Clay_ScrollContainerData scrollData = Clay_GetScrollContainerData(elementId);
     if (!scrollData.found) return;
 
+    SDL_FRect scaledBox = ScaleBoundingBox(boundingBox);
+
     // Calculate scroll ratio based on content vs viewport size
-    float viewportSize = isVertical ? boundingBox.height : boundingBox.width;
-    float contentSize = isVertical ? scrollData.contentDimensions.height : scrollData.contentDimensions.width;
+    float viewportSize = isVertical ? scaledBox.h : scaledBox.w;
+    float contentSize = isVertical ? scrollData.contentDimensions.height * renderScaleFactor 
+                                  : scrollData.contentDimensions.width * renderScaleFactor;
     float scrollPosition = isVertical ? scrollData.scrollPosition->y : scrollData.scrollPosition->x;
     
     // Calculate thumb size and position
     float thumbSize = (viewportSize / contentSize) * viewportSize;
-    float thumbPosition = (-scrollPosition / contentSize) * viewportSize;
+    float thumbPosition = (-scrollPosition / contentSize) * viewportSize * renderScaleFactor;
 
     // Render background
     SDL_FRect scrollbar_bg = {
-        .x = isVertical ? boundingBox.x + boundingBox.width - scrollbar_size : boundingBox.x,
-        .y = isVertical ? boundingBox.y : boundingBox.y + boundingBox.height - scrollbar_size,
-        .w = isVertical ? scrollbar_size : boundingBox.width,
-        .h = isVertical ? boundingBox.height : scrollbar_size
+        .x = isVertical ? scaledBox.x + scaledBox.w - scrollbar_size : scaledBox.x,
+        .y = isVertical ? scaledBox.y : scaledBox.y + scaledBox.h - scrollbar_size,
+        .w = isVertical ? scrollbar_size : scaledBox.w,
+        .h = isVertical ? scaledBox.h : scrollbar_size
     };
     
     SDL_SetRenderDrawColor(renderer, COLOR_SECONDARY.r, COLOR_SECONDARY.g, COLOR_SECONDARY.b, 200);
@@ -150,8 +172,8 @@ static void RenderScrollbar(
         .h = isVertical ? thumbSize : scrollbar_size
     };
 
-    bool isHovered = mouseX >= scroll_thumb.x && mouseX <= scroll_thumb.x + scroll_thumb.w &&
-                    mouseY >= scroll_thumb.y && mouseY <= scroll_thumb.y + scroll_thumb.h;
+    bool isHovered = scaledMouseX >= scroll_thumb.x && scaledMouseX <= scroll_thumb.x + scroll_thumb.w &&
+                    scaledMouseY >= scroll_thumb.y && scaledMouseY <= scroll_thumb.y + scroll_thumb.h;
     
     SDL_SetRenderDrawColor(renderer,
         isHovered ? COLOR_PRIMARY_HOVER.r : COLOR_PRIMARY.r,
@@ -161,6 +183,7 @@ static void RenderScrollbar(
     );
     SDL_RenderFillRectF(renderer, &scroll_thumb);
 }
+
 
 SDL_Rect currentClippingRectangle;
 
@@ -174,19 +197,22 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
 
     int mouseX, mouseY;
     SDL_GetMouseState(&mouseX, &mouseY);
+    // Scale mouse coordinates for hit testing
+    mouseX /= renderScaleFactor;
+    mouseY /= renderScaleFactor;
 
     for (uint32_t i = 0; i < renderCommands.length; i++) {
         Clay_RenderCommand *renderCommand = Clay_RenderCommandArray_Get(&renderCommands, i);
         
-        // Add null checks
         if (!renderCommand) {
             fprintf(stderr, "Error: Render command is NULL at index %u\n", i);
             continue;
         }
-        Clay_BoundingBox boundingBox = renderCommand->boundingBox;
 
-        switch (renderCommand->commandType)
-        {
+        Clay_BoundingBox boundingBox = renderCommand->boundingBox;
+        SDL_FRect scaledBox = ScaleBoundingBox(boundingBox);
+
+        switch (renderCommand->commandType) {
             case CLAY_RENDER_COMMAND_TYPE_RECTANGLE: {
                 Clay_RectangleElementConfig *config = renderCommand->config.rectangleElementConfig;
                 if (!config) {
@@ -203,40 +229,36 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
                 Clay_Color color = config->color;
                 SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
                 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND); 
-                SDL_FRect rect = (SDL_FRect) {
-                        .x = boundingBox.x,
-                        .y = boundingBox.y,
-                        .w = boundingBox.width,
-                        .h = boundingBox.height,
-                };
-                SDL_RenderFillRectF(renderer, &rect);
+                SDL_RenderFillRectF(renderer, &scaledBox);
                 break;
             }
+
             case CLAY_RENDER_COMMAND_TYPE_TEXT: {
                 Clay_TextElementConfig *config = renderCommand->config.textElementConfig;
                 Clay_String text = renderCommand->text;
 
-                char *cloned = malloc(text.length + 1);  // Use malloc instead of calloc
+                char *cloned = malloc(text.length + 1);
                 if (!cloned) {
                     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
                         "Memory allocation failed for text rendering");
                     continue;
                 }
-                memset(cloned, 0, text.length + 1); 
+                memset(cloned, 0, text.length + 1);
                 memcpy(cloned, text.chars, text.length);
 
                 TTF_Font* font = SDL2_fonts[config->fontId].font;
                 if (!font) {
                     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
                         "ERROR: Font is NULL for fontId %u", config->fontId);
+                    free(cloned);
                     break;
                 }
 
                 SDL_Surface *surface = TTF_RenderUTF8_Blended(font, cloned, (SDL_Color) {
-                        .r = (Uint8)config->textColor.r,
-                        .g = (Uint8)config->textColor.g,
-                        .b = (Uint8)config->textColor.b,
-                        .a = (Uint8)config->textColor.a,
+                    .r = (Uint8)config->textColor.r,
+                    .g = (Uint8)config->textColor.g,
+                    .b = (Uint8)config->textColor.b,
+                    .a = (Uint8)config->textColor.a,
                 });
                 
                 if (!surface) {
@@ -254,40 +276,28 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
                     continue;
                 }
 
-                SDL_Rect destination = (SDL_Rect){
-                        .x = boundingBox.x,
-                        .y = boundingBox.y,
-                        .w = boundingBox.width,
-                        .h = boundingBox.height,
+                SDL_FRect destination = {
+                    .x = scaledBox.x,
+                    .y = scaledBox.y,
+                    .w = scaledBox.w,
+                    .h = scaledBox.h
                 };
-                SDL_RenderCopy(renderer, texture, NULL, &destination);
+                SDL_RenderCopyF(renderer, texture, NULL, &destination);
 
                 SDL_DestroyTexture(texture);
                 SDL_FreeSurface(surface);
                 free(cloned);
                 break;
             }
+
             case CLAY_RENDER_COMMAND_TYPE_IMAGE: {                
                 Clay_ImageElementConfig *imageConfig = renderCommand->config.imageElementConfig;
-
                 SDL_Texture* texture = (SDL_Texture*)imageConfig->imageData;
 
-                // Additional SDL-specific texture validation
-                int width = 0, height = 0;
-                Uint32 format = 0;
-                SDL_QueryTexture(texture, &format, NULL, &width, &height);
-
-                SDL_FRect destination = {
-                    .x = boundingBox.x,
-                    .y = boundingBox.y,
-                    .w = boundingBox.width,
-                    .h = boundingBox.height
-                };
-
-                SDL_RenderCopyF(renderer, texture, NULL, &destination);
-  
+                SDL_RenderCopyF(renderer, texture, NULL, &scaledBox);
                 break;
             }
+
             case CLAY_RENDER_COMMAND_TYPE_BORDER: {
                 Clay_BorderElementConfig *config = renderCommand->config.borderElementConfig;
                 if (!config) {
@@ -295,23 +305,27 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
                     continue;
                 }
 
-                // Set border colors and draw borders
-                SDL_SetRenderDrawColor(renderer, 
-                    config->left.color.r, 
-                    config->left.color.g, 
-                    config->left.color.b, 
-                    config->left.color.a
-                );
+                // Scale border widths
+                float scaledLeftWidth = config->left.width * renderScaleFactor;
+                float scaledRightWidth = config->right.width * renderScaleFactor;
+                float scaledTopWidth = config->top.width * renderScaleFactor;
+                float scaledBottomWidth = config->bottom.width * renderScaleFactor;
 
                 // Draw left border
                 if (config->left.width > 0) {
-                    SDL_Rect leftBorder = {
-                        .x = boundingBox.x,
-                        .y = boundingBox.y,
-                        .w = config->left.width,
-                        .h = boundingBox.height
+                    SDL_SetRenderDrawColor(renderer, 
+                        config->left.color.r, 
+                        config->left.color.g, 
+                        config->left.color.b, 
+                        config->left.color.a
+                    );
+                    SDL_FRect leftBorder = {
+                        .x = scaledBox.x,
+                        .y = scaledBox.y,
+                        .w = scaledLeftWidth,
+                        .h = scaledBox.h
                     };
-                    SDL_RenderFillRect(renderer, &leftBorder);
+                    SDL_RenderFillRectF(renderer, &leftBorder);
                 }
 
                 // Draw right border
@@ -322,13 +336,13 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
                         config->right.color.b, 
                         config->right.color.a
                     );
-                    SDL_Rect rightBorder = {
-                        .x = boundingBox.x + boundingBox.width - config->right.width,
-                        .y = boundingBox.y,
-                        .w = config->right.width,
-                        .h = boundingBox.height
+                    SDL_FRect rightBorder = {
+                        .x = scaledBox.x + scaledBox.w - scaledRightWidth,
+                        .y = scaledBox.y,
+                        .w = scaledRightWidth,
+                        .h = scaledBox.h
                     };
-                    SDL_RenderFillRect(renderer, &rightBorder);
+                    SDL_RenderFillRectF(renderer, &rightBorder);
                 }
 
                 // Draw top border
@@ -339,13 +353,13 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
                         config->top.color.b, 
                         config->top.color.a
                     );
-                    SDL_Rect topBorder = {
-                        .x = boundingBox.x,
-                        .y = boundingBox.y,
-                        .w = boundingBox.width,
-                        .h = config->top.width
+                    SDL_FRect topBorder = {
+                        .x = scaledBox.x,
+                        .y = scaledBox.y,
+                        .w = scaledBox.w,
+                        .h = scaledTopWidth
                     };
-                    SDL_RenderFillRect(renderer, &topBorder);
+                    SDL_RenderFillRectF(renderer, &topBorder);
                 }
 
                 // Draw bottom border
@@ -356,29 +370,29 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
                         config->bottom.color.b, 
                         config->bottom.color.a
                     );
-                    SDL_Rect bottomBorder = {
-                        .x = boundingBox.x,
-                        .y = boundingBox.y + boundingBox.height - config->bottom.width,
-                        .w = boundingBox.width,
-                        .h = config->bottom.width
+                    SDL_FRect bottomBorder = {
+                        .x = scaledBox.x,
+                        .y = scaledBox.y + scaledBox.h - scaledBottomWidth,
+                        .w = scaledBox.w,
+                        .h = scaledBottomWidth
                     };
-                    SDL_RenderFillRect(renderer, &bottomBorder);
+                    SDL_RenderFillRectF(renderer, &bottomBorder);
                 }
                 break;
             }
+
             case CLAY_RENDER_COMMAND_TYPE_SCISSOR_START: {
-                currentClippingRectangle = (SDL_Rect) {
-                    .x = boundingBox.x,
-                    .y = boundingBox.y,
-                    .w = boundingBox.width,
-                    .h = boundingBox.height,
+                SDL_Rect scaledClip = {
+                    .x = scaledBox.x,
+                    .y = scaledBox.y,
+                    .w = scaledBox.w,
+                    .h = scaledBox.h
                 };
-                SDL_RenderSetClipRect(renderer, &currentClippingRectangle);
+                SDL_RenderSetClipRect(renderer, &scaledClip);
 
                 if (renderCommand->config.scrollElementConfig) {
                     Clay_ScrollElementConfig *config = renderCommand->config.scrollElementConfig;
-                    // Create proper ElementId struct with empty string
-                    Clay_ElementId elementId = (Clay_ElementId){
+                    Clay_ElementId elementId = {
                         .id = renderCommand->id,
                         .offset = 0,
                         .baseId = renderCommand->id,
@@ -394,10 +408,12 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
                 }
                 break;
             }
+
             case CLAY_RENDER_COMMAND_TYPE_SCISSOR_END: {
                 SDL_RenderSetClipRect(renderer, NULL);
                 break;
             }
+
             default: {
                 fprintf(stderr, "Error: unhandled render command: %d\n", renderCommand->commandType);
                 exit(1);
@@ -412,4 +428,3 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
         SDL_SetCursor(currentCursor);
     }
 }
-

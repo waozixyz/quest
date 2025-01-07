@@ -28,9 +28,12 @@ static bool isScrollThumbDragging = false;
 
 
 double windowWidth = 1024, windowHeight = 768;
+float globalScalingFactor = 1.0f;
 uint32_t ACTIVE_PAGE = 0;
 uint32_t ACTIVE_RENDERER_INDEX = 0;
 bool pages_initialized = false;
+float screenBreakpoint = 768.0f;
+
 
 // Font IDs
 const uint32_t FONT_ID_BODY_16 = 0;
@@ -70,6 +73,9 @@ const Clay_Color COLOR_BORDER_FOCUSED = (Clay_Color) {148, 47, 74, 255}; // #942
 const Clay_Color COLOR_TEXT = (Clay_Color) {230, 221, 233, 255};     // #e6dde9
 const Clay_Color COLOR_TEXT_SECONDARY = (Clay_Color) {184, 168, 192, 255}; // #b8a8c0
 const Clay_Color COLOR_CURSOR = (Clay_Color){255, 107, 151, 255};           // Using COLOR_ACCENT for cursor
+
+
+const int DEFAULT_PADDING = 32;
 
 void HandleNavInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
@@ -215,30 +221,34 @@ void HandleSDLEvents(bool* running) {
             case SDL_QUIT:
                 *running = false;
                 break;
-
             case SDL_WINDOWEVENT:
                 if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
-                    windowWidth = event.window.data1;
-                    windowHeight = event.window.data2;
+                    windowWidth = event.window.data1 / globalScalingFactor;
+                    windowHeight = event.window.data2 / globalScalingFactor;
+                    Clay_SetLayoutDimensions((Clay_Dimensions){windowWidth, windowHeight});
                 }
                 break;
-
             case SDL_MOUSEWHEEL:
                 {
                     Clay_Vector2 scrollDelta = {
-                        event.wheel.x * 30.0f, // Horizontal scroll 
-                        event.wheel.y * 30.0f  // Vertical scroll
+                        event.wheel.x * 30.0f / globalScalingFactor, // Scale scroll delta
+                        event.wheel.y * 30.0f / globalScalingFactor
                     };
+        
                     Clay_UpdateScrollContainers(true, scrollDelta, delta_time);
                 }
                 break;
             
             case SDL_MOUSEMOTION:
+
                 Clay_SetPointerState(
-                    (Clay_Vector2){(float)event.motion.x, (float)event.motion.y},
+                    (Clay_Vector2){
+                        (float)event.motion.x / globalScalingFactor, 
+                        (float)event.motion.y / globalScalingFactor
+                    },
                     (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_LMASK) != 0
                 );
-
+                
                 if (isScrollThumbDragging) {
                     Clay_ScrollContainerData scrollData = Clay_GetScrollContainerData(
                         Clay_GetElementId(CLAY_STRING("CalendarScrollContainer"))
@@ -291,9 +301,13 @@ void HandleSDLEvents(bool* running) {
                 break;
             case SDL_MOUSEBUTTONDOWN:
                 Clay_SetPointerState(
-                    (Clay_Vector2){(float)event.button.x, (float)event.button.y},
+                    (Clay_Vector2){
+                        (float)event.button.x / globalScalingFactor, 
+                        (float)event.button.y / globalScalingFactor
+                    },
                     event.type == SDL_MOUSEBUTTONDOWN
                 );
+  
                 
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     Clay_ElementId scrollContainerId = Clay_GetElementId(CLAY_STRING("CalendarScrollContainer"));
@@ -372,56 +386,32 @@ void HandleSDLEvents(bool* running) {
 
 #endif
 
-// Common initialization and loop logic
 
-void RunGameLoop(SDL_Window* window, SDL_Renderer* renderer) {    SDL_Log("RunGameLoop started\n");
-    SDL_Log("Initializing SDL2 renderer...\n");
-    Clay_SDL2_InitRenderer(renderer);
-    SDL_Log("SDL2 renderer initialized\n");
+void RunGameLoop(SDL_Window* window, SDL_Renderer* renderer) {    
+    SDL_Log("RunGameLoop started\n");
 
     if (TTF_Init() == -1) {
         SDL_Log("SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError());
-        // Handle error appropriately
         return;
     }
+    SDL_Log("TTF initialized\n");
 
-    // Load fonts with new helper function
-    if (!load_font(FONT_ID_BODY_16, "Quicksand-Semibold.ttf", 16)) {
-        SDL_Log("Failed to load BODY_16 font\n");
+    SDL_Log("Initializing SDL2 renderer...\n");
+    Clay_SDL2_InitRenderer(renderer);
+    Clay_SDL2_SetRenderScale(globalScalingFactor);  
+    SDL_Log("SDL2 renderer initialized\n");
+
+    
+    if (!load_font(FONT_ID_BODY_16, "Quicksand-Semibold.ttf", 16) ||
+        !load_font(FONT_ID_TITLE_56, "Calistoga-Regular.ttf", 56) ||
+        !load_font(FONT_ID_BODY_24, "Quicksand-Semibold.ttf", 24) ||
+        !load_font(FONT_ID_BODY_36, "Quicksand-Semibold.ttf", 36) ||
+        !load_font(FONT_ID_TITLE_36, "Calistoga-Regular.ttf", 36) ||
+        !load_font(FONT_ID_MONOSPACE_24, "Calistoga-Regular.ttf", 24)) {
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to load one or more fonts");
+        TTF_Quit();
         return;
     }
-    SDL_Log("Loaded BODY_16 font\n");
-
-    if (!load_font(FONT_ID_TITLE_56, "Calistoga-Regular.ttf", 56)) {
-        SDL_Log("Failed to load TITLE_56 font\n");
-        return;
-    }
-    SDL_Log("Loaded TITLE_56 font\n");
-
-    if (!load_font(FONT_ID_BODY_24, "Quicksand-Semibold.ttf", 24)) {
-        SDL_Log("Failed to load BODY_24 font\n");
-        return;
-    }
-    SDL_Log("Loaded BODY_24 font\n");
-
-    if (!load_font(FONT_ID_BODY_36, "Quicksand-Semibold.ttf", 36)) {
-        SDL_Log("Failed to load BODY_36 font\n");
-        return;
-    }
-    SDL_Log("Loaded BODY_36 font\n");
-
-    if (!load_font(FONT_ID_TITLE_36, "Calistoga-Regular.ttf", 36)) {
-        SDL_Log("Failed to load TITLE_36 font\n");
-        return;
-    }
-    SDL_Log("Loaded TITLE_36 font\n");
-
-    if (!load_font(FONT_ID_MONOSPACE_24, "Calistoga-Regular.ttf", 24)) {
-        SDL_Log("Failed to load MONOSPACE_24 font\n");
-        return;
-    }
-    SDL_Log("Loaded MONOSPACE_24 font\n");
-
 
     uint32_t minSize = Clay_MinMemorySize();
     uint32_t recommendedSize = minSize + (minSize / 2);
@@ -429,6 +419,7 @@ void RunGameLoop(SDL_Window* window, SDL_Renderer* renderer) {    SDL_Log("RunGa
     void* arenaMemory = malloc(recommendedSize);
     if (!arenaMemory) {
         SDL_Log("Failed to allocate %u bytes for Clay arena\n", recommendedSize);
+        TTF_Quit();
         return;
     }
     SDL_Log("Successfully allocated %u bytes for Clay arena\n", recommendedSize);
@@ -475,100 +466,67 @@ void RunGameLoop(SDL_Window* window, SDL_Renderer* renderer) {    SDL_Log("RunGa
 int main() {
    return 0;
 }
+
 #elif defined(CLAY_MOBILE)
 int SDL_main(int argc, char* argv[]) {
-    SDL_Log("SDL_main: ENTERED - Extremely Verbose Mode");
-    SDL_Log("SDL_main: argc = %d", argc);
+    SDL_Init(SDL_INIT_EVERYTHING);
 
-    // Log all arguments
-    for (int i = 0; i < argc; i++) {
-        SDL_Log("SDL_main: argv[%d] = %s", i, argv ? argv[i] : "NULL");
+    // Get display info
+    SDL_DisplayMode displayMode;
+    SDL_GetCurrentDisplayMode(0, &displayMode);
+
+    // Get screen DPI
+    float ddpi, hdpi, vdpi;
+    if (SDL_GetDisplayDPI(0, &ddpi, &hdpi, &vdpi) != 0) {
+        // Default to standard DPI if we can't get it
+        ddpi = 160.0f;
+        hdpi = 160.0f;
+        vdpi = 160.0f;
     }
 
-    // Early Android state initialization logging
-    SDL_Log("SDL_main: Initializing Android state");
-    
-    // Detailed SDL initialization checks
-    SDL_Log("SDL_main: Checking SDL initialization");
-    Uint32 sdl_init_flags = SDL_WasInit(SDL_INIT_EVERYTHING);
-    SDL_Log("SDL_main: Currently initialized SDL subsystems: 0x%x", sdl_init_flags);
+    // Calculate density scale and update global scaling
+    float densityScale = ddpi / 160.0f;  // 160 DPI is baseline for Android
+    globalScalingFactor = densityScale;
 
-    // Force initialize all SDL subsystems if not already done
-    if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
-            "SDL_main: CRITICAL - Failed to initialize SDL: %s", 
-            SDL_GetError());
-        return -1;
-    }
+    // Calculate window dimensions
+    windowWidth = displayMode.w / densityScale;
+    windowHeight = displayMode.h / densityScale;
 
-    // Extensive video system information
-    SDL_Log("SDL_main: Video system information:");
-    SDL_Log("Number of video drivers: %d", SDL_GetNumVideoDrivers());
-    for (int i = 0; i < SDL_GetNumVideoDrivers(); i++) {
-        SDL_Log("Video driver %d: %s", i, SDL_GetVideoDriver(i));
-    }
+    SDL_Log("Mobile display setup: dimensions=%dx%d, dpi=%f, scale=%f", 
+            displayMode.w, displayMode.h, ddpi, globalScalingFactor);
 
-    // Try multiple window retrieval strategies
-    SDL_Window* window = NULL;
-    int wait_attempts = 0;
-    while (!window && wait_attempts < 50) {
-        // First, check if we can create a window directly
-        window = SDL_CreateWindow(
-            "MyQuest", 
-            SDL_WINDOWPOS_UNDEFINED, 
-            SDL_WINDOWPOS_UNDEFINED, 
-            1080, 2220,  // Use device dimensions from logs
-            SDL_WINDOW_SHOWN | SDL_WINDOW_BORDERLESS
-        );
-
-        if (!window) {
-            SDL_Log("SDL_main: Window creation attempt %d failed: %s", 
-                    wait_attempts, SDL_GetError());
-            SDL_Delay(100);
-            wait_attempts++;
-        }
-    }
+    SDL_Window* window = SDL_CreateWindow(
+        "myQuest", 
+        SDL_WINDOWPOS_UNDEFINED, 
+        SDL_WINDOWPOS_UNDEFINED, 
+        displayMode.w,
+        displayMode.h,
+        SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN
+    );
 
     if (!window) {
-        SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
-            "SDL_main: CRITICAL - Failed to create window after %d attempts", 
-            wait_attempts);
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Window creation failed: %s", SDL_GetError());
         return -1;
     }
 
-    SDL_Log("SDL_main: Window created successfully");
-
-    // Log window details
-    int width, height;
-    SDL_GetWindowSize(window, &width, &height);
-    SDL_Log("SDL_main: Window size - width: %d, height: %d", width, height);
-
-    // Create renderer
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 
-        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-    
+        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
+    );
+        
     if (!renderer) {
-        SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
-            "SDL_main: Failed to create renderer: %s", 
-            SDL_GetError());
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Renderer creation failed: %s", SDL_GetError());
         SDL_DestroyWindow(window);
         return -1;
     }
 
-    SDL_Log("SDL_main: Renderer created successfully");
-
-    // Run game loop
     RunGameLoop(window, renderer);
 
-    // Cleanup
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
 
-    SDL_Log("SDL_main: COMPLETED SUCCESSFULLY");
     return 0;
 }
-
 
 #else
 int main() {

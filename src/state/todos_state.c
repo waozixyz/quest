@@ -1,4 +1,5 @@
 #include "state/todos_state.h"
+#include "storage_utils.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -8,8 +9,7 @@ EM_JS(void, JS_LoadTodos, (TodoCollection* collection), {});
 
 #else
 #include "../../vendor/cJSON/cJSON.h"
-
-#define TODOS_FILE "todos.json"
+#include <time.h>
 
 static cJSON* TodoToJSON(const Todo* todo) {
     cJSON* todoObj = cJSON_CreateObject();
@@ -23,6 +23,11 @@ static cJSON* TodoToJSON(const Todo* todo) {
 }
 
 static void SaveTodosJSON(const TodoCollection* collection) {
+    if (!collection) return;
+
+    StorageConfig storage_config;
+    determine_storage_directory(&storage_config);
+
     cJSON* root = cJSON_CreateObject();
     cJSON_AddStringToObject(root, "active_day", collection->active_day);
     
@@ -34,11 +39,7 @@ static void SaveTodosJSON(const TodoCollection* collection) {
     cJSON_AddItemToObject(root, "todos", todos);
 
     char* jsonStr = cJSON_Print(root);
-    FILE* file = fopen(TODOS_FILE, "w");
-    if (file) {
-        fputs(jsonStr, file);
-        fclose(file);
-    }
+    write_file_contents(storage_config.todos_path, jsonStr, strlen(jsonStr));
 
     free(jsonStr);
     cJSON_Delete(root);
@@ -53,28 +54,32 @@ static void LoadTodoFromJSON(Todo* todo, cJSON* todoObj) {
     strncpy(todo->day, cJSON_GetObjectItem(todoObj, "day")->valuestring, 9);
 }
 
+static void CreateDefaultTodosJSON(TodoCollection* collection) {
+    memset(collection, 0, sizeof(TodoCollection));
+    strcpy(collection->active_day, "Monday");
+    SaveTodosJSON(collection);
+}
+
 static void LoadTodosJSON(TodoCollection* collection) {
-    FILE* file = fopen(TODOS_FILE, "r");
-    if (!file) {
-        strcpy(collection->active_day, "Monday");
-        collection->todos_count = 0;
+    StorageConfig storage_config;
+    determine_storage_directory(&storage_config);
+
+    long file_size;
+    char* jsonStr = read_file_contents(storage_config.todos_path, &file_size);
+    if (!jsonStr) {
+        CreateDefaultTodosJSON(collection);
         return;
     }
-
-    fseek(file, 0, SEEK_END);
-    long fsize = ftell(file);
-    fseek(file, 0, SEEK_SET);
-
-    char* jsonStr = malloc(fsize + 1);
-    fread(jsonStr, 1, fsize, file);
-    jsonStr[fsize] = 0;
-    fclose(file);
 
     cJSON* root = cJSON_Parse(jsonStr);
     free(jsonStr);
 
-    if (!root) return;
+    if (!root) {
+        CreateDefaultTodosJSON(collection);
+        return;
+    }
 
+    memset(collection, 0, sizeof(TodoCollection));
     strncpy(collection->active_day, 
             cJSON_GetObjectItem(root, "active_day")->valuestring, 9);
 
@@ -89,7 +94,6 @@ static void LoadTodosJSON(TodoCollection* collection) {
 
     cJSON_Delete(root);
 }
-
 #endif
 
 void LoadTodos(TodoCollection* collection) {

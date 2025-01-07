@@ -1,14 +1,11 @@
 #include "components/home_card.h"
 
-
 const int CONER_RADIUS = 10;
 
 void RenderHomeCard(uint32_t index) {
     float screenWidth = (float)windowWidth;
 
-    float cardWidthPercent = screenWidth < 768 ? 0.5f : 0.25f;
-
-
+    float cardWidthPercent = screenWidth < screenBreakpoint ? 0.5f : 0.25f;
 
     Clay_TextElementConfig *card_title_config = CLAY_TEXT_CONFIG({ 
         .fontSize = 28,
@@ -35,7 +32,6 @@ void RenderHomeCard(uint32_t index) {
             .color = Clay_Hovered() ? COLOR_CARD_HOVER : COLOR_CARD,
             .cornerRadius = CLAY_CORNER_RADIUS(CONER_RADIUS),
             .cursorPointer = true
-
         }),
         CLAY_BORDER({
             .top = Clay_Hovered() ? (Clay_Border){ .width = 2, .color = COLOR_PRIMARY } : (Clay_Border){ .width = 2, .color = COLOR_BACKGROUND },
@@ -46,10 +42,9 @@ void RenderHomeCard(uint32_t index) {
                 .bottomRight = 0 
             }
         }),
-        
         Clay_OnHover(HandleNavInteraction, index + 1)
     ) {
-        
+ 
         switch(index) {
             case 0: 
                 CLAY_TEXT(CLAY_STRING("Habits"), card_title_config);

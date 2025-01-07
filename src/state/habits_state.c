@@ -1,19 +1,16 @@
-// habits_state.c
 #include "state/habits_state.h"
+#include "storage_utils.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 
-
 EM_JS(void, JS_SaveHabits, (const HabitCollection* collection), {});
-
 EM_JS(void, JS_LoadHabits, (HabitCollection* collection), {});
 
 #else
 #include "../../vendor/cJSON/cJSON.h"
 #include <stdlib.h>
-
-#define HABITS_FILE "habits.json"
+#include <time.h>
 
 static cJSON* HabitToJSON(const Habit* habit) {
     cJSON* habitObj = cJSON_CreateObject();
@@ -41,6 +38,11 @@ static cJSON* HabitToJSON(const Habit* habit) {
 }
 
 static void SaveHabitsJSON(const HabitCollection* collection) {
+    if (!collection) return;
+
+    StorageConfig storage_config;
+    determine_storage_directory(&storage_config);
+
     cJSON* root = cJSON_CreateObject();
     cJSON_AddNumberToObject(root, "active_habit_id", collection->active_habit_id);
     cJSON_AddNumberToObject(root, "calendar_start_date", (double)collection->calendar_start_date);
@@ -53,11 +55,7 @@ static void SaveHabitsJSON(const HabitCollection* collection) {
     cJSON_AddItemToObject(root, "habits", habits);
 
     char* jsonStr = cJSON_Print(root);
-    FILE* file = fopen(HABITS_FILE, "w");
-    if (file) {
-        fputs(jsonStr, file);
-        fclose(file);
-    }
+    write_file_contents(storage_config.habits_path, jsonStr, strlen(jsonStr));
 
     free(jsonStr);
     cJSON_Delete(root);
@@ -86,17 +84,15 @@ static void LoadHabitFromJSON(Habit* habit, cJSON* habitObj) {
     }
 }
 
-static void CreateDefaultHabitsJSON() {
-    HabitCollection defaultCollection = {0};
-    Habit* default_habit = &defaultCollection.habits[0];
+static void CreateDefaultHabitsJSON(HabitCollection* defaultCollection) {
+    Habit* default_habit = &defaultCollection->habits[0];
     strncpy(default_habit->name, "Meditation", MAX_HABIT_NAME - 1);
     default_habit->id = 0;
     default_habit->color = COLOR_PRIMARY;
     default_habit->days_count = 0;
-    defaultCollection.habits_count = 1;
-    defaultCollection.active_habit_id = 0;
+    defaultCollection->habits_count = 1;
+    defaultCollection->active_habit_id = 0;
 
-    
     // Set calendar start date to the most recent past Monday
     time_t now = time(NULL);
     struct tm *local_time = localtime(&now);
@@ -106,37 +102,31 @@ static void CreateDefaultHabitsJSON() {
     start_date.tm_sec = 0;
     int days_to_monday = start_date.tm_wday == 0 ? 6 : start_date.tm_wday - 1;
     start_date.tm_mday -= days_to_monday;
-    defaultCollection.calendar_start_date = mktime(&start_date);
+    defaultCollection->calendar_start_date = mktime(&start_date);
 
-
-    SaveHabitsJSON(&defaultCollection);
+    SaveHabitsJSON(defaultCollection);
 }
+
 static void LoadHabitsJSON(HabitCollection* collection) {
-    FILE* file = fopen(HABITS_FILE, "r");
-    if (!file) {
-        CreateDefaultHabitsJSON();
-        file = fopen(HABITS_FILE, "r");
-        if (!file) return;
+    StorageConfig storage_config;
+    determine_storage_directory(&storage_config);
+
+    long file_size;
+    char* jsonStr = read_file_contents(storage_config.habits_path, &file_size);
+    if (!jsonStr) {
+        HabitCollection defaultCollection = {0};
+        CreateDefaultHabitsJSON(&defaultCollection);
+        *collection = defaultCollection;
+        return;
     }
-
-    // Get file size and read entire file 
-    fseek(file, 0, SEEK_END);
-    long fsize = ftell(file);
-    fseek(file, 0, SEEK_SET);
-
-    char* jsonStr = malloc(fsize + 1);
-    fread(jsonStr, 1, fsize, file);
-    jsonStr[fsize] = 0;
-    fclose(file);
 
     cJSON* root = cJSON_Parse(jsonStr);
     free(jsonStr);
 
     if (!root) {
-        const char* error_ptr = cJSON_GetErrorPtr();
-        if (error_ptr) {
-            fprintf(stderr, "Error parsing JSON: %s\n", error_ptr);
-        }
+        HabitCollection defaultCollection = {0};
+        CreateDefaultHabitsJSON(&defaultCollection);
+        *collection = defaultCollection;
         return;
     }
 
@@ -166,16 +156,6 @@ static void LoadHabitsJSON(HabitCollection* collection) {
         int days_to_monday = start_tm.tm_wday == 0 ? 6 : start_tm.tm_wday - 1;
         start_tm.tm_mday -= days_to_monday;
         collection->calendar_start_date = mktime(&start_tm);
-        
-        // Add the start date to the existing JSON object and save
-        cJSON_AddNumberToObject(root, "calendar_start_date", (double)collection->calendar_start_date);
-        char* updatedJsonStr = cJSON_Print(root);
-        FILE* outFile = fopen(HABITS_FILE, "w");
-        if (outFile) {
-            fputs(updatedJsonStr, outFile);
-            fclose(outFile);
-        }
-        free(updatedJsonStr);
     }
 
     cJSON_Delete(root);
@@ -195,12 +175,10 @@ void SaveHabits(HabitCollection* collection) {
 void LoadHabits(HabitCollection* collection) {
     if (!collection) return;
 
-
     // Save the text input pointer and edit state before loading
     TextInput* saved_input = collection->habit_name_input;
     bool saved_editing_state = collection->is_editing_new_habit;
     uint32_t saved_active_id = collection->active_habit_id;
-
 
     #ifdef __EMSCRIPTEN__
         JS_LoadHabits(collection);
@@ -208,12 +186,10 @@ void LoadHabits(HabitCollection* collection) {
         LoadHabitsJSON(collection);
     #endif
 
-
     // Restore the saved values
     collection->habit_name_input = saved_input;
     collection->is_editing_new_habit = saved_editing_state;
     collection->active_habit_id = saved_active_id;
-
 
     // Initialize default habit if none exists
     if (collection->habits_count == 0) {
@@ -226,6 +202,7 @@ void LoadHabits(HabitCollection* collection) {
         collection->active_habit_id = 0;
     }
 }
+
 
 bool ToggleHabitDay(HabitCollection* collection, uint32_t day_index) {
     if (!collection) return false;

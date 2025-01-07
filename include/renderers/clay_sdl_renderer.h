@@ -19,6 +19,7 @@ void Clay_SDL2_InitRenderer(SDL_Renderer *renderer);
 void Clay_SDL2_CleanupRenderer(void);
 
 // Rendering
+void Clay_SDL2_SetRenderScale(float scale);
 void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderCommands);
 
 #endif // CLAY_SDL_RENDERER_H

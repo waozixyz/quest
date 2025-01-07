@@ -201,3 +201,29 @@ SDL_Surface* load_image(const char* filename) {
     return IMG_Load(get_image_path(filename));
 #endif
 }
+
+float ScaleUI(float value) {
+    return value * globalScalingFactor;
+}
+
+int ScaleUIToInt(float value) {
+    return (int)(value * globalScalingFactor);
+}
+
+SDL_FRect ScaleRect(SDL_Rect rect) {
+    return (SDL_FRect){
+        rect.x * globalScalingFactor,
+        rect.y * globalScalingFactor,
+        rect.w * globalScalingFactor,
+        rect.h * globalScalingFactor
+    };
+}
+
+SDL_FRect ScaleRectF(SDL_FRect rect) {
+    return (SDL_FRect){
+        rect.x * globalScalingFactor,
+        rect.y * globalScalingFactor,
+        rect.w * globalScalingFactor,
+        rect.h * globalScalingFactor
+    };
+}

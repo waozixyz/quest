@@ -9,6 +9,7 @@
 
 #include <SDL.h>
 #include <SDL_ttf.h>
+#include "state.h"
 #endif
 
 #if defined(CLAY_MOBILE)
@@ -16,6 +17,7 @@
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
 #include <jni.h>
+
 
 
 typedef struct {
@@ -49,6 +51,13 @@ bool load_font(uint32_t font_id, const char* filename, int size);
 SDL_Surface* load_image(const char* filename);
 bool Clay_SDL2_LoadFontRW(uint32_t fontId, SDL_RWops* rw, int fontSize);
 void cleanup_fonts();
+
+
+// utils.h
+float ScaleUI(float value);
+int ScaleUIToInt(float value);
+SDL_FRect ScaleRect(SDL_Rect rect);
+SDL_FRect ScaleRectF(SDL_FRect rect);
 
 
 #endif // UTILS_H

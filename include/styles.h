@@ -41,4 +41,6 @@ extern const Clay_Color COLOR_TEXT;
 extern const Clay_Color COLOR_TEXT_SECONDARY;
 extern const Clay_Color COLOR_CURSOR;
 
+extern const int DEFAULT_PADDING;
+
 #endif
