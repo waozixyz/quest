@@ -2,19 +2,13 @@
 #include "renderers/clay_sdl_renderer.h"
 #include <unistd.h>
 #include "styles.h"
+#include "utils.h"
 
 // Global cursor variables
 static SDL_Cursor* defaultCursor = NULL;
 static SDL_Cursor* pointerCursor = NULL;
 static SDL_Cursor* currentCursor = NULL;
 
-
-typedef struct {
-    uint32_t fontId;
-    TTF_Font *font;
-} SDL2_Font;
-
-static SDL2_Font SDL2_fonts[32];
 
 
 void Clay_SDL2_InitCursors() {
@@ -97,26 +91,6 @@ void Clay_SDL2_InitRenderer(SDL_Renderer *renderer) {
     Clay_SetMeasureTextFunction(SDL2_MeasureText);
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
     Clay_SDL2_InitCursors();
-}
-
-bool Clay_SDL2_LoadFont(uint32_t fontId, const char* fontPath, int fontSize) {
-    if (!fontPath || access(fontPath, F_OK) != 0) {
-        fprintf(stderr, "Error: Font file does not exist at %s\n", fontPath);
-        return false;
-    }
-
-    if (fontId >= 32) {
-        printf("ERROR: fontId %d is too large\n", fontId);
-        return false;
-    }
-    TTF_Font* font = TTF_OpenFont(fontPath, fontSize);
-    if (!font) {
-        printf("ERROR: Failed to load font: %s\n", TTF_GetError());
-        return false;
-    }
-    SDL2_fonts[fontId].font = font;
-    SDL2_fonts[fontId].fontId = fontId;
-    return true;
 }
 
 void Clay_SDL2_CleanupRenderer(void) {
@@ -240,30 +214,22 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
             }
             case CLAY_RENDER_COMMAND_TYPE_TEXT: {
                 Clay_TextElementConfig *config = renderCommand->config.textElementConfig;
-                if (!config) {
-                    fprintf(stderr, "Error: Text config is NULL\n");
-                    continue;
-                }
                 Clay_String text = renderCommand->text;
-                
-                // Add more rigorous text validation
-                if (!text.chars || text.length == 0) {
-                    fprintf(stderr, "Error: Text is empty or NULL\n");
-                    continue;
-                }
 
-                char *cloned = (char *)calloc(text.length + 1, 1);
+                char *cloned = malloc(text.length + 1);  // Use malloc instead of calloc
                 if (!cloned) {
-                    fprintf(stderr, "Error: Memory allocation failed for text\n");
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
+                        "Memory allocation failed for text rendering");
                     continue;
                 }
+                memset(cloned, 0, text.length + 1); 
                 memcpy(cloned, text.chars, text.length);
 
                 TTF_Font* font = SDL2_fonts[config->fontId].font;
                 if (!font) {
-                    fprintf(stderr, "Error: Font is NULL for fontId %u\n", config->fontId);
-                    free(cloned);
-                    continue;
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
+                        "ERROR: Font is NULL for fontId %u", config->fontId);
+                    break;
                 }
 
                 SDL_Surface *surface = TTF_RenderUTF8_Blended(font, cloned, (SDL_Color) {

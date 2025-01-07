@@ -8,7 +8,8 @@
 #include <android/asset_manager_jni.h>
 #endif
 
-TTF_Font* loadedFonts[32] = {0};
+// Single global font array, removing the duplicate loadedFonts
+SDL2_Font SDL2_fonts[32] = {0};
 
 #if defined(CLAY_MOBILE)
 // Define the global Android state
@@ -22,7 +23,12 @@ AndroidState g_android_state = {
 static AAssetManager* get_asset_manager() {
     pthread_mutex_lock(&g_android_state.mutex);
     void* mgr = g_android_state.assetManager;
+    bool initialized = g_android_state.initialized;
     pthread_mutex_unlock(&g_android_state.mutex);
+    
+    SDL_Log("get_asset_manager: pointer %p, initialized: %s", 
+            mgr, initialized ? "YES" : "NO");
+    
     return (AAssetManager*)mgr;
 }
 #endif
@@ -58,21 +64,6 @@ const char* get_image_path(const char* filename) {
     return path;
 }
 
-bool Clay_SDL2_LoadFontRW(uint32_t fontId, SDL_RWops* rw, int fontSize) {
-    TTF_Font* font = TTF_OpenFontRW(rw, 1, fontSize);  // 1 means SDL_RWops will be auto-closed
-    if (!font) {
-        SDL_Log("Failed to load font: %s", TTF_GetError());
-        return false;
-    }
-
-    // Free existing font if any
-    if (loadedFonts[fontId]) {
-        TTF_CloseFont(loadedFonts[fontId]);
-    }
-
-    loadedFonts[fontId] = font;
-    return true;
-}
 bool load_font(uint32_t font_id, const char* filename, int size) {
 #if defined(CLAY_MOBILE)
     // Check if SDL_ttf is initialized
@@ -121,15 +112,46 @@ bool load_font(uint32_t font_id, const char* filename, int size) {
         return false;
     }
 
-    bool success = Clay_SDL2_LoadFontRW(font_id, rw, size);
+    TTF_Font* font = TTF_OpenFontRW(rw, 1, size);  // 1 means SDL_RWops will be auto-closed
     free(buffer);
-    return success;
+
+    if (!font) {
+        SDL_Log("Failed to load font: %s\n", TTF_GetError());
+        return false;
+    }
+
+    // Store the font in SDL2_fonts array
+    SDL2_fonts[font_id].fontId = font_id;
+    SDL2_fonts[font_id].font = font;
+    SDL_Log("Successfully loaded font with ID %u\n", font_id);
+    return true;
+
 #else
     // Non-mobile platform font loading
-    return Clay_SDL2_LoadFont(font_id, get_font_path(filename), size);
+    TTF_Font* font = TTF_OpenFont(get_font_path(filename), size);
+    if (!font) {
+        SDL_Log("Failed to load font: %s\n", TTF_GetError());
+        return false;
+    }
+
+    // Store the font in SDL2_fonts array
+    SDL2_fonts[font_id].fontId = font_id;
+    SDL2_fonts[font_id].font = font;
+    SDL_Log("Successfully loaded font with ID %u\n", font_id);
+    return true;
 #endif
 }
 
+// Add a cleanup function for fonts
+void cleanup_fonts() {
+    for (int i = 0; i < 32; i++) {
+        if (SDL2_fonts[i].font) {
+            TTF_CloseFont(SDL2_fonts[i].font);
+            SDL2_fonts[i].font = NULL;
+            SDL2_fonts[i].fontId = 0;
+        }
+    }
+}
 
 SDL_Surface* load_image(const char* filename) {
 #if defined(CLAY_MOBILE)

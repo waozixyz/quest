@@ -18,9 +18,6 @@ SDL_Cursor* Clay_SDL2_GetCurrentCursor();
 void Clay_SDL2_InitRenderer(SDL_Renderer *renderer);
 void Clay_SDL2_CleanupRenderer(void);
 
-// Font loading
-bool Clay_SDL2_LoadFont(uint32_t fontId, const char* fontPath, int fontSize);
-
 // Rendering
 void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderCommands);
 

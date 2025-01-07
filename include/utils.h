@@ -33,7 +33,14 @@ Java_xyz_waozi_myquest_MainActivity_nativeSetAssetManager(
     JNIEnv* env, jclass clazz, jobject asset_manager);
 #endif
 
-extern TTF_Font* loadedFonts[];
+
+typedef struct {
+    uint32_t fontId;
+    TTF_Font *font;
+} SDL2_Font;
+
+
+extern SDL2_Font SDL2_fonts[32];
 
 const char* get_asset_path(const char* filename);
 const char* get_font_path(const char* filename);
@@ -41,5 +48,7 @@ const char* get_image_path(const char* filename);
 bool load_font(uint32_t font_id, const char* filename, int size);
 SDL_Surface* load_image(const char* filename);
 bool Clay_SDL2_LoadFontRW(uint32_t fontId, SDL_RWops* rw, int fontSize);
+void cleanup_fonts();
+
 
 #endif // UTILS_H

@@ -1,15 +1,25 @@
 #!/bin/sh
 set -e
 
-echo "Building Android app..."
-make build-android
-
-echo "Installing APKs..."
-cd android/app/build/outputs/apk/debug
-
 # Get device ABI
 DEVICE_ABI=$(adb shell getprop ro.product.cpu.abi)
 echo "Device ABI: $DEVICE_ABI"
+
+# Validate ABI
+case $DEVICE_ABI in
+    "arm64-v8a"|"armeabi-v7a"|"x86_64"|"x86")
+        echo "Building Android app for $DEVICE_ABI..."
+        # Modify make command to build only for current ABI
+        make build-android ANDROID_ABIS=$DEVICE_ABI
+        ;;
+    *)
+        echo "Unsupported ABI: $DEVICE_ABI"
+        exit 1
+        ;;
+esac
+
+echo "Installing APKs..."
+cd android/app/build/outputs/apk/debug
 
 # Choose appropriate APK based on device ABI
 case $DEVICE_ABI in
@@ -25,14 +35,11 @@ case $DEVICE_ABI in
     "x86")
         APK="app-x86-debug.apk"
         ;;
-    *)
-        echo "Unknown ABI, using universal APK"
-        APK="app-universal-debug.apk"
-        ;;
 esac
 
 echo "Installing $APK..."
-adb install -r $APK
+adb install -r "$APK"
+
 cd ../../../../../
 
 echo "Starting app..."
