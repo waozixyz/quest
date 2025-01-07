@@ -17,10 +17,16 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
 #include "renderers/clay_sdl_renderer.h"
-#else 
-#include <SDL_Log.h>
+
+static bool isScrollDragging = false;
+static int scrollDragStartY = 0;
+static int scrollDragStartX = 0;
+static Clay_Vector2 initialScrollPosition = {0, 0};
+static bool isScrollThumbDragging = false;
 
 #endif
+
+
 double windowWidth = 1024, windowHeight = 768;
 uint32_t ACTIVE_PAGE = 0;
 uint32_t ACTIVE_RENDERER_INDEX = 0;
@@ -93,6 +99,8 @@ void InitializePages(SDL_Renderer* renderer) {
     pages_initialized = true;
     SDL_Log("Pages initialized\n");
 }
+
+
 
 #endif
 void RenderCurrentPage() {
@@ -215,21 +223,127 @@ void HandleSDLEvents(bool* running) {
                 }
                 break;
 
+            case SDL_MOUSEWHEEL:
+                {
+                    Clay_Vector2 scrollDelta = {
+                        event.wheel.x * 30.0f, // Horizontal scroll 
+                        event.wheel.y * 30.0f  // Vertical scroll
+                    };
+                    Clay_UpdateScrollContainers(true, scrollDelta, delta_time);
+                }
+                break;
+            
             case SDL_MOUSEMOTION:
                 Clay_SetPointerState(
                     (Clay_Vector2){(float)event.motion.x, (float)event.motion.y},
                     (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_LMASK) != 0
                 );
-                break;
 
+                if (isScrollThumbDragging) {
+                    Clay_ScrollContainerData scrollData = Clay_GetScrollContainerData(
+                        Clay_GetElementId(CLAY_STRING("CalendarScrollContainer"))
+                    );
+                    
+                    if (scrollData.found) {
+                        // Calculate scroll position based on mouse movement
+                        float scrollableHeight = scrollData.contentDimensions.height - scrollData.scrollContainerDimensions.height;
+                        float dragDelta = event.motion.y - scrollDragStartY;
+                        float scrollRatio = dragDelta / scrollData.scrollContainerDimensions.height;
+                        float newScrollY = initialScrollPosition.y - (scrollRatio * scrollableHeight);
+                        
+                        // Clamp scroll position
+                        newScrollY = CLAY__MIN(0, CLAY__MAX(
+                            newScrollY, 
+                            -scrollableHeight
+                        ));
+                        
+                        *scrollData.scrollPosition = (Clay_Vector2){
+                            scrollData.scrollPosition->x,
+                            newScrollY
+                        };
+                    }
+                } else if (isScrollDragging) {
+                    Clay_ScrollContainerData scrollData = Clay_GetScrollContainerData(
+                        Clay_GetElementId(CLAY_STRING("CalendarScrollContainer"))
+                    );
+                    
+                    if (scrollData.found) {
+                        // Direct 1:1 movement for more natural feel
+                        float deltaY = scrollDragStartY - event.motion.y;
+                        float newScrollY = initialScrollPosition.y - deltaY;
+                        
+                        // Clamp scroll position
+                        newScrollY = CLAY__MIN(0, CLAY__MAX(
+                            newScrollY, 
+                            -(scrollData.contentDimensions.height - scrollData.scrollContainerDimensions.height)
+                        ));
+                        
+                        *scrollData.scrollPosition = (Clay_Vector2){
+                            scrollData.scrollPosition->x,
+                            newScrollY
+                        };
+
+                        // Update drag start position for smooth continuous scrolling
+                        scrollDragStartY = event.motion.y;
+                        initialScrollPosition = *scrollData.scrollPosition;
+                    }
+                }
+                break;
             case SDL_MOUSEBUTTONDOWN:
-            case SDL_MOUSEBUTTONUP:
                 Clay_SetPointerState(
                     (Clay_Vector2){(float)event.button.x, (float)event.button.y},
                     event.type == SDL_MOUSEBUTTONDOWN
                 );
+                
+                if (event.button.button == SDL_BUTTON_LEFT) {
+                    Clay_ElementId scrollContainerId = Clay_GetElementId(CLAY_STRING("CalendarScrollContainer"));
+                    Clay_ScrollContainerData scrollData = Clay_GetScrollContainerData(scrollContainerId);
+                    
+                    if (scrollData.found) {
+                        Clay_LayoutElementHashMapItem* hashMapItem = Clay__GetHashMapItem(scrollContainerId.id);
+                        if (hashMapItem) {
+                            Clay_BoundingBox containerBox = hashMapItem->boundingBox;
+                            
+                            // Calculate scroll thumb position and size
+                            float viewportSize = containerBox.height;
+                            float contentSize = scrollData.contentDimensions.height;
+                            float thumbSize = (viewportSize / contentSize) * viewportSize;
+                            float thumbPosition = (-scrollData.scrollPosition->y / contentSize) * viewportSize;
+                            
+                            // Check if click is on the scroll thumb
+                            if (event.button.x >= containerBox.x + containerBox.width - 10 && 
+                                event.button.x <= containerBox.x + containerBox.width &&
+                                event.button.y >= containerBox.y + thumbPosition &&
+                                event.button.y <= containerBox.y + thumbPosition + thumbSize) {
+                                isScrollThumbDragging = true;
+                                scrollDragStartY = event.button.y;
+                                initialScrollPosition = *scrollData.scrollPosition;
+                            }
+                            // Regular container drag check
+                            else if (event.button.x >= containerBox.x && 
+                                event.button.x <= containerBox.x + containerBox.width &&
+                                event.button.y >= containerBox.y && 
+                                event.button.y <= containerBox.y + containerBox.height) {
+                                isScrollDragging = true;
+                                scrollDragStartY = event.button.y;
+                                scrollDragStartX = event.button.x;
+                                initialScrollPosition = *scrollData.scrollPosition;
+                            }
+                        }
+                    }
+                }
                 break;
 
+            case SDL_MOUSEBUTTONUP:
+                if (isScrollThumbDragging || isScrollDragging) {
+                    isScrollThumbDragging = false;
+                    isScrollDragging = false;
+                }
+                Clay_SetPointerState(
+                    (Clay_Vector2){(float)event.button.x, (float)event.button.y},
+                    false
+                );
+                break;
             case SDL_KEYDOWN:
                 input_event.isTextInput = false;
                 if (event.key.keysym.sym == SDLK_BACKSPACE) {

@@ -237,16 +237,18 @@ void RenderHabitsPage() {
 
     time_t now;
     time(&now);
-    struct tm *local_time = localtime(&now);
 
-    struct tm *start_tm = localtime(&habits.calendar_start_date);
-    struct tm start_date = *start_tm;
-
-    struct tm today_midnight = *local_time;
+    struct tm today_midnight = {0};  // Initialize to zero
+    time_t now_time;
+    time(&now_time);
+    today_midnight = *localtime(&now_time);
     today_midnight.tm_hour = 0;
     today_midnight.tm_min = 0;
     today_midnight.tm_sec = 0;
     time_t today_timestamp = mktime(&today_midnight);
+
+    struct tm *start_tm = localtime(&habits.calendar_start_date);
+    struct tm start_date = *start_tm;
 
     const int WEEKS_TO_DISPLAY = 10;
     struct tm end_date = start_date;
@@ -332,6 +334,13 @@ void RenderHabitsPage() {
                     ) {
                         for (int col = 0; col < 7; col++) {
                             time_t current_timestamp = mktime(&current);
+
+
+                            char today_str[64];
+                            char current_str[64];
+                            strftime(today_str, sizeof(today_str), "%m/%d/%y", &today_midnight);
+                            strftime(current_str, sizeof(current_str), "%m/%d/%y", &current);
+
                             bool is_today = (current_timestamp == today_timestamp);
                             bool is_past = (current_timestamp < today_timestamp);
 

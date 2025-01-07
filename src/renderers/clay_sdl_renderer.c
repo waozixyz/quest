@@ -1,6 +1,7 @@
 // clay_sdl_renderer.c
 #include "renderers/clay_sdl_renderer.h"
 #include <unistd.h>
+#include "styles.h"
 
 // Global cursor variables
 static SDL_Cursor* defaultCursor = NULL;
@@ -132,7 +133,60 @@ void Clay_SDL2_CleanupRenderer(void) {
 SDL_Cursor* Clay_SDL2_GetCurrentCursor() {
     return currentCursor;
 }
+static void RenderScrollbar(
+    SDL_Renderer* renderer,
+    Clay_BoundingBox boundingBox,
+    bool isVertical,
+    int mouseX,
+    int mouseY,
+    Clay_ScrollElementConfig *config,
+    Clay_ElementId elementId  // Add this parameter
+) {
+    const float scrollbar_size = 10;
+    
+    // Get scroll data for proper thumb positioning
+    Clay_ScrollContainerData scrollData = Clay_GetScrollContainerData(elementId);
+    if (!scrollData.found) return;
 
+    // Calculate scroll ratio based on content vs viewport size
+    float viewportSize = isVertical ? boundingBox.height : boundingBox.width;
+    float contentSize = isVertical ? scrollData.contentDimensions.height : scrollData.contentDimensions.width;
+    float scrollPosition = isVertical ? scrollData.scrollPosition->y : scrollData.scrollPosition->x;
+    
+    // Calculate thumb size and position
+    float thumbSize = (viewportSize / contentSize) * viewportSize;
+    float thumbPosition = (-scrollPosition / contentSize) * viewportSize;
+
+    // Render background
+    SDL_FRect scrollbar_bg = {
+        .x = isVertical ? boundingBox.x + boundingBox.width - scrollbar_size : boundingBox.x,
+        .y = isVertical ? boundingBox.y : boundingBox.y + boundingBox.height - scrollbar_size,
+        .w = isVertical ? scrollbar_size : boundingBox.width,
+        .h = isVertical ? boundingBox.height : scrollbar_size
+    };
+    
+    SDL_SetRenderDrawColor(renderer, COLOR_SECONDARY.r, COLOR_SECONDARY.g, COLOR_SECONDARY.b, 200);
+    SDL_RenderFillRectF(renderer, &scrollbar_bg);
+
+    // Render thumb
+    SDL_FRect scroll_thumb = {
+        .x = isVertical ? scrollbar_bg.x : scrollbar_bg.x + thumbPosition,
+        .y = isVertical ? scrollbar_bg.y + thumbPosition : scrollbar_bg.y,
+        .w = isVertical ? scrollbar_size : thumbSize,
+        .h = isVertical ? thumbSize : scrollbar_size
+    };
+
+    bool isHovered = mouseX >= scroll_thumb.x && mouseX <= scroll_thumb.x + scroll_thumb.w &&
+                    mouseY >= scroll_thumb.y && mouseY <= scroll_thumb.y + scroll_thumb.h;
+    
+    SDL_SetRenderDrawColor(renderer,
+        isHovered ? COLOR_PRIMARY_HOVER.r : COLOR_PRIMARY.r,
+        isHovered ? COLOR_PRIMARY_HOVER.g : COLOR_PRIMARY.g,
+        isHovered ? COLOR_PRIMARY_HOVER.b : COLOR_PRIMARY.b,
+        255
+    );
+    SDL_RenderFillRectF(renderer, &scroll_thumb);
+}
 
 SDL_Rect currentClippingRectangle;
 
@@ -346,15 +400,32 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
                 }
                 break;
             }
-
             case CLAY_RENDER_COMMAND_TYPE_SCISSOR_START: {
                 currentClippingRectangle = (SDL_Rect) {
-                        .x = boundingBox.x,
-                        .y = boundingBox.y,
-                        .w = boundingBox.width,
-                        .h = boundingBox.height,
+                    .x = boundingBox.x,
+                    .y = boundingBox.y,
+                    .w = boundingBox.width,
+                    .h = boundingBox.height,
                 };
                 SDL_RenderSetClipRect(renderer, &currentClippingRectangle);
+
+                if (renderCommand->config.scrollElementConfig) {
+                    Clay_ScrollElementConfig *config = renderCommand->config.scrollElementConfig;
+                    // Create proper ElementId struct with empty string
+                    Clay_ElementId elementId = (Clay_ElementId){
+                        .id = renderCommand->id,
+                        .offset = 0,
+                        .baseId = renderCommand->id,
+                        .stringId = (Clay_String){ .length = 0, .chars = NULL }
+                    };
+                    
+                    if (config->vertical) {
+                        RenderScrollbar(renderer, boundingBox, true, mouseX, mouseY, config, elementId);
+                    }
+                    if (config->horizontal) {
+                        RenderScrollbar(renderer, boundingBox, false, mouseX, mouseY, config, elementId);
+                    }
+                }
                 break;
             }
             case CLAY_RENDER_COMMAND_TYPE_SCISSOR_END: {
