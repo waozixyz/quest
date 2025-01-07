@@ -39,6 +39,7 @@ typedef struct {
     uint32_t active_habit_id;
     bool is_editing_new_habit;
     TextInput* habit_name_input;
+    time_t calendar_start_date;  
 } HabitCollection;
 
 // Public API
@@ -49,5 +50,6 @@ void UpdateHabitColor(HabitCollection* collection, Clay_Color color);
 Habit* GetActiveHabit(HabitCollection* collection);
 void AddNewHabit(HabitCollection* collection);
 Habit* GetHabitById(HabitCollection* collection, uint32_t id);
+void UpdateCalendarStartDate(HabitCollection* collection, time_t new_start_date);
 
 #endif

@@ -27,14 +27,15 @@ static SDL_Texture* day_symbols_textures[7] = {NULL};
 #endif
 
 static DaySymbol DAY_SYMBOLS[] = {
-    {.url = CLAY_STRING(ICON_PATH "moon.png"), .dimensions = {55, 55}},
-    {.url = CLAY_STRING(ICON_PATH "mars.png"), .dimensions = {60, 60}},
-    {.url = CLAY_STRING(ICON_PATH "mercury.png"), .dimensions = {55, 55}},
-    {.url = CLAY_STRING(ICON_PATH "jupiter.png"), .dimensions = {55, 55}},
-    {.url = CLAY_STRING(ICON_PATH "venus.png"), .dimensions = {55, 55}},
-    {.url = CLAY_STRING(ICON_PATH "saturn.png"), .dimensions = {60, 60}},
-    {.url = CLAY_STRING(ICON_PATH "sun.png"), .dimensions = {55, 55}}
+    {.url = CLAY_STRING("icons/moon.png"), .dimensions = {55, 55}},
+    {.url = CLAY_STRING("icons/mars.png"), .dimensions = {60, 60}},
+    {.url = CLAY_STRING("icons/mercury.png"), .dimensions = {55, 55}},
+    {.url = CLAY_STRING("icons/jupiter.png"), .dimensions = {55, 55}},
+    {.url = CLAY_STRING("icons/venus.png"), .dimensions = {55, 55}},
+    {.url = CLAY_STRING("icons/saturn.png"), .dimensions = {60, 60}},
+    {.url = CLAY_STRING("icons/sun.png"), .dimensions = {55, 55}}
 };
+
 static void OnTodoInputChanged(const char* text) {
     // Handle input changes if needed
 }
@@ -62,7 +63,7 @@ void InitializeTodosPage(SDL_Renderer* renderer) {
             day_symbols_textures[i] = NULL;
         }
 
-        SDL_Surface* surface = IMG_Load(get_image_path(DAY_SYMBOLS[i].url.chars));
+        SDL_Surface* surface = load_image(DAY_SYMBOLS[i].url.chars);
         if (!surface) {
             fprintf(stderr, "Failed to load image %s: %s\n", DAY_SYMBOLS[i].url.chars, IMG_GetError());
             continue;

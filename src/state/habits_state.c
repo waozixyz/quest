@@ -43,6 +43,7 @@ static cJSON* HabitToJSON(const Habit* habit) {
 static void SaveHabitsJSON(const HabitCollection* collection) {
     cJSON* root = cJSON_CreateObject();
     cJSON_AddNumberToObject(root, "active_habit_id", collection->active_habit_id);
+    cJSON_AddNumberToObject(root, "calendar_start_date", (double)collection->calendar_start_date);
     
     cJSON* habits = cJSON_CreateArray();
     for (size_t i = 0; i < collection->habits_count; i++) {
@@ -95,9 +96,21 @@ static void CreateDefaultHabitsJSON() {
     defaultCollection.habits_count = 1;
     defaultCollection.active_habit_id = 0;
 
+    
+    // Set calendar start date to the most recent past Monday
+    time_t now = time(NULL);
+    struct tm *local_time = localtime(&now);
+    struct tm start_date = *local_time;
+    start_date.tm_hour = 0;
+    start_date.tm_min = 0;
+    start_date.tm_sec = 0;
+    int days_to_monday = start_date.tm_wday == 0 ? 6 : start_date.tm_wday - 1;
+    start_date.tm_mday -= days_to_monday;
+    defaultCollection.calendar_start_date = mktime(&start_date);
+
+
     SaveHabitsJSON(&defaultCollection);
 }
-
 static void LoadHabitsJSON(HabitCollection* collection) {
     FILE* file = fopen(HABITS_FILE, "r");
     if (!file) {
@@ -106,7 +119,7 @@ static void LoadHabitsJSON(HabitCollection* collection) {
         if (!file) return;
     }
 
-    // Get file size and read entire file
+    // Get file size and read entire file 
     fseek(file, 0, SEEK_END);
     long fsize = ftell(file);
     fseek(file, 0, SEEK_SET);
@@ -129,7 +142,8 @@ static void LoadHabitsJSON(HabitCollection* collection) {
 
     memset(collection, 0, sizeof(HabitCollection));
     collection->active_habit_id = cJSON_GetObjectItem(root, "active_habit_id")->valueint;
-
+    
+    // Load existing habits first
     cJSON* habits = cJSON_GetObjectItem(root, "habits");
     cJSON* habit;
     cJSON_ArrayForEach(habit, habits) {
@@ -137,9 +151,35 @@ static void LoadHabitsJSON(HabitCollection* collection) {
         LoadHabitFromJSON(&collection->habits[collection->habits_count++], habit);
     }
 
+    // Check if calendar_start_date exists in the JSON
+    cJSON* start_date = cJSON_GetObjectItem(root, "calendar_start_date");
+    if (start_date) {
+        collection->calendar_start_date = (time_t)start_date->valuedouble;
+    } else {
+        // If not present, set it to the most recent past Monday
+        time_t now = time(NULL);
+        struct tm *local_time = localtime(&now);
+        struct tm start_tm = *local_time;
+        start_tm.tm_hour = 0;
+        start_tm.tm_min = 0;
+        start_tm.tm_sec = 0;
+        int days_to_monday = start_tm.tm_wday == 0 ? 6 : start_tm.tm_wday - 1;
+        start_tm.tm_mday -= days_to_monday;
+        collection->calendar_start_date = mktime(&start_tm);
+        
+        // Add the start date to the existing JSON object and save
+        cJSON_AddNumberToObject(root, "calendar_start_date", (double)collection->calendar_start_date);
+        char* updatedJsonStr = cJSON_Print(root);
+        FILE* outFile = fopen(HABITS_FILE, "w");
+        if (outFile) {
+            fputs(updatedJsonStr, outFile);
+            fclose(outFile);
+        }
+        free(updatedJsonStr);
+    }
+
     cJSON_Delete(root);
 }
-
 #endif
 
 void SaveHabits(HabitCollection* collection) {
@@ -210,6 +250,12 @@ bool ToggleHabitDay(HabitCollection* collection, uint32_t day_index) {
     new_day->completed = true;
     new_day->date = time(NULL);
     return true;
+}
+
+void UpdateCalendarStartDate(HabitCollection* collection, time_t new_start_date) {
+    if (!collection) return;
+    collection->calendar_start_date = new_start_date;
+    SaveHabits(collection);
 }
 
 void UpdateHabitColor(HabitCollection* collection, Clay_Color color) {

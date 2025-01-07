@@ -6,8 +6,6 @@
 #include "../styles.h"
 #include "../events.h"
 
-#include "../components/calendar_box.h"
-#include "../components/color_picker.h"
 #include <time.h>
 #include <stdio.h>
 #include <string.h>

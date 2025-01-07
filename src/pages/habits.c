@@ -1,11 +1,27 @@
 #include "pages/habits.h"
 
+#include "components/calendar_box.h"
+#include "components/color_picker.h"
+#include "components/date_picker.h"
+
 HabitCollection habits = {0};
 Modal color_picker_modal = {
     .is_open = false,
     .width = 300,
-    .height = 200
+    .height = 300
 };
+
+Modal date_picker_modal = {
+    .is_open = false,
+    .width = 400,
+    .height = 500
+};
+
+void HandleDateChange(time_t new_date) {
+    habits.calendar_start_date = new_date;
+    SaveHabits(&habits);
+}
+
 
 static void HandleHabitNameSubmit(const char* text) {
     if (text[0] != '\0') {
@@ -25,6 +41,8 @@ static void HandleHabitNameSubmit(const char* text) {
 void InitializeHabitsPage() {
     LoadHabits(&habits);
     habits.habit_name_input = CreateTextInput(NULL, HandleHabitNameSubmit);
+    InitializeDatePicker(habits.calendar_start_date, HandleDateChange, &date_picker_modal);
+
 }
 
 void ToggleHabitStateForDay(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
@@ -221,16 +239,19 @@ void RenderHabitsPage() {
     time(&now);
     struct tm *local_time = localtime(&now);
 
+    struct tm *start_tm = localtime(&habits.calendar_start_date);
+    struct tm start_date = *start_tm;
+
     struct tm today_midnight = *local_time;
     today_midnight.tm_hour = 0;
     today_midnight.tm_min = 0;
     today_midnight.tm_sec = 0;
     time_t today_timestamp = mktime(&today_midnight);
 
-    struct tm start_date = today_midnight;
-    int days_to_monday = start_date.tm_wday == 0 ? 6 : start_date.tm_wday - 1;
-    start_date.tm_mday -= days_to_monday;
-    mktime(&start_date);
+    const int WEEKS_TO_DISPLAY = 10;
+    struct tm end_date = start_date;
+    end_date.tm_mday += (WEEKS_TO_DISPLAY * 7) - 1;
+    mktime(&end_date);
 
     CLAY(CLAY_ID("HabitsContainer"),
         CLAY_LAYOUT({
@@ -259,10 +280,19 @@ void RenderHabitsPage() {
 
         // Habit tabs
         RenderHabitTabs();
-
-        // Color picker for active habit
-        RenderColorPicker(active_habit->color, HandleColorChange, &color_picker_modal);
-
+        // Color picker and date picker on the same row
+        CLAY(CLAY_ID("ColorAndDatePickerContainer"),
+            CLAY_LAYOUT({
+                .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) },
+                .childGap = 0,  // Set to 0 to remove space between elements
+                .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                .padding = { 0, 0 },  // Remove padding
+                .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
+            })
+        ) {
+            RenderColorPicker(active_habit->color, HandleColorChange, &color_picker_modal);
+            RenderDatePicker(habits.calendar_start_date, HandleDateChange, &date_picker_modal);
+        }
         CLAY(CLAY_ID("CalendarScrollContainer"),
             CLAY_LAYOUT({
                 .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() }
