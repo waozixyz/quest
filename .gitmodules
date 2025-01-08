@@ -19,3 +19,6 @@
 	url = https://github.com/libsdl-org/SDL_ttf.git
 	branch = SDL2
     ignore = dirty
+[submodule "vendor/SDL2_gfx"]
+	path = vendor/SDL2_gfx
+	url = https://github.com/mupfdev/SDL2_gfx
