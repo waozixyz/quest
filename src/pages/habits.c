@@ -3,7 +3,7 @@
 #include "components/calendar_box.h"
 #include "components/color_picker.h"
 #include "components/date_picker.h"
-
+#include "config.h"
 HabitCollection habits = {0};
 Modal color_picker_modal = {
     .is_open = false,
@@ -255,6 +255,8 @@ void RenderHabitsPage() {
     end_date.tm_mday += (WEEKS_TO_DISPLAY * 7) - 1;
     mktime(&end_date);
 
+    static const char *day_labels[] = {"S", "M", "T", "W", "T", "F", "S"};
+
     CLAY(CLAY_ID("HabitsContainer"),
         CLAY_LAYOUT({
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
@@ -278,7 +280,6 @@ void RenderHabitsPage() {
             RenderColorPicker(active_habit->color, HandleColorChange, &color_picker_modal);
             RenderDatePicker(habits.calendar_start_date, HandleDateChange, &date_picker_modal);
         }
-        static const char *day_labels[] = {"S", "M", "T", "W", "T", "F", "S"};
 
         CLAY(CLAY_ID("DayLabels"), 
             CLAY_LAYOUT({
@@ -286,26 +287,53 @@ void RenderHabitsPage() {
                 .childAlignment = { .x = CLAY_ALIGN_X_CENTER}
             })
         ) {
+            float screenWidth = (float)windowWidth;
+
+            // Determine label size based on screen width
+            float labelWidth;
+            int labelFontSize;
+            if (screenWidth < BREAKPOINT_SMALL) {
+                // Mobile layout: smaller labels
+                labelWidth = 50.0f;
+                labelFontSize = 16;
+            } else if (screenWidth < BREAKPOINT_LARGE) {
+                // Tablet/small screen layout: medium labels
+                labelWidth = 70.0f;
+                labelFontSize = 20;
+            } else {
+                // Large screen layout: larger labels
+                labelWidth = 90.0f;
+                labelFontSize = 24;
+            }
+
             Clay_TextElementConfig *day_label_config = CLAY_TEXT_CONFIG({
-                .fontSize = 20,
+                .fontSize = labelFontSize,
                 .fontId = FONT_ID_BODY_24,
                 .textColor = COLOR_TEXT
             });
 
-            for (int i = 0; i < sizeof(day_labels) / sizeof(day_labels[0]); i++) {
+            // Rotate day labels based on the start day of the week
+            for (int i = 0; i < 7; i++) {
+                // Calculate the correct day label index based on the start day of the week
+                int label_index = (start_date.tm_wday + i) % 7;
+
                 CLAY(CLAY_IDI("DayLabel", i),
                     CLAY_LAYOUT({
-                        .sizing = { CLAY_SIZING_FIXED(80), CLAY_SIZING_FIT(0) }, 
+                        .sizing = { 
+                            CLAY_SIZING_FIXED(labelWidth), 
+                            CLAY_SIZING_FIT(0) 
+                        }, 
                         .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
                     })) { 
                         Clay_String day_str = {
-                            .length = strlen(day_labels[i]),
-                            .chars = day_labels[i]
+                            .length = strlen(day_labels[label_index]),
+                            .chars = day_labels[label_index]
                         };
                         CLAY_TEXT(day_str, day_label_config); 
                     }           
             }
         }
+
         CLAY(CLAY_ID("CalendarScrollContainer"),
             CLAY_LAYOUT({
                 .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },

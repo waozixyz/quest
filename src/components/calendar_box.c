@@ -1,5 +1,5 @@
 #include "components/calendar_box.h"
-
+#include "config.h"
 static const Clay_String DAY_STRINGS[32] = {
     {1, "0"}, {1, "1"}, {1, "2"}, {1, "3"}, {1, "4"}, 
     {1, "5"}, {1, "6"}, {1, "7"}, {1, "8"}, {1, "9"},
@@ -53,13 +53,26 @@ static Clay_Color GenerateFutureColor(Clay_Color color) {
         .a = color.a
     });
 }
-
 void RenderCalendarBox(CalendarBoxProps props) {    
-    // Ensure base color is valid and has full opacity
+    float screenWidth = (float)windowWidth;
+
+    // Determine box size based on screen width
+    float boxSize;
+    if (screenWidth < BREAKPOINT_SMALL) {
+        // Mobile layout: smaller boxes
+        boxSize = 50.0f;
+    } else if (screenWidth < BREAKPOINT_LARGE) {
+        // Tablet/small screen layout: medium boxes
+        boxSize = 70.0f;
+    } else {
+        // Large screen layout: larger boxes
+        boxSize = 90.0f;
+    }
+
+    // Rest of the existing color generation logic remains the same
     Clay_Color base_color = props.custom_color;
     base_color.a = 70.0f;
 
-    // Determine box color based on day state
     Clay_Color box_color = base_color;
     Clay_Color hover_color = base_color;
     
@@ -85,11 +98,15 @@ void RenderCalendarBox(CalendarBoxProps props) {
         .b = base_color.b * 1.5f,
         .a = 255.0f  // Full opacity for today's border
     });
+
+    // Determine font size based on box size
+    int fontSize = (int)(boxSize * 0.25f);
+
     CLAY(CLAY_IDI("Box", props.unique_index),
         CLAY_LAYOUT({
             .sizing = { 
-                CLAY_SIZING_FIXED(70),
-                CLAY_SIZING_FIXED(70)  
+                CLAY_SIZING_FIXED(boxSize),
+                CLAY_SIZING_FIXED(boxSize)  
             },
             .childAlignment = { 
                 .x = CLAY_ALIGN_X_CENTER,
@@ -106,7 +123,7 @@ void RenderCalendarBox(CalendarBoxProps props) {
     ) {
         CLAY_TEXT(DAY_STRINGS[props.day_number], 
             CLAY_TEXT_CONFIG({ 
-                .fontSize = 16,
+                .fontSize = fontSize,
                 .fontId = FONT_ID_BODY_16,
                 .textColor = COLOR_TEXT
             })

@@ -1,23 +1,21 @@
-// clay_sdl_renderer.c
-#include "renderers/clay_sdl_renderer.h"
-#include <unistd.h>
-#include "styles.h"
-#include "utils.h"
-#include <stdlib.h>
+#include "renderers/clay_sdl_renderer_internal.h"
 
-// Global cursor variables
-static SDL_Cursor* defaultCursor = NULL;
-static SDL_Cursor* pointerCursor = NULL;
-static SDL_Cursor* currentCursor = NULL;
+// Global variable definitions// Global variable definitions
+float renderScaleFactor = 1.0f;
+int mouseX = 0;
+int mouseY = 0;
+float scrollbarOpacity = 0.0f;
+float lastMouseMoveTime = 0.0f;
+const float SCROLLBAR_FADE_DURATION = 0.6f; 
+const float SCROLLBAR_HIDE_DELAY = 0.6f;    
 
-
-static float renderScaleFactor = 1.0f;
+SDL_Rect currentClippingRectangle;
 
 void Clay_SDL2_SetRenderScale(float scale) {
     renderScaleFactor = scale;
 }
 
-static void* Clay_AllocateAligned(size_t alignment, size_t size) {
+void* Clay_AllocateAligned(size_t alignment, size_t size) {
     #ifdef CLAY_MOBILE
         // Use Android-compatible aligned allocation
         void* ptr = NULL;
@@ -30,8 +28,7 @@ static void* Clay_AllocateAligned(size_t alignment, size_t size) {
     #endif
 }
 
-// Helper function to scale a rectangle
-static SDL_FRect ScaleBoundingBox(Clay_BoundingBox box) {
+SDL_FRect ScaleBoundingBox(Clay_BoundingBox box) {
     return (SDL_FRect) {
         .x = box.x * renderScaleFactor,
         .y = box.y * renderScaleFactor,
@@ -39,90 +36,6 @@ static SDL_FRect ScaleBoundingBox(Clay_BoundingBox box) {
         .h = box.height * renderScaleFactor
     };
 }
-
-void Clay_SDL2_InitCursors() {
-    // Create default arrow cursor
-    defaultCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
-    
-    // Create hand pointer cursor
-    pointerCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
-
-    currentCursor = defaultCursor;
-    SDL_SetCursor(currentCursor);
-}
-
-
-void Clay_SDL2_CleanupCursors() {
-    if (defaultCursor) {
-        SDL_FreeCursor(defaultCursor);
-        defaultCursor = NULL;
-    }
-    if (pointerCursor) {
-        SDL_FreeCursor(pointerCursor);
-        pointerCursor = NULL;
-    }
-    currentCursor = NULL;
-}
-
-static Clay_Dimensions SDL2_MeasureText(Clay_String *text, Clay_TextElementConfig *config) {    
-    // Validate font
-    if (config->fontId >= 32) {
-        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Invalid fontId: %d", config->fontId);
-        return (Clay_Dimensions){0, 0};
-    }
-
-    TTF_Font *font = SDL2_fonts[config->fontId].font;
-    if (!font) {
-        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Font is NULL for fontId: %d", config->fontId);
-        return (Clay_Dimensions){0, 0};
-    }
-
-    // Early validation of text
-    if (!text || !text->chars || text->length == 0) {
-        return (Clay_Dimensions){0, (float)TTF_FontHeight(font)};
-    }
-
-    // Allocate buffer with proper alignment and checks
-    size_t bufferSize = text->length + 1;
-    char* chars = (char*)Clay_AllocateAligned(8, bufferSize);
-    
-    if (!chars) {
-        SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
-            "Failed to allocate text buffer of size %zu", bufferSize);
-        return (Clay_Dimensions){0, 0};
-    }
-
-    // Zero initialize buffer and copy text
-    memset(chars, 0, bufferSize);
-    memcpy(chars, text->chars, text->length);
-
-    #ifdef CLAY_MOBILE
-        SDL_Log("Measuring text: '%.*s' (length: %d)",
-            (int)text->length, chars, (int)text->length);
-    #endif
-
-    int width = 0;
-    int height = 0;
-    int result = TTF_SizeUTF8(font, chars, &width, &height);
-    
-    if (result < 0) {
-        SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
-            "TTF_SizeUTF8 failed for fontId %d: %s", 
-            config->fontId, TTF_GetError());
-        SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
-            "Problematic text: '%s'", chars);
-        free(chars);
-        return (Clay_Dimensions){0, 0};
-    }
-
-    free(chars);
-    return (Clay_Dimensions) {
-        .width = (float)width,
-        .height = (float)height,
-    };
-}
-
-
 
 void Clay_SDL2_InitRenderer(SDL_Renderer *renderer) {
     Clay_SetMeasureTextFunction(SDL2_MeasureText);
@@ -138,81 +51,35 @@ void Clay_SDL2_CleanupRenderer(void) {
         }
     }
     Clay_SDL2_CleanupCursors();
-
 }
-
-SDL_Cursor* Clay_SDL2_GetCurrentCursor() {
-    return currentCursor;
-}static void RenderScrollbar(
-    SDL_Renderer* renderer,
-    Clay_BoundingBox boundingBox,
-    bool isVertical,
-    int mouseX,
-    int mouseY,
-    Clay_ScrollElementConfig *config,
-    Clay_ElementId elementId
-) {
-    // Get scroll data for proper thumb positioning
-    Clay_ScrollContainerData scrollData = Clay_GetScrollContainerData(elementId);
-    if (!scrollData.found) return;
-
-    // Check if content actually exceeds viewport - only render if scrollable
-    float viewportSize = isVertical ? boundingBox.height : boundingBox.width;
-    float contentSize = isVertical ? scrollData.contentDimensions.height : scrollData.contentDimensions.width;
-
-    // If content fits entirely in viewport, don't render scrollbar
-    if (contentSize <= viewportSize) {
-        return;
-    }
-
-    const float scrollbar_size = 10 * renderScaleFactor;  // Scale scrollbar size
-    
-    // Scale mouse coordinates for hit testing
-    float scaledMouseX = mouseX;  // Already scaled in main render function
-    float scaledMouseY = mouseY;  // Already scaled in main render function
-
-    SDL_FRect scaledBox = ScaleBoundingBox(boundingBox);
-
-    float scrollPosition = isVertical ? scrollData.scrollPosition->y : scrollData.scrollPosition->x;
-    
-    // Calculate thumb size and position
-    float thumbSize = (viewportSize / contentSize) * viewportSize * renderScaleFactor;
-    float thumbPosition = (-scrollPosition / contentSize) * viewportSize * renderScaleFactor;
-
-    // Render background
-    SDL_FRect scrollbar_bg = {
-        .x = isVertical ? scaledBox.x + scaledBox.w - scrollbar_size : scaledBox.x,
-        .y = isVertical ? scaledBox.y : scaledBox.y + scaledBox.h - scrollbar_size,
-        .w = isVertical ? scrollbar_size : scaledBox.w,
-        .h = isVertical ? scaledBox.h : scrollbar_size
-    };
-    
-    SDL_SetRenderDrawColor(renderer, COLOR_SECONDARY.r, COLOR_SECONDARY.g, COLOR_SECONDARY.b, 200);
-    SDL_RenderFillRectF(renderer, &scrollbar_bg);
-
-    // Render thumb
-    SDL_FRect scroll_thumb = {
-        .x = isVertical ? scrollbar_bg.x : scrollbar_bg.x + thumbPosition,
-        .y = isVertical ? scrollbar_bg.y + thumbPosition : scrollbar_bg.y,
-        .w = isVertical ? scrollbar_size : thumbSize,
-        .h = isVertical ? thumbSize : scrollbar_size
-    };
-
-    bool isHovered = scaledMouseX >= scroll_thumb.x && scaledMouseX <= scroll_thumb.x + scroll_thumb.w &&
-                    scaledMouseY >= scroll_thumb.y && scaledMouseY <= scroll_thumb.y + scroll_thumb.h;
-    
-    SDL_SetRenderDrawColor(renderer,
-        isHovered ? COLOR_PRIMARY_HOVER.r : COLOR_PRIMARY.r,
-        isHovered ? COLOR_PRIMARY_HOVER.g : COLOR_PRIMARY.g,
-        isHovered ? COLOR_PRIMARY_HOVER.b : COLOR_PRIMARY.b,
-        255
-    );
-    SDL_RenderFillRectF(renderer, &scroll_thumb);
-}
-
-SDL_Rect currentClippingRectangle;
 
 void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderCommands) {
+    static float currentTime = 0;
+    currentTime = SDL_GetTicks() / 1000.0f;
+    
+    SDL_GetMouseState(&mouseX, &mouseY);
+
+    // Check for mouse movement
+    static int lastMouseX = 0;
+    static int lastMouseY = 0;
+    
+    if (mouseX != lastMouseX || mouseY != lastMouseY) {
+        lastMouseMoveTime = currentTime;
+        lastMouseX = mouseX;
+        lastMouseY = mouseY;
+    }
+
+    // Update scrollbar opacity
+    float timeSinceLastMove = currentTime - lastMouseMoveTime;
+    
+    if (timeSinceLastMove < SCROLLBAR_HIDE_DELAY) {
+        // Fade in
+        scrollbarOpacity = SDL_min(scrollbarOpacity + (1.0f / SCROLLBAR_FADE_DURATION) * (1.0f/60.0f), 1.0f);
+    } else {
+        // Fade out
+        scrollbarOpacity = SDL_max(scrollbarOpacity - (1.0f / SCROLLBAR_FADE_DURATION) * (1.0f/60.0f), 0.0f);
+    }
+
     if (!renderer) {
         fprintf(stderr, "Error: Renderer is NULL\n");
         return;
@@ -245,19 +112,15 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
                     continue;
                 }
                             
-                if (config->cursorPointer == true && 
+                if (config->cursorPointer && 
                     mouseX >= boundingBox.x && mouseX <= boundingBox.x + boundingBox.width &&
                     mouseY >= boundingBox.y && mouseY <= boundingBox.y + boundingBox.height) {
                     hasPointerElement = true;
                 }
 
-                Clay_Color color = config->color;
-                SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-                SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND); 
-                SDL_RenderFillRectF(renderer, &scaledBox);
+                RenderRoundedRectangle(renderer, scaledBox, config->cornerRadius, config->color);
                 break;
             }
-
             case CLAY_RENDER_COMMAND_TYPE_TEXT: {
                 Clay_TextElementConfig *config = renderCommand->config.textElementConfig;
                 Clay_String text = renderCommand->text;
@@ -333,7 +196,6 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
             case CLAY_RENDER_COMMAND_TYPE_IMAGE: {                
                 Clay_ImageElementConfig *imageConfig = renderCommand->config.imageElementConfig;
                 SDL_Texture* texture = (SDL_Texture*)imageConfig->imageData;
-
                 SDL_RenderCopyF(renderer, texture, NULL, &scaledBox);
                 break;
             }
@@ -345,13 +207,98 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
                     continue;
                 }
 
-                // Scale border widths
+                // Scale border widths and corner radii
                 float scaledLeftWidth = config->left.width * renderScaleFactor;
                 float scaledRightWidth = config->right.width * renderScaleFactor;
                 float scaledTopWidth = config->top.width * renderScaleFactor;
                 float scaledBottomWidth = config->bottom.width * renderScaleFactor;
+                
+                float topLeftRadius = config->cornerRadius.topLeft * renderScaleFactor;
+                float topRightRadius = config->cornerRadius.topRight * renderScaleFactor;
+                float bottomLeftRadius = config->cornerRadius.bottomLeft * renderScaleFactor;
+                float bottomRightRadius = config->cornerRadius.bottomRight * renderScaleFactor;
 
-                // Draw left border
+                // Draw borders with appropriate corners
+                if (config->top.width > 0) {
+                    SDL_SetRenderDrawColor(renderer, 
+                        config->top.color.r, 
+                        config->top.color.g, 
+                        config->top.color.b, 
+                        config->top.color.a
+                    );
+
+                    // Top line between corners
+                    SDL_FRect topBorder = {
+                        .x = scaledBox.x + topLeftRadius,
+                        .y = scaledBox.y,
+                        .w = scaledBox.w - (topLeftRadius + topRightRadius),
+                        .h = scaledTopWidth
+                    };
+                    SDL_RenderFillRectF(renderer, &topBorder);
+
+                    // Draw rounded corners for top border if needed
+                    if (topLeftRadius > 0) {
+                        DrawQuarterCircle(
+                            renderer,
+                            scaledBox.x + topLeftRadius,
+                            scaledBox.y + topLeftRadius,
+                            topLeftRadius,
+                            (float)M_PI,
+                            (SDL_Color){config->top.color.r, config->top.color.g, config->top.color.b, config->top.color.a}
+                        );
+                    }
+                    if (topRightRadius > 0) {
+                        DrawQuarterCircle(
+                            renderer,
+                            scaledBox.x + scaledBox.w - topRightRadius,
+                            scaledBox.y + topRightRadius,
+                            topRightRadius,
+                            -(float)M_PI/2,
+                            (SDL_Color){config->top.color.r, config->top.color.g, config->top.color.b, config->top.color.a}
+                        );
+                    }
+                }
+
+                if (config->bottom.width > 0) {
+                    SDL_SetRenderDrawColor(renderer, 
+                        config->bottom.color.r, 
+                        config->bottom.color.g, 
+                        config->bottom.color.b, 
+                        config->bottom.color.a
+                    );
+
+                    // Bottom line between corners
+                    SDL_FRect bottomBorder = {
+                        .x = scaledBox.x + bottomLeftRadius,
+                        .y = scaledBox.y + scaledBox.h - scaledBottomWidth,
+                        .w = scaledBox.w - (bottomLeftRadius + bottomRightRadius),
+                        .h = scaledBottomWidth
+                    };
+                    SDL_RenderFillRectF(renderer, &bottomBorder);
+
+                    // Draw rounded corners for bottom border if needed
+                    if (bottomLeftRadius > 0) {
+                        DrawQuarterCircle(
+                            renderer,
+                            scaledBox.x + bottomLeftRadius,
+                            scaledBox.y + scaledBox.h - bottomLeftRadius,
+                            bottomLeftRadius,
+                            (float)M_PI/2,
+                            (SDL_Color){config->bottom.color.r, config->bottom.color.g, config->bottom.color.b, config->bottom.color.a}
+                        );
+                    }
+                    if (bottomRightRadius > 0) {
+                        DrawQuarterCircle(
+                            renderer,
+                            scaledBox.x + scaledBox.w - bottomRightRadius,
+                            scaledBox.y + scaledBox.h - bottomRightRadius,
+                            bottomRightRadius,
+                            0,
+                            (SDL_Color){config->bottom.color.r, config->bottom.color.g, config->bottom.color.b, config->bottom.color.a}
+                        );
+                    }
+                }
+
                 if (config->left.width > 0) {
                     SDL_SetRenderDrawColor(renderer, 
                         config->left.color.r, 
@@ -361,14 +308,13 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
                     );
                     SDL_FRect leftBorder = {
                         .x = scaledBox.x,
-                        .y = scaledBox.y,
+                        .y = scaledBox.y + topLeftRadius,
                         .w = scaledLeftWidth,
-                        .h = scaledBox.h
+                        .h = scaledBox.h - (topLeftRadius + bottomLeftRadius)
                     };
                     SDL_RenderFillRectF(renderer, &leftBorder);
                 }
 
-                // Draw right border
                 if (config->right.width > 0) {
                     SDL_SetRenderDrawColor(renderer, 
                         config->right.color.r, 
@@ -378,45 +324,11 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
                     );
                     SDL_FRect rightBorder = {
                         .x = scaledBox.x + scaledBox.w - scaledRightWidth,
-                        .y = scaledBox.y,
+                        .y = scaledBox.y + topRightRadius,
                         .w = scaledRightWidth,
-                        .h = scaledBox.h
+                        .h = scaledBox.h - (topRightRadius + bottomRightRadius)
                     };
                     SDL_RenderFillRectF(renderer, &rightBorder);
-                }
-
-                // Draw top border
-                if (config->top.width > 0) {
-                    SDL_SetRenderDrawColor(renderer, 
-                        config->top.color.r, 
-                        config->top.color.g, 
-                        config->top.color.b, 
-                        config->top.color.a
-                    );
-                    SDL_FRect topBorder = {
-                        .x = scaledBox.x,
-                        .y = scaledBox.y,
-                        .w = scaledBox.w,
-                        .h = scaledTopWidth
-                    };
-                    SDL_RenderFillRectF(renderer, &topBorder);
-                }
-
-                // Draw bottom border
-                if (config->bottom.width > 0) {
-                    SDL_SetRenderDrawColor(renderer, 
-                        config->bottom.color.r, 
-                        config->bottom.color.g, 
-                        config->bottom.color.b, 
-                        config->bottom.color.a
-                    );
-                    SDL_FRect bottomBorder = {
-                        .x = scaledBox.x,
-                        .y = scaledBox.y + scaledBox.h - scaledBottomWidth,
-                        .w = scaledBox.w,
-                        .h = scaledBottomWidth
-                    };
-                    SDL_RenderFillRectF(renderer, &bottomBorder);
                 }
                 break;
             }
