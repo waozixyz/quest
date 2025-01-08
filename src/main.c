@@ -32,8 +32,8 @@ float globalScalingFactor = 1.0f;
 uint32_t ACTIVE_PAGE = 0;
 uint32_t ACTIVE_RENDERER_INDEX = 0;
 bool pages_initialized = false;
-float screenBreakpoint = 768.0f;
-
+float screenBreakpoint = 1024.0f;
+float mobileBreakpoint = 640.0f;
 
 // Font IDs
 const uint32_t FONT_ID_BODY_16 = 0;
@@ -429,6 +429,7 @@ void RunGameLoop(SDL_Window* window, SDL_Renderer* renderer) {
     Clay_ErrorHandler errorHandler = { .errorHandlerFunction = NULL };
     Clay_Initialize(arena, (Clay_Dimensions){windowWidth, windowHeight}, errorHandler);
 
+    InitializeNavIcons(renderer);
     InitializePages(renderer);
 
     // Main Game Loop
@@ -456,6 +457,7 @@ void RunGameLoop(SDL_Window* window, SDL_Renderer* renderer) {
     }
 
     CleanupPages();
+    CleanupNavIcons();
     Clay_SDL2_CleanupRenderer();
     free(arenaMemory);
     TTF_Quit();
