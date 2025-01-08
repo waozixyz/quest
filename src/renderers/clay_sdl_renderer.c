@@ -143,8 +143,7 @@ void Clay_SDL2_CleanupRenderer(void) {
 
 SDL_Cursor* Clay_SDL2_GetCurrentCursor() {
     return currentCursor;
-}
-static void RenderScrollbar(
+}static void RenderScrollbar(
     SDL_Renderer* renderer,
     Clay_BoundingBox boundingBox,
     bool isVertical,
@@ -153,26 +152,31 @@ static void RenderScrollbar(
     Clay_ScrollElementConfig *config,
     Clay_ElementId elementId
 ) {
+    // Get scroll data for proper thumb positioning
+    Clay_ScrollContainerData scrollData = Clay_GetScrollContainerData(elementId);
+    if (!scrollData.found) return;
+
+    // Check if content actually exceeds viewport - only render if scrollable
+    float viewportSize = isVertical ? boundingBox.height : boundingBox.width;
+    float contentSize = isVertical ? scrollData.contentDimensions.height : scrollData.contentDimensions.width;
+
+    // If content fits entirely in viewport, don't render scrollbar
+    if (contentSize <= viewportSize) {
+        return;
+    }
+
     const float scrollbar_size = 10 * renderScaleFactor;  // Scale scrollbar size
     
     // Scale mouse coordinates for hit testing
     float scaledMouseX = mouseX;  // Already scaled in main render function
     float scaledMouseY = mouseY;  // Already scaled in main render function
-    
-    // Get scroll data for proper thumb positioning
-    Clay_ScrollContainerData scrollData = Clay_GetScrollContainerData(elementId);
-    if (!scrollData.found) return;
 
     SDL_FRect scaledBox = ScaleBoundingBox(boundingBox);
 
-    // Calculate scroll ratio based on content vs viewport size
-    float viewportSize = isVertical ? scaledBox.h : scaledBox.w;
-    float contentSize = isVertical ? scrollData.contentDimensions.height * renderScaleFactor 
-                                  : scrollData.contentDimensions.width * renderScaleFactor;
     float scrollPosition = isVertical ? scrollData.scrollPosition->y : scrollData.scrollPosition->x;
     
     // Calculate thumb size and position
-    float thumbSize = (viewportSize / contentSize) * viewportSize;
+    float thumbSize = (viewportSize / contentSize) * viewportSize * renderScaleFactor;
     float thumbPosition = (-scrollPosition / contentSize) * viewportSize * renderScaleFactor;
 
     // Render background
@@ -205,7 +209,6 @@ static void RenderScrollbar(
     );
     SDL_RenderFillRectF(renderer, &scroll_thumb);
 }
-
 
 SDL_Rect currentClippingRectangle;
 

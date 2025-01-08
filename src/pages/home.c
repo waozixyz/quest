@@ -13,13 +13,15 @@ void SetupCardGridLayout() {
 void RenderHomePage() {    
     float screenWidth = (float)windowWidth;
 
-    CLAY(CLAY_ID("HomeContainer"), 
+    CLAY(CLAY_ID("HomeScrollContainer"), 
         CLAY_LAYOUT({ 
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
             .padding = { 32, 32 },
             .childGap = 32,
             .layoutDirection = CLAY_TOP_TO_BOTTOM
-        })
+        }),
+        CLAY_SCROLL({ .vertical = true })
+
     ) {
         // Cards container
         CLAY(CLAY_ID("CardGrid"), SetupCardGridLayout()) {
