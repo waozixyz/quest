@@ -33,6 +33,17 @@ void* Clay_AllocateAligned(size_t alignment, size_t size);
 SDL_FRect ScaleBoundingBox(Clay_BoundingBox box);
 
 // Shape rendering functions
+void RenderBorder(
+    SDL_Renderer* renderer,
+    SDL_FRect rect,
+    Clay_Border border,
+    Clay_CornerRadius cornerRadius,
+    bool isTop,
+    bool isBottom,
+    bool isLeft,
+    bool isRight
+);
+
 void DrawQuarterCircle(
     SDL_Renderer* renderer,
     float centerX, 

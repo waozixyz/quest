@@ -23,13 +23,25 @@ void HandleDateChange(time_t new_date) {
     habits.calendar_start_date = new_date;
     SaveHabits(&habits);
 }
-
+#ifdef __EMSCRIPTEN__
 void InitializeHabitsPage() {
     LoadHabits(&habits);
     habits.habit_name_input = CreateTextInput(NULL, HandleHabitNameSubmit);
     InitializeDatePicker(habits.calendar_start_date, HandleDateChange, &date_picker_modal);
-
 }
+
+#else
+void InitializeHabitsPage(SDL_Renderer* renderer) {
+    LoadHabits(&habits);
+    habits.habit_name_input = CreateTextInput(NULL, HandleHabitNameSubmit);
+    InitializeDatePicker(habits.calendar_start_date, HandleDateChange, &date_picker_modal);
+    
+    #ifndef __EMSCRIPTEN__
+    InitializeHabitTabBar(renderer);
+    #endif
+}
+#endif
+
 
 void ToggleHabitStateForDay(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
@@ -68,6 +80,7 @@ void CleanupHabitsPage() {
         DestroyTextInput(habits.habit_name_input);
         habits.habit_name_input = NULL;
     }
+    CleanupHabitTabBar();
 }
 
 

@@ -1,6 +1,16 @@
 #include "components/habit_tab_bar.h"
-#include "config.h"
-#include "pages/habits.h"
+
+#ifndef __EMSCRIPTEN__
+static SDL_Texture* check_texture = NULL;
+
+void InitializeHabitTabBar(SDL_Renderer* renderer) {
+    // Load the check texture
+    SDL_Surface* surface = load_image("icons/check.png");
+
+    check_texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
+}
+#endif
 
 void HandleHabitNameSubmit(const char* text) {
     if (text[0] != '\0') {
@@ -41,7 +51,8 @@ static void RenderHabitTab(const Habit* habit) {
         CLAY_RECTANGLE({
             .color = isActive ? COLOR_PRIMARY :
                      (Clay_Hovered() ? COLOR_PRIMARY_HOVER : COLOR_PANEL),
-            .cornerRadius = CLAY_CORNER_RADIUS(5)
+            .cornerRadius = CLAY_CORNER_RADIUS(5),
+            .cursorPointer = true
         }),
         Clay_OnHover(HandleTabInteraction, habit->id)
     ) {
@@ -59,7 +70,6 @@ static void RenderHabitTab(const Habit* habit) {
                 })) {
                     RenderTextInput(habits.habit_name_input, habit->id);
                 }
-
                 // Confirm button
                 CLAY(CLAY_IDI("ConfirmHabitName", habit->id),
                     CLAY_LAYOUT({
@@ -68,15 +78,28 @@ static void RenderHabitTab(const Habit* habit) {
                     }),
                     CLAY_RECTANGLE({
                         .color = Clay_Hovered() ? COLOR_SUCCESS : COLOR_SECONDARY,
-                        .cornerRadius = CLAY_CORNER_RADIUS(4)
+                        .cornerRadius = CLAY_CORNER_RADIUS(4),
+                        .cursorPointer = true
                     }),
                     Clay_OnHover(HandleConfirmButtonClick, 0)
                 ) {
-                    CLAY_TEXT(CLAY_STRING("✓"), CLAY_TEXT_CONFIG({
-                        .fontSize = 20,
-                        .fontId = FONT_ID_BODY_24,
-                        .textColor = COLOR_TEXT
-                    }));
+                    #ifdef __EMSCRIPTEN__
+                    CLAY(CLAY_LAYOUT({
+                        .sizing = { CLAY_SIZING_FIXED(24), CLAY_SIZING_FIXED(24) }
+                    }),
+                    CLAY_IMAGE({
+                        .sourceDimensions = { 24, 24 },
+                        .sourceURL = CLAY_STRING("icons/check.png")
+                    })) {}
+                    #else
+                    CLAY(CLAY_LAYOUT({
+                        .sizing = { CLAY_SIZING_FIXED(24), CLAY_SIZING_FIXED(24) }
+                    }),
+                    CLAY_IMAGE({
+                        .sourceDimensions = { 24, 24 },
+                        .imageData = check_texture
+                    })) {}
+                    #endif
                 }
             }
         } else {
@@ -93,11 +116,13 @@ void RenderHabitTabBar() {
         CLAY_LAYOUT({
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIXED(80) }
         }),
-        CLAY_RECTANGLE({ .color = COLOR_SECONDARY })
+        CLAY_RECTANGLE({ 
+            .color = COLOR_SECONDARY
+         })
     ) {
         CLAY(CLAY_ID("HabitTabs"),
             CLAY_LAYOUT({
-                .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
+                .sizing = { CLAY_SIZING_FIT(), CLAY_SIZING_GROW() },
                 .childGap = 16,
                 .padding = { 16, 0 },
                 .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
@@ -115,7 +140,8 @@ void RenderHabitTabBar() {
                 CLAY_LAYOUT({ .padding = { 16, 8 } }),
                 CLAY_RECTANGLE({
                     .color = Clay_Hovered() ? COLOR_PRIMARY_HOVER : COLOR_PANEL,
-                    .cornerRadius = CLAY_CORNER_RADIUS(5)
+                    .cornerRadius = CLAY_CORNER_RADIUS(5),
+                    .cursorPointer = true
                 }),
                 Clay_OnHover(HandleNewTabInteraction, 0)
             ) {
@@ -173,3 +199,13 @@ void HandleTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo
         last_click_time = current_time;
     }
 }
+
+void CleanupHabitTabBar(void) {
+    #ifndef __EMSCRIPTEN__
+    if (check_texture) {
+        SDL_DestroyTexture(check_texture);
+        check_texture = NULL;
+    }
+    #endif
+}
+

@@ -199,7 +199,6 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
                 SDL_RenderCopyF(renderer, texture, NULL, &scaledBox);
                 break;
             }
-
             case CLAY_RENDER_COMMAND_TYPE_BORDER: {
                 Clay_BorderElementConfig *config = renderCommand->config.borderElementConfig;
                 if (!config) {
@@ -207,141 +206,15 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
                     continue;
                 }
 
-                // Scale border widths and corner radii
-                float scaledLeftWidth = config->left.width * renderScaleFactor;
-                float scaledRightWidth = config->right.width * renderScaleFactor;
-                float scaledTopWidth = config->top.width * renderScaleFactor;
-                float scaledBottomWidth = config->bottom.width * renderScaleFactor;
-                
-                float topLeftRadius = config->cornerRadius.topLeft * renderScaleFactor;
-                float topRightRadius = config->cornerRadius.topRight * renderScaleFactor;
-                float bottomLeftRadius = config->cornerRadius.bottomLeft * renderScaleFactor;
-                float bottomRightRadius = config->cornerRadius.bottomRight * renderScaleFactor;
-
-                // Draw borders with appropriate corners
-                if (config->top.width > 0) {
-                    SDL_SetRenderDrawColor(renderer, 
-                        config->top.color.r, 
-                        config->top.color.g, 
-                        config->top.color.b, 
-                        config->top.color.a
-                    );
-
-                    // Top line between corners
-                    SDL_FRect topBorder = {
-                        .x = scaledBox.x + topLeftRadius,
-                        .y = scaledBox.y,
-                        .w = scaledBox.w - (topLeftRadius + topRightRadius),
-                        .h = scaledTopWidth
-                    };
-                    SDL_RenderFillRectF(renderer, &topBorder);
-
-                    // Draw rounded corners for top border if needed
-                    if (topLeftRadius > 0) {
-                        DrawQuarterCircle(
-                            renderer,
-                            scaledBox.x + topLeftRadius,
-                            scaledBox.y + topLeftRadius,
-                            topLeftRadius,
-                            (float)M_PI,
-                            (SDL_Color){config->top.color.r, config->top.color.g, config->top.color.b, config->top.color.a}
-                        );
-                    }
-                    if (topRightRadius > 0) {
-                        DrawQuarterCircle(
-                            renderer,
-                            scaledBox.x + scaledBox.w - topRightRadius,
-                            scaledBox.y + topRightRadius,
-                            topRightRadius,
-                            -(float)M_PI/2,
-                            (SDL_Color){config->top.color.r, config->top.color.g, config->top.color.b, config->top.color.a}
-                        );
-                    }
-                }
-
-                if (config->bottom.width > 0) {
-                    SDL_SetRenderDrawColor(renderer, 
-                        config->bottom.color.r, 
-                        config->bottom.color.g, 
-                        config->bottom.color.b, 
-                        config->bottom.color.a
-                    );
-
-                    // Bottom line between corners
-                    SDL_FRect bottomBorder = {
-                        .x = scaledBox.x + bottomLeftRadius,
-                        .y = scaledBox.y + scaledBox.h - scaledBottomWidth,
-                        .w = scaledBox.w - (bottomLeftRadius + bottomRightRadius),
-                        .h = scaledBottomWidth
-                    };
-                    SDL_RenderFillRectF(renderer, &bottomBorder);
-
-                    // Draw rounded corners for bottom border if needed
-                    if (bottomLeftRadius > 0) {
-                        DrawQuarterCircle(
-                            renderer,
-                            scaledBox.x + bottomLeftRadius,
-                            scaledBox.y + scaledBox.h - bottomLeftRadius,
-                            bottomLeftRadius,
-                            (float)M_PI/2,
-                            (SDL_Color){config->bottom.color.r, config->bottom.color.g, config->bottom.color.b, config->bottom.color.a}
-                        );
-                    }
-                    if (bottomRightRadius > 0) {
-                        DrawQuarterCircle(
-                            renderer,
-                            scaledBox.x + scaledBox.w - bottomRightRadius,
-                            scaledBox.y + scaledBox.h - bottomRightRadius,
-                            bottomRightRadius,
-                            0,
-                            (SDL_Color){config->bottom.color.r, config->bottom.color.g, config->bottom.color.b, config->bottom.color.a}
-                        );
-                    }
-                }
-
-                if (config->left.width > 0) {
-                    SDL_SetRenderDrawColor(renderer, 
-                        config->left.color.r, 
-                        config->left.color.g, 
-                        config->left.color.b, 
-                        config->left.color.a
-                    );
-                    SDL_FRect leftBorder = {
-                        .x = scaledBox.x,
-                        .y = scaledBox.y + topLeftRadius,
-                        .w = scaledLeftWidth,
-                        .h = scaledBox.h - (topLeftRadius + bottomLeftRadius)
-                    };
-                    SDL_RenderFillRectF(renderer, &leftBorder);
-                }
-
-                if (config->right.width > 0) {
-                    SDL_SetRenderDrawColor(renderer, 
-                        config->right.color.r, 
-                        config->right.color.g, 
-                        config->right.color.b, 
-                        config->right.color.a
-                    );
-                    SDL_FRect rightBorder = {
-                        .x = scaledBox.x + scaledBox.w - scaledRightWidth,
-                        .y = scaledBox.y + topRightRadius,
-                        .w = scaledRightWidth,
-                        .h = scaledBox.h - (topRightRadius + bottomRightRadius)
-                    };
-                    SDL_RenderFillRectF(renderer, &rightBorder);
-                }
+                // Render each border segment
+                RenderBorder(renderer, scaledBox, config->top, config->cornerRadius, true, false, false, false);
+                RenderBorder(renderer, scaledBox, config->bottom, config->cornerRadius, false, true, false, false);
+                RenderBorder(renderer, scaledBox, config->left, config->cornerRadius, false, false, true, false);
+                RenderBorder(renderer, scaledBox, config->right, config->cornerRadius, false, false, false, true);
                 break;
             }
 
             case CLAY_RENDER_COMMAND_TYPE_SCISSOR_START: {
-                SDL_Rect scaledClip = {
-                    .x = scaledBox.x,
-                    .y = scaledBox.y,
-                    .w = scaledBox.w,
-                    .h = scaledBox.h
-                };
-                SDL_RenderSetClipRect(renderer, &scaledClip);
-
                 if (renderCommand->config.scrollElementConfig) {
                     Clay_ScrollElementConfig *config = renderCommand->config.scrollElementConfig;
                     Clay_ElementId elementId = {
@@ -358,6 +231,15 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
                         RenderScrollbar(renderer, boundingBox, false, mouseX, mouseY, config, elementId);
                     }
                 }
+
+                SDL_Rect scaledClip = {
+                    .x = scaledBox.x,
+                    .y = scaledBox.y,
+                    .w = scaledBox.w,
+                    .h = scaledBox.h
+                };
+                SDL_RenderSetClipRect(renderer, &scaledClip);
+
                 break;
             }
 

@@ -66,4 +66,5 @@ int scrollDragStartY = 0;
 int scrollDragStartX = 0;
 Clay_Vector2 initialScrollPosition = {0, 0};
 bool isScrollThumbDragging = false;
+bool isHorizontalScrollThumbDragging = false;
 #endif

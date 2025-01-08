@@ -222,7 +222,11 @@ static void RenderDatePickerModal(void) {
         // Save Button
         CLAY(CLAY_LAYOUT({ .padding = { 0, 10 }})) {
             CLAY(CLAY_LAYOUT({ .padding = { 20, 10 }}),
-                CLAY_RECTANGLE({ .color = COLOR_SUCCESS }),
+                CLAY_RECTANGLE({
+                    .color = COLOR_SUCCESS,
+                    .cursorPointer = true,
+                    .cornerRadius = CLAY_CORNER_RADIUS(8)
+                }),
                 Clay_OnHover(HandleSaveDate, 0)
             ) {
                 CLAY_TEXT(CLAY_STRING("Save"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = COLOR_TEXT }));
@@ -259,7 +263,8 @@ void RenderDatePicker(time_t current_date, void (*on_date_change)(time_t), Modal
             CLAY_LAYOUT({ .padding = { 10, 5 }}),
             CLAY_RECTANGLE({
                 .color = COLOR_SECONDARY,
-                .cursorPointer = true
+                .cursorPointer = true,
+                .cornerRadius = CLAY_CORNER_RADIUS(8)
             }),
             Clay_OnHover(HandleDateClick, (intptr_t)modal)
         ) {

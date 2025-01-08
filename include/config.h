@@ -55,6 +55,7 @@ void HandleNavInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo
 #include <SDL.h>
 // Scroll state (for non-EMSCRIPTEN)
 extern bool isScrollDragging;
+extern bool isHorizontalScrollThumbDragging;
 extern int scrollDragStartY;
 extern int scrollDragStartX;
 extern Clay_Vector2 initialScrollPosition;

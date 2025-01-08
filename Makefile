@@ -30,18 +30,19 @@ else ifeq ($(BUILD_TYPE),android)
         -Ivendor/cJSON \
         -Ivendor/SDL/include \
         -Ivendor/SDL_image/include \
-        -Ivendor/SDL_ttf
+        -Ivendor/SDL_ttf \
+		-Ivendor/SDL2_gfx
 
     LINKER_FLAGS = -shared -landroid -llog -lm \
         -L$(dir $(TARGET)) \
-        -lSDL2 -lSDL2_image -lSDL2_ttf
+        -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_gfx
 
     SRCS = $(shell find $(SRC_DIR) -name "*.c")
     SRCS += vendor/cJSON/cJSON.c
 else ifeq ($(BUILD_TYPE),desktop)
 	CC = clang
 	CFLAGS = -Wall -Werror -O2 -DCLAY_DESKTOP
-	LINKER_FLAGS = -lSDL2 -lSDL2_image -lSDL2_ttf -lm
+	LINKER_FLAGS = -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_gfx -lm
 	INCLUDE_FLAGS += -I/usr/include/SDL2 -Ivendor/cJSON
 	TARGET = $(BUILD_DIR)/game
 	SRCS = $(shell find $(SRC_DIR) -name "*.c")
@@ -94,7 +95,27 @@ build-sdl-android:
 		cp vendor/SDL/build-android-$$abi/libSDL2.so android/app/src/main/jniLibs/$$abi/ ; \
 	done
 
-build-sdl-image-android: build-sdl-android
+
+build-sdl-gfx-android: build-sdl-android
+	@for abi in $(ANDROID_ABIS) ; do \
+		echo "Building SDL2_gfx for $$abi" && \
+		mkdir -p vendor/SDL2_gfx/build-android-$$abi && \
+		(cd vendor/SDL2_gfx/build-android-$$abi && \
+		cmake .. \
+			-DCMAKE_TOOLCHAIN_FILE=$(NDK_PATH)/build/cmake/android.toolchain.cmake \
+			-DANDROID_ABI=$$abi \
+			-DANDROID_PLATFORM=android-21 \
+			-DSDL2_DIR=../../SDL/build-android-$$abi \
+			-DSDL2_INCLUDE_DIR=../../SDL/include \
+			-DSDL2_LIBRARY=../../SDL/build-android-$$abi/libSDL2.so \
+			-DBUILD_SHARED_LIBS=ON && \
+		make) && \
+		cp vendor/SDL2_gfx/build-android-$$abi/libSDL2_gfx.so android/app/src/main/jniLibs/$$abi/ ; \
+	done
+
+
+
+build-sdl-image-android: build-sdl-gfx-android
 	@for abi in $(ANDROID_ABIS) ; do \
 		echo "Building SDL_image for $$abi" && \
 		mkdir -p vendor/SDL_image/build-android-$$abi && \
@@ -158,6 +179,7 @@ clean-android:
 	rm -rf vendor/SDL/build-android-*
 	rm -rf vendor/SDL_image/build-android-*
 	rm -rf vendor/SDL_ttf/build-android-*
+	rm -rf vendor/SDL2_gfx/build-android-*    #
 	rm -rf android/app/build
 	rm -rf android/app/src/main/jniLibs
 
