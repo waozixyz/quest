@@ -17,5 +17,6 @@ void InitializeHabitsPage(void);
 void CleanupHabitsPage(void);
 void HandleHabitsPageInput(InputEvent event);
 
+extern HabitCollection habits;
 
 #endif // HABITS_H

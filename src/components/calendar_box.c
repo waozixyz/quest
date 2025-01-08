@@ -55,19 +55,14 @@ static Clay_Color GenerateFutureColor(Clay_Color color) {
 }
 void RenderCalendarBox(CalendarBoxProps props) {    
     float screenWidth = (float)windowWidth;
+    const float MAX_BOX_SIZE = 90.0f;  // Maximum box size
+    const float MIN_BOX_SIZE = 32.0f;  // Minimum box size
 
-    // Determine box size based on screen width
-    float boxSize;
-    if (screenWidth < BREAKPOINT_SMALL) {
-        // Mobile layout: smaller boxes
-        boxSize = 50.0f;
-    } else if (screenWidth < BREAKPOINT_LARGE) {
-        // Tablet/small screen layout: medium boxes
-        boxSize = 70.0f;
-    } else {
-        // Large screen layout: larger boxes
-        boxSize = 90.0f;
-    }
+    // Calculate box size as a percentage of screen width
+    float boxSize = screenWidth * 0.1f;  // 10% of screen width
+    
+    // Clamp the box size between min and max
+    boxSize = fmaxf(MIN_BOX_SIZE, fminf(boxSize, MAX_BOX_SIZE));
 
     // Rest of the existing color generation logic remains the same
     Clay_Color base_color = props.custom_color;
@@ -115,7 +110,8 @@ void RenderCalendarBox(CalendarBoxProps props) {
         }),
         CLAY_RECTANGLE({ 
             .color = Clay_Hovered() ? hover_color : box_color,
-            .cornerRadius = CLAY_CORNER_RADIUS(8)
+            .cornerRadius = CLAY_CORNER_RADIUS(8),
+            .cursorPointer = true
         }),
         // Distinct border for today
         props.is_today ? CLAY_BORDER_OUTSIDE_RADIUS(2, today_border_color, 8) : 0,
