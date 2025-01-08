@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include "styles.h"
 #include "utils.h"
+#include <stdlib.h>
 
 // Global cursor variables
 static SDL_Cursor* defaultCursor = NULL;
@@ -14,6 +15,19 @@ static float renderScaleFactor = 1.0f;
 
 void Clay_SDL2_SetRenderScale(float scale) {
     renderScaleFactor = scale;
+}
+
+static void* Clay_AllocateAligned(size_t alignment, size_t size) {
+    #ifdef CLAY_MOBILE
+        // Use Android-compatible aligned allocation
+        void* ptr = NULL;
+        if (posix_memalign(&ptr, alignment, size) != 0) {
+            return NULL;
+        }
+        return ptr;
+    #else
+        return aligned_alloc(alignment, size);
+    #endif
 }
 
 // Helper function to scale a rectangle
@@ -50,47 +64,53 @@ void Clay_SDL2_CleanupCursors() {
     currentCursor = NULL;
 }
 
-static Clay_Dimensions SDL2_MeasureText(Clay_String *text, Clay_TextElementConfig *config)
-{    
+static Clay_Dimensions SDL2_MeasureText(Clay_String *text, Clay_TextElementConfig *config) {    
     // Validate font
     if (config->fontId >= 32) {
-        fprintf(stderr, "ERROR: Invalid fontId: %d\n", config->fontId);
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Invalid fontId: %d", config->fontId);
         return (Clay_Dimensions){0, 0};
     }
 
     TTF_Font *font = SDL2_fonts[config->fontId].font;
     if (!font) {
-        fprintf(stderr, "ERROR: Font is NULL for fontId: %d\n", config->fontId);
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Font is NULL for fontId: %d", config->fontId);
         return (Clay_Dimensions){0, 0};
     }
 
-    // Additional font validation
-    if (TTF_FontHeight(font) <= 0) {
-        fprintf(stderr, "ERROR: Invalid font height for fontId: %d\n", config->fontId);
-        return (Clay_Dimensions){0, 0};
-    }
-
-    if (!text->chars || text->length == 0) {
-        // Return a default size for empty text
+    // Early validation of text
+    if (!text || !text->chars || text->length == 0) {
         return (Clay_Dimensions){0, (float)TTF_FontHeight(font)};
     }
 
-    char *chars = (char *)calloc(text->length + 1, 1);
+    // Allocate buffer with proper alignment and checks
+    size_t bufferSize = text->length + 1;
+    char* chars = (char*)Clay_AllocateAligned(8, bufferSize);
+    
     if (!chars) {
-        fprintf(stderr, "ERROR: Memory allocation failed for text\n");
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
+            "Failed to allocate text buffer of size %zu", bufferSize);
         return (Clay_Dimensions){0, 0};
     }
+
+    // Zero initialize buffer and copy text
+    memset(chars, 0, bufferSize);
     memcpy(chars, text->chars, text->length);
-    chars[text->length] = '\0';  // Ensure null-termination
+
+    #ifdef CLAY_MOBILE
+        SDL_Log("Measuring text: '%.*s' (length: %d)",
+            (int)text->length, chars, (int)text->length);
+    #endif
 
     int width = 0;
     int height = 0;
     int result = TTF_SizeUTF8(font, chars, &width, &height);
     
     if (result < 0) {
-        fprintf(stderr, "TTF_SizeUTF8 failed for fontId %d: %s\n", 
-                config->fontId, TTF_GetError());
-        fprintf(stderr, "Problematic text: '%s'\n", chars);
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
+            "TTF_SizeUTF8 failed for fontId %d: %s", 
+            config->fontId, TTF_GetError());
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
+            "Problematic text: '%s'", chars);
         free(chars);
         return (Clay_Dimensions){0, 0};
     }
@@ -101,6 +121,8 @@ static Clay_Dimensions SDL2_MeasureText(Clay_String *text, Clay_TextElementConfi
         .height = (float)height,
     };
 }
+
+
 
 void Clay_SDL2_InitRenderer(SDL_Renderer *renderer) {
     Clay_SetMeasureTextFunction(SDL2_MeasureText);
@@ -237,32 +259,43 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
                 Clay_TextElementConfig *config = renderCommand->config.textElementConfig;
                 Clay_String text = renderCommand->text;
 
-                char *cloned = malloc(text.length + 1);
-                if (!cloned) {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
-                        "Memory allocation failed for text rendering");
+                if (!text.chars || text.length == 0) {
                     continue;
                 }
-                memset(cloned, 0, text.length + 1);
+
+                // Use aligned allocation
+                size_t bufferSize = text.length + 1;
+                char* cloned = (char*)Clay_AllocateAligned(8, bufferSize);
+                
+                if (!cloned) {
+                    SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
+                        "Memory allocation failed for text rendering (size: %zu)", 
+                        bufferSize);
+                    continue;
+                }
+
+                memset(cloned, 0, bufferSize);
                 memcpy(cloned, text.chars, text.length);
 
                 TTF_Font* font = SDL2_fonts[config->fontId].font;
                 if (!font) {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
-                        "ERROR: Font is NULL for fontId %u", config->fontId);
+                    SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
+                        "Font is NULL for fontId %u", config->fontId);
                     free(cloned);
-                    break;
+                    continue;
                 }
-
-                SDL_Surface *surface = TTF_RenderUTF8_Blended(font, cloned, (SDL_Color) {
+                SDL_Color textColor = {
                     .r = (Uint8)config->textColor.r,
                     .g = (Uint8)config->textColor.g,
                     .b = (Uint8)config->textColor.b,
                     .a = (Uint8)config->textColor.a,
-                });
+                };
+
+                SDL_Surface *surface = TTF_RenderUTF8_Blended(font, cloned, textColor);
                 
                 if (!surface) {
-                    fprintf(stderr, "Error rendering text surface: %s\n", TTF_GetError());
+                    SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
+                        "Error rendering text surface: %s", TTF_GetError());
                     free(cloned);
                     continue;
                 }
@@ -270,7 +303,8 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
                 SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
                 
                 if (!texture) {
-                    fprintf(stderr, "Error creating texture: %s\n", SDL_GetError());
+                    SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
+                        "Error creating texture: %s", SDL_GetError());
                     SDL_FreeSurface(surface);
                     free(cloned);
                     continue;
@@ -282,14 +316,17 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
                     .w = scaledBox.w,
                     .h = scaledBox.h
                 };
-                SDL_RenderCopyF(renderer, texture, NULL, &destination);
+                
+                if (SDL_RenderCopyF(renderer, texture, NULL, &destination) != 0) {
+                    SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
+                        "Error rendering text texture: %s", SDL_GetError());
+                }
 
                 SDL_DestroyTexture(texture);
                 SDL_FreeSurface(surface);
                 free(cloned);
                 break;
             }
-
             case CLAY_RENDER_COMMAND_TYPE_IMAGE: {                
                 Clay_ImageElementConfig *imageConfig = renderCommand->config.imageElementConfig;
                 SDL_Texture* texture = (SDL_Texture*)imageConfig->imageData;

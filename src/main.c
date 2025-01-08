@@ -390,12 +390,6 @@ void HandleSDLEvents(bool* running) {
 void RunGameLoop(SDL_Window* window, SDL_Renderer* renderer) {    
     SDL_Log("RunGameLoop started\n");
 
-    if (TTF_Init() == -1) {
-        SDL_Log("SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError());
-        return;
-    }
-    SDL_Log("TTF initialized\n");
-
     SDL_Log("Initializing SDL2 renderer...\n");
     Clay_SDL2_InitRenderer(renderer);
     Clay_SDL2_SetRenderScale(globalScalingFactor);  
@@ -413,9 +407,11 @@ void RunGameLoop(SDL_Window* window, SDL_Renderer* renderer) {
         return;
     }
 
+
     uint32_t minSize = Clay_MinMemorySize();
-    uint32_t recommendedSize = minSize + (minSize / 2);
-    
+    uint32_t mobileMultiplier = 2;  // Double the memory on mobile
+    uint32_t recommendedSize = minSize + (minSize * mobileMultiplier);
+
     void* arenaMemory = malloc(recommendedSize);
     if (!arenaMemory) {
         SDL_Log("Failed to allocate %u bytes for Clay arena\n", recommendedSize);
@@ -496,6 +492,19 @@ int SDL_main(int argc, char* argv[]) {
 
     SDL_Log("Mobile display setup: dimensions=%dx%d, dpi=%f, scale=%f", 
             displayMode.w, displayMode.h, ddpi, globalScalingFactor);
+
+
+    if (TTF_Init() == -1) {
+        SDL_Log("SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError());
+    }
+
+    char *env_str = SDL_getenv("MAGICK_MEMORY_LIMIT");
+    if (!env_str) {
+        SDL_setenv("MAGICK_MEMORY_LIMIT", "512MB", 1);
+    }
+
+    SDL_Log("TTF initialized\n");
+
 
     SDL_Window* window = SDL_CreateWindow(
         "myQuest", 

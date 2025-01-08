@@ -2,6 +2,8 @@
 #include "renderers/clay_sdl_renderer.h"
 #include <SDL_image.h>
 #include <errno.h>
+#include <unicode/uchar.h>
+#include <unicode/ustring.h>
 
 #if defined(CLAY_MOBILE)
 #include <android/asset_manager.h>
@@ -63,83 +65,156 @@ const char* get_image_path(const char* filename) {
 #endif
     return path;
 }
-
 bool load_font(uint32_t font_id, const char* filename, int size) {
-#if defined(CLAY_MOBILE)
-    // Check if SDL_ttf is initialized
-    if (!TTF_WasInit()) {
-        SDL_Log("SDL_ttf is not initialized before loading font\n");
+    // Early validation checks
+    if (font_id >= 32) {
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
+            "Invalid font ID %u (max 31)", font_id);
         return false;
     }
 
-    AAssetManager* mgr = get_asset_manager();
-    if (!mgr) {
-        SDL_Log("Error: Cannot load font - no asset manager\n");
-        return false;
+    // Cleanup existing font if any
+    if (SDL2_fonts[font_id].font) {
+        TTF_CloseFont(SDL2_fonts[font_id].font);
+        SDL2_fonts[font_id].font = NULL;
     }
 
-    const char* asset_path = get_font_path(filename);
-    SDL_Log("Attempting to load font: %s\n", asset_path);
+    const char* core_test_strings[] = {
+        "abcdefghijklmnopqrstuvwxyz",
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+        "0123456789",
+        "!@#$%^&*()_+-=[]{}|;:,.<>?"
+    };
 
-    AAsset* asset = AAssetManager_open(mgr, asset_path, AASSET_MODE_BUFFER);
-    if (!asset) {
-        SDL_Log("Error: Cannot open font asset: %s (errno: %d, error: %s)\n", 
-                asset_path, errno, strerror(errno));
-        return false;
-    }
 
-    off_t length = AAsset_getLength(asset);
-    void* buffer = malloc(length);
-    if (!buffer) {
-        SDL_Log("Error: Failed to allocate %ld bytes for font data\n", (long)length);
+    TTF_Font* font = NULL;
+    int max_attempts = 3;
+    int total_missing_glyphs = 0;
+    int total_tested_glyphs = 0;
+
+    for (int attempt = 0; attempt < max_attempts; attempt++) {
+        SDL_Log("Font loading attempt %d for %s", attempt + 1, filename);
+
+        // Android-specific loading
+        #if defined(CLAY_MOBILE)
+        AAssetManager* mgr = get_asset_manager();
+        if (!mgr) {
+            SDL_LogError(SDL_LOG_CATEGORY_ERROR, "No asset manager available");
+            continue;
+        }
+
+        const char* asset_path = get_font_path(filename);
+        SDL_Log("Attempting to load font from path: %s", asset_path);
+
+        AAsset* asset = AAssetManager_open(mgr, asset_path, AASSET_MODE_BUFFER);
+        if (!asset) {
+            SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
+                "Failed to open font asset: %s (Error: %s)", 
+                asset_path, strerror(errno));
+            continue;
+        }
+
+        off_t length = AAsset_getLength(asset);
+        SDL_Log("Font asset size: %ld bytes", (long)length);
+
+        void* buffer = malloc(length);
+        if (!buffer) {
+            SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
+                "Failed to allocate %ld bytes for font", (long)length);
+            AAsset_close(asset);
+            continue;
+        }
+
+        int read = AAsset_read(asset, buffer, length);
         AAsset_close(asset);
-        return false;
+
+        if (read != length) {
+            SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
+                "Incomplete font read: got %d of %ld bytes", read, (long)length);
+            free(buffer);
+            continue;
+        }
+
+        SDL_RWops* rw = SDL_RWFromMem(buffer, length);
+        if (!rw) {
+            SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
+                "Failed to create RWops: %s", SDL_GetError());
+            free(buffer);
+            continue;
+        }
+
+        font = TTF_OpenFontRW(rw, 1, size);  // 1 means SDL will free RWops
+        #else
+        // Non-mobile loading
+        const char* font_path = get_font_path(filename);
+        font = TTF_OpenFont(font_path, size);
+        #endif
+
+        if (!font) {
+            SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
+                "Failed to load font: %s", TTF_GetError());
+            SDL_Delay(200 * (attempt + 1));  // Exponential backoff
+            continue;
+        }
+
+        // Enhanced font configuration
+        TTF_SetFontHinting(font, TTF_HINTING_LIGHT);
+        TTF_SetFontKerning(font, 1);
+        TTF_SetFontOutline(font, 0);
+
+        total_missing_glyphs = 0;
+        total_tested_glyphs = 0;
+        
+        for (int i = 0; i < sizeof(core_test_strings)/sizeof(char*); i++) {
+            const char* test_string = core_test_strings[i];
+            
+            for (const char* c = test_string; *c; c++) {
+                total_tested_glyphs++;
+                
+                if (!TTF_GlyphIsProvided(font, (Uint16)*c)) {
+                    SDL_Log("Missing glyph for character: '%c' (Unicode: %d)", 
+                            *c, (unsigned int)*c);
+                    total_missing_glyphs++;
+                }
+            }
+        }
+
+        float missing_percentage = ((float)total_missing_glyphs / total_tested_glyphs) * 100.0f;
+        
+        SDL_Log("Glyph Coverage Analysis for %s:", filename);
+        SDL_Log(" - Total Tested Glyphs: %d", total_tested_glyphs);
+        SDL_Log(" - Missing Glyphs: %d", total_missing_glyphs);
+        SDL_Log(" - Missing Percentage: %.2f%%", missing_percentage);
+
+        // Stricter glyph coverage requirement
+        if (missing_percentage > 10.0f) {  // Allow max 10% missing glyphs
+            SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
+                "Font %s has insufficient glyph coverage (%.2f%% missing). Retrying.", 
+                filename, missing_percentage);
+            TTF_CloseFont(font);
+            font = NULL;
+            continue;
+        }
+
+        // If we've made it this far, we've successfully loaded the font
+        break;
     }
 
-    int read = AAsset_read(asset, buffer, length);
-    AAsset_close(asset);
-
-    if (read != length) {
-        SDL_Log("Error: Failed to read full font data. Expected %ld bytes, got %d\n", (long)length, read);
-        free(buffer);
-        return false;
-    }
-
-    SDL_RWops* rw = SDL_RWFromMem(buffer, length);
-    if (!rw) {
-        SDL_Log("Error: Failed to create RWops from memory: %s\n", SDL_GetError());
-        free(buffer);
-        return false;
-    }
-
-    TTF_Font* font = TTF_OpenFontRW(rw, 1, size);  // 1 means SDL_RWops will be auto-closed
-    free(buffer);
-
+    // Final validation
     if (!font) {
-        SDL_Log("Failed to load font: %s\n", TTF_GetError());
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
+            "Failed to load font %s after multiple attempts", filename);
         return false;
     }
 
-    // Store the font in SDL2_fonts array
+    // Store the font
     SDL2_fonts[font_id].fontId = font_id;
     SDL2_fonts[font_id].font = font;
-    SDL_Log("Successfully loaded font with ID %u\n", font_id);
+    
+    SDL_Log("Successfully loaded font %s (ID: %u, height: %d)", 
+        filename, font_id, TTF_FontHeight(font));
+    
     return true;
-
-#else
-    // Non-mobile platform font loading
-    TTF_Font* font = TTF_OpenFont(get_font_path(filename), size);
-    if (!font) {
-        SDL_Log("Failed to load font: %s\n", TTF_GetError());
-        return false;
-    }
-
-    // Store the font in SDL2_fonts array
-    SDL2_fonts[font_id].fontId = font_id;
-    SDL2_fonts[font_id].font = font;
-    SDL_Log("Successfully loaded font with ID %u\n", font_id);
-    return true;
-#endif
 }
 
 // Add a cleanup function for fonts
