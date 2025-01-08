@@ -103,8 +103,6 @@ void HandlePageInput(InputEvent event) {
         case 4: /* HandleRoutinePageInput(event); */ break;
     }
 }
-
-
 void HandleSDLEvents(bool* running) {
     SDL_Event event;
     static float last_time = 0;
@@ -115,11 +113,29 @@ void HandleSDLEvents(bool* running) {
     InputEvent input_event = {0};
     input_event.delta_time = delta_time;
 
+    // Get all active scroll containers at start of frame
+    Clay_ScrollContainerData activeScrollContainers[16] = {0};  // Adjust size as needed
+    Clay_ElementId activeScrollContainerIds[16] = {0};
+    int activeScrollCount = 0;
+
+    // Get all pointer-over elements and find scroll containers
+    for (uint32_t i = 0; i < Clay__pointerOverIds.length && activeScrollCount < 16; i++) {
+        Clay_ElementId elementId = Clay__pointerOverIds.internalArray[i];
+        Clay_ScrollContainerData tempData = Clay_GetScrollContainerData(elementId);
+        
+        if (tempData.found) {
+            activeScrollContainers[activeScrollCount] = tempData;
+            activeScrollContainerIds[activeScrollCount] = elementId;
+            activeScrollCount++;
+        }
+    }
+
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
             case SDL_QUIT:
                 *running = false;
                 break;
+
             case SDL_WINDOWEVENT:
                 if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
                     windowWidth = event.window.data1 / globalScalingFactor;
@@ -127,24 +143,33 @@ void HandleSDLEvents(bool* running) {
                     Clay_SetLayoutDimensions((Clay_Dimensions){windowWidth, windowHeight});
                 }
                 break;
-            case SDL_MOUSEWHEEL:
-{
-                float scrollMultiplier = 30.0f / globalScalingFactor;
+
+            case SDL_MOUSEWHEEL: {
+                float scrollMultiplier = 15.0f / globalScalingFactor;
                 Clay_Vector2 scrollDelta = {0, 0};
-                
-                // Check if shift is held for horizontal scrolling
-                const Uint8* keyState = SDL_GetKeyboardState(NULL);
-                if (keyState[SDL_SCANCODE_LSHIFT] || keyState[SDL_SCANCODE_RSHIFT]) {
-                    scrollDelta.x = event.wheel.y * scrollMultiplier; // Use Y wheel for horizontal when shift held
-                    scrollDelta.y = event.wheel.x * scrollMultiplier;
-                } else {
-                    scrollDelta.x = event.wheel.x * scrollMultiplier;
-                    scrollDelta.y = event.wheel.y * scrollMultiplier;
+
+                // Find topmost scroll container that's active
+                Clay_ScrollContainerData* activeScroll = NULL;
+                for (int i = 0; i < activeScrollCount; i++) {
+                    activeScroll = &activeScrollContainers[i];
+                    break;  // Use first (topmost) container
+                }
+
+                if (activeScroll) {
+                    bool preferHorizontal = (activeScroll->contentDimensions.width > activeScroll->contentDimensions.height) ||
+                                          (activeScroll->config.horizontal && !activeScroll->config.vertical);
+
+                    if (preferHorizontal) {
+                        scrollDelta.x = event.wheel.y * scrollMultiplier;
+                    } else {
+                        scrollDelta.y = event.wheel.y * scrollMultiplier;
+                    }
                 }
 
                 Clay_UpdateScrollContainers(true, scrollDelta, delta_time);
             }
             break;
+
             case SDL_MOUSEMOTION:
                 Clay_SetPointerState(
                     (Clay_Vector2){
@@ -155,26 +180,22 @@ void HandleSDLEvents(bool* running) {
                 );
                 
                 if (isScrollThumbDragging || isHorizontalScrollThumbDragging || isScrollDragging) {
-                    // Try both scroll containers
-                    Clay_ScrollContainerData calendarScrollData = Clay_GetScrollContainerData(
-                        Clay_GetElementId(CLAY_STRING("CalendarScrollContainer"))
-                    );
-                    Clay_ScrollContainerData homeScrollData = Clay_GetScrollContainerData(
-                        Clay_GetElementId(CLAY_STRING("HomeScrollContainer"))
-                    );
-                    
-                    Clay_ScrollContainerData* scrollData = 
-                        calendarScrollData.found ? &calendarScrollData : 
-                        (homeScrollData.found ? &homeScrollData : NULL);
-                    
+                    Clay_ScrollContainerData* scrollData = NULL;
+
+                    // Find the active scroll container
+                    for (int i = 0; i < activeScrollCount; i++) {
+                        scrollData = &activeScrollContainers[i];
+                        break;
+                    }
+
                     if (scrollData) {
+
                         if (isScrollThumbDragging) {
-                            // Vertical scrollbar logic
                             float scrollableHeight = scrollData->contentDimensions.height - scrollData->scrollContainerDimensions.height;
                             float dragDelta = (event.motion.y / globalScalingFactor) - (scrollDragStartY / globalScalingFactor);
                             float scrollRatio = dragDelta / scrollData->scrollContainerDimensions.height;
                             float newScrollY = initialScrollPosition.y - (scrollRatio * scrollableHeight);
-                            
+                                 
                             newScrollY = CLAY__MIN(0, CLAY__MAX(newScrollY, -scrollableHeight));
                             
                             *scrollData->scrollPosition = (Clay_Vector2){
@@ -182,7 +203,6 @@ void HandleSDLEvents(bool* running) {
                                 newScrollY
                             };
                         } else if (isHorizontalScrollThumbDragging) {
-                            // Horizontal scrollbar logic
                             float scrollableWidth = scrollData->contentDimensions.width - scrollData->scrollContainerDimensions.width;
                             float dragDelta = (event.motion.x / globalScalingFactor) - (scrollDragStartX / globalScalingFactor);
                             float scrollRatio = dragDelta / scrollData->scrollContainerDimensions.width;
@@ -195,13 +215,12 @@ void HandleSDLEvents(bool* running) {
                                 scrollData->scrollPosition->y
                             };
                         } else if (isScrollDragging) {
-                            // Direct dragging logic for both axes
                             float deltaY = (scrollDragStartY - event.motion.y) / globalScalingFactor;
                             float deltaX = (scrollDragStartX - event.motion.x) / globalScalingFactor;
                             
                             float newScrollY = initialScrollPosition.y;
                             float newScrollX = initialScrollPosition.x;
-                            
+                               
                             if (scrollData->config.vertical) {
                                 float scrollableHeight = scrollData->contentDimensions.height - scrollData->scrollContainerDimensions.height;
                                 newScrollY = initialScrollPosition.y - deltaY;
@@ -216,7 +235,6 @@ void HandleSDLEvents(bool* running) {
                             
                             *scrollData->scrollPosition = (Clay_Vector2){newScrollX, newScrollY};
                             
-                            // Update drag start position for smooth continuous scrolling
                             scrollDragStartY = event.motion.y;
                             scrollDragStartX = event.motion.x;
                             initialScrollPosition = *scrollData->scrollPosition;
@@ -224,6 +242,7 @@ void HandleSDLEvents(bool* running) {
                     }
                 }
                 break;
+
             case SDL_MOUSEBUTTONDOWN:
                 Clay_SetPointerState(
                     (Clay_Vector2){
@@ -234,76 +253,73 @@ void HandleSDLEvents(bool* running) {
                 );
 
                 if (event.button.button == SDL_BUTTON_LEFT) {
-                    Clay_ElementId calendarScrollContainerId = Clay_GetElementId(CLAY_STRING("CalendarScrollContainer"));
-                    Clay_ElementId homeScrollContainerId = Clay_GetElementId(CLAY_STRING("HomeScrollContainer"));
-                    
-                    Clay_ScrollContainerData calendarScrollData = Clay_GetScrollContainerData(calendarScrollContainerId);
-                    Clay_ScrollContainerData homeScrollData = Clay_GetScrollContainerData(homeScrollContainerId);
-                    
-                    Clay_ScrollContainerData* scrollData = 
-                        calendarScrollData.found ? &calendarScrollData : 
-                        (homeScrollData.found ? &homeScrollData : NULL);
-                    
-                    Clay_ElementId scrollContainerId = 
-                        calendarScrollData.found ? calendarScrollContainerId : 
-                        (homeScrollData.found ? homeScrollContainerId : (Clay_ElementId){0});
-                    
-                    if (scrollData) {
-                        Clay_LayoutElementHashMapItem* hashMapItem = Clay__GetHashMapItem(scrollContainerId.id);
+                    // Find active scroll container
+                    Clay_ScrollContainerData* scrollData = NULL;
+                    Clay_ElementId scrollContainerId = {0};
+                    Clay_LayoutElementHashMapItem* hashMapItem = NULL;
+
+                    for (int i = 0; i < activeScrollCount; i++) {
+                        scrollData = &activeScrollContainers[i];
+                        scrollContainerId = activeScrollContainerIds[i];
+                        hashMapItem = Clay__GetHashMapItem(scrollContainerId.id);
                         if (hashMapItem) {
-                            Clay_BoundingBox containerBox = hashMapItem->boundingBox;
-                            float scaledMouseX = event.button.x / globalScalingFactor;
-                            float scaledMouseY = event.button.y / globalScalingFactor;
+                            break;
+                        }
+                    }
 
-                            // Only calculate what we need based on enabled direction
-                            if (scrollData->config.vertical) {
-                                float viewportHeight = containerBox.height;
-                                float contentHeight = scrollData->contentDimensions.height;
-                                float thumbHeight = (viewportHeight / contentHeight) * viewportHeight;
-                                float thumbPosY = (-scrollData->scrollPosition->y / contentHeight) * viewportHeight;
+                    if (scrollData && hashMapItem) {
+                        Clay_BoundingBox containerBox = hashMapItem->boundingBox;
+                        float scaledMouseX = event.button.x / globalScalingFactor;
+                        float scaledMouseY = event.button.y / globalScalingFactor;
 
-                                // Check vertical scrollbar thumb
-                                if (scaledMouseX >= containerBox.x + containerBox.width - 10 && 
-                                    scaledMouseX <= containerBox.x + containerBox.width &&
-                                    scaledMouseY >= containerBox.y + thumbPosY &&
-                                    scaledMouseY <= containerBox.y + thumbPosY + thumbHeight) {
-                                    isScrollThumbDragging = true;
-                                    scrollDragStartY = event.button.y;
-                                    initialScrollPosition = *scrollData->scrollPosition;
-                                }
-                            }
-                            
-                            if (scrollData->config.horizontal) {
-                                float viewportWidth = containerBox.width;
-                                float contentWidth = scrollData->contentDimensions.width;
-                                float thumbWidth = (viewportWidth / contentWidth) * viewportWidth;
-                                float thumbPosX = (-scrollData->scrollPosition->x / contentWidth) * viewportWidth;
+                        // Vertical scrollbar check
+                        if (scrollData->config.vertical) {
+                            float viewportHeight = containerBox.height;
+                            float contentHeight = scrollData->contentDimensions.height;
+                            float thumbHeight = (viewportHeight / contentHeight) * viewportHeight;
+                            float thumbPosY = (-scrollData->scrollPosition->y / contentHeight) * viewportHeight;
 
-                                // Check horizontal scrollbar thumb
-                                if (scaledMouseY >= containerBox.y + containerBox.height - 10 && 
-                                    scaledMouseY <= containerBox.y + containerBox.height &&
-                                    scaledMouseX >= containerBox.x + thumbPosX &&
-                                    scaledMouseX <= containerBox.x + thumbPosX + thumbWidth) {
-                                    isHorizontalScrollThumbDragging = true;
-                                    scrollDragStartX = event.button.x;
-                                    initialScrollPosition = *scrollData->scrollPosition;
-                                }
-                            }
-
-                            // Only allow content drag if we hit the container
-                            if (scaledMouseX >= containerBox.x && 
+                            if (scaledMouseX >= containerBox.x + containerBox.width - 10 && 
                                 scaledMouseX <= containerBox.x + containerBox.width &&
-                                scaledMouseY >= containerBox.y && 
-                                scaledMouseY <= containerBox.y + containerBox.height) {
-                                isScrollDragging = true;
+                                scaledMouseY >= containerBox.y + thumbPosY &&
+                                scaledMouseY <= containerBox.y + thumbPosY + thumbHeight) {
+                                isScrollThumbDragging = true;
                                 scrollDragStartY = event.button.y;
+                                initialScrollPosition = *scrollData->scrollPosition;
+                            }
+                        }
+                        
+                        // Horizontal scrollbar check
+                        if (scrollData->config.horizontal) {
+                            float viewportWidth = containerBox.width;
+                            float contentWidth = scrollData->contentDimensions.width;
+                            float thumbWidth = (viewportWidth / contentWidth) * viewportWidth;
+                            float thumbPosX = (-scrollData->scrollPosition->x / contentWidth) * viewportWidth;
+
+                            if (scaledMouseY >= containerBox.y + containerBox.height - 10 && 
+                                scaledMouseY <= containerBox.y + containerBox.height &&
+                                scaledMouseX >= containerBox.x + thumbPosX &&
+                                scaledMouseX <= containerBox.x + thumbPosX + thumbWidth) {
+                                isHorizontalScrollThumbDragging = true;
                                 scrollDragStartX = event.button.x;
                                 initialScrollPosition = *scrollData->scrollPosition;
                             }
                         }
+
+                        // General drag check
+                        if (scaledMouseX >= containerBox.x && 
+                            scaledMouseX <= containerBox.x + containerBox.width &&
+                            scaledMouseY >= containerBox.y && 
+                            scaledMouseY <= containerBox.y + containerBox.height) {
+                            isScrollDragging = true;
+                            scrollDragStartY = event.button.y;
+                            scrollDragStartX = event.button.x;
+                            initialScrollPosition = *scrollData->scrollPosition;
+                        }
                     }
                 }
                 break;
+            
             case SDL_MOUSEBUTTONUP:
                 if (isScrollThumbDragging || isHorizontalScrollThumbDragging || isScrollDragging) {
                     isScrollThumbDragging = false;
