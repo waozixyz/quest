@@ -32,8 +32,11 @@ float globalScalingFactor = 1.0f;
 uint32_t ACTIVE_PAGE = 0;
 uint32_t ACTIVE_RENDERER_INDEX = 0;
 bool pages_initialized = false;
-float screenBreakpoint = 1024.0f;
-float mobileBreakpoint = 640.0f;
+
+const float BREAKPOINT_LARGE = 1024.0f; 
+const float BREAKPOINT_MEDIUM = 640.0f;  
+const float BREAKPOINT_SMALL = 480.0f;  
+
 
 // Font IDs
 const uint32_t FONT_ID_BODY_16 = 0;

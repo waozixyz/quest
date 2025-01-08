@@ -47,7 +47,7 @@ void CleanupNavIcons() {
 
 void RenderNavItem(const char* text, uint32_t pageId) {
     bool isActive = ACTIVE_PAGE == pageId;
-    bool showIcons = windowWidth < mobileBreakpoint;
+    bool showIcons = windowWidth < BREAKPOINT_MEDIUM;
 
     Clay_TextElementConfig *text_config = CLAY_TEXT_CONFIG({ 
         .fontSize = 20,

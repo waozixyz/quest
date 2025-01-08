@@ -1,11 +1,20 @@
 #include "components/home_card.h"
 
 const int CONER_RADIUS = 10;
-
 void RenderHomeCard(uint32_t index) {
     float screenWidth = (float)windowWidth;
 
-    float cardWidthPercent = screenWidth < screenBreakpoint ? 0.5f : 0.25f;
+    float cardWidthPercent;
+    if (screenWidth < BREAKPOINT_SMALL) {
+        // Mobile layout: 100% width
+        cardWidthPercent = 1.0f;
+    } else if (screenWidth < BREAKPOINT_LARGE) {
+        // Tablet/small screen layout: 50% width
+        cardWidthPercent = 0.5f;
+    } else {
+        // Large screen layout: 25% width
+        cardWidthPercent = 0.25f;
+    }
 
     Clay_TextElementConfig *card_title_config = CLAY_TEXT_CONFIG({ 
         .fontSize = 28,

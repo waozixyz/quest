@@ -8,6 +8,8 @@ void SetupCardGridLayout() {
         .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
     });
 }
+
+
 void RenderHomePage() {    
     float screenWidth = (float)windowWidth;
 
@@ -19,26 +21,20 @@ void RenderHomePage() {
             .layoutDirection = CLAY_TOP_TO_BOTTOM
         })
     ) {
-        // Title
-        CLAY(CLAY_ID("HomePageTitle"),
-            CLAY_LAYOUT({
-                .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) },
-                .childAlignment = { .x = CLAY_ALIGN_X_CENTER },
-                .padding = { 0, 32 }
-            })
-        ) {
-            CLAY_TEXT(CLAY_STRING("Welcome to MyQuest"),
-                CLAY_TEXT_CONFIG({
-                    .fontSize = 48,
-                    .fontId = FONT_ID_TITLE_56,
-                    .textColor = COLOR_TEXT
-                })
-            );
-        }
-
         // Cards container
         CLAY(CLAY_ID("CardGrid"), SetupCardGridLayout()) {
-            if (screenWidth < screenBreakpoint) {
+            if (screenWidth < BREAKPOINT_SMALL) {
+                // Mobile layout - 1 card per row
+                CLAY(CLAY_LAYOUT({
+                    .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
+                    .childGap = 32,
+                    .layoutDirection = CLAY_TOP_TO_BOTTOM
+                })) {
+                    for(uint32_t i = 0; i < 4; i++) {
+                        RenderHomeCard(i);
+                    }
+                }
+            } else if (screenWidth < BREAKPOINT_LARGE) {
                 // Small screen layout - 2x2 grid
                 CLAY(CLAY_LAYOUT({
                     .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },

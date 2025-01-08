@@ -43,4 +43,8 @@ extern const Clay_Color COLOR_CURSOR;
 
 extern const int DEFAULT_PADDING;
 
+extern const float BREAKPOINT_LARGE;
+extern const float BREAKPOINT_MEDIUM;
+extern const float BREAKPOINT_SMALL;
+
 #endif
