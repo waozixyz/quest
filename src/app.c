@@ -81,7 +81,6 @@ Clay_RenderCommandArray CreateLayout() {
         CLAY(CLAY_ID("MainContent"),
             CLAY_LAYOUT({ 
                 .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
-                .padding = { 16, 16 }
             })
         ) {
             RenderCurrentPage();
