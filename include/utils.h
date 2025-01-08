@@ -9,7 +9,7 @@
 
 #include <SDL.h>
 #include <SDL_ttf.h>
-#include "state.h"
+#include "config.h"
 #endif
 
 #if defined(CLAY_MOBILE)

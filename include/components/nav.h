@@ -11,7 +11,7 @@
 #endif
 
 #include "../styles.h"
-#include "../state.h"
+#include "../config.h"
 #include "../utils.h"
 #include "../../vendor/clay/clay.h"
 

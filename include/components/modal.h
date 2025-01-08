@@ -1,6 +1,7 @@
 #ifndef MODAL_H
 #define MODAL_H
 
+#include "../clay_extensions.h"
 #include "../../vendor/clay/clay.h"
 #include "../styles.h"
 

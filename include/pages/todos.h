@@ -11,14 +11,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef __EMSCRIPTEN__
+#ifdef CLAY_WASM
 #define CLAY_EXTEND_CONFIG_IMAGE Clay_String sourceURL;
 #else
 #include <SDL_image.h>
 #include <SDL.h>
 #endif
 
-#ifdef __EMSCRIPTEN__
+#ifdef CLAY_WASM
 void InitializeTodosPage(void);
 #else
 void InitializeTodosPage(SDL_Renderer* renderer);

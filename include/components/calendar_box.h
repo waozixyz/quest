@@ -2,6 +2,7 @@
 #define CALENDAR_BOX_H
 
 #include <stdbool.h>
+#include "../clay_extensions.h"
 #include "../../vendor/clay/clay.h"
 #include "../styles.h"
 #include <stdio.h>

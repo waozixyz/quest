@@ -93,8 +93,6 @@ bool load_font(uint32_t font_id, const char* filename, int size) {
     int total_tested_glyphs = 0;
 
     for (int attempt = 0; attempt < max_attempts; attempt++) {
-        SDL_Log("Font loading attempt %d for %s", attempt + 1, filename);
-
         // Android-specific loading
         #if defined(CLAY_MOBILE)
         AAssetManager* mgr = get_asset_manager();
@@ -104,7 +102,6 @@ bool load_font(uint32_t font_id, const char* filename, int size) {
         }
 
         const char* asset_path = get_font_path(filename);
-        SDL_Log("Attempting to load font from path: %s", asset_path);
 
         AAsset* asset = AAssetManager_open(mgr, asset_path, AASSET_MODE_BUFFER);
         if (!asset) {
@@ -115,7 +112,6 @@ bool load_font(uint32_t font_id, const char* filename, int size) {
         }
 
         off_t length = AAsset_getLength(asset);
-        SDL_Log("Font asset size: %ld bytes", (long)length);
 
         void* buffer = malloc(length);
         if (!buffer) {
@@ -172,8 +168,6 @@ bool load_font(uint32_t font_id, const char* filename, int size) {
                 total_tested_glyphs++;
                 
                 if (!TTF_GlyphIsProvided(font, (Uint16)*c)) {
-                    SDL_Log("Missing glyph for character: '%c' (Unicode: %d)", 
-                            *c, (unsigned int)*c);
                     total_missing_glyphs++;
                 }
             }
@@ -181,11 +175,6 @@ bool load_font(uint32_t font_id, const char* filename, int size) {
 
         float missing_percentage = ((float)total_missing_glyphs / total_tested_glyphs) * 100.0f;
         
-        SDL_Log("Glyph Coverage Analysis for %s:", filename);
-        SDL_Log(" - Total Tested Glyphs: %d", total_tested_glyphs);
-        SDL_Log(" - Missing Glyphs: %d", total_missing_glyphs);
-        SDL_Log(" - Missing Percentage: %.2f%%", missing_percentage);
-
         // Stricter glyph coverage requirement
         if (missing_percentage > 10.0f) {  // Allow max 10% missing glyphs
             SDL_LogError(SDL_LOG_CATEGORY_ERROR, 

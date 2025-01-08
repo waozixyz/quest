@@ -1,11 +1,12 @@
+// events.h
 #ifndef EVENTS_H
 #define EVENTS_H
 
 typedef struct {
-    int key;              // Key code
-    char text[32];        // Text input
-    bool isTextInput;     // Whether this is a text input event
-    float delta_time;     // Time since last frame
+    float delta_time;
+    bool isTextInput;
+    char text[32];
+    int key;
 } InputEvent;
 
 #endif
