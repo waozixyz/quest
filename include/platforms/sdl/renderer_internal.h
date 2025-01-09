@@ -8,9 +8,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "clay_sdl_renderer.h"
-#include "../styles.h"
-#include "../utils.h"
+#include "renderer.h"
+#include "../../styles.h"
+#include "../../utils.h"
 
 // Shared global variables
 extern SDL_Cursor* defaultCursor;

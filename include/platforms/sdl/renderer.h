@@ -5,8 +5,8 @@
 #include <SDL_ttf.h>
 #include <stdbool.h>
 
-#include "../clay_extensions.h"
-#include "../../vendor/clay/clay.h"
+#include "../../clay_extensions.h"
+#include "../../../vendor/clay/clay.h"
 
 // Initialize and cleanup renderer
 void Clay_SDL2_InitRenderer(SDL_Renderer *renderer);

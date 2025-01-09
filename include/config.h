@@ -60,6 +60,8 @@ extern int scrollDragStartY;
 extern int scrollDragStartX;
 extern Clay_Vector2 initialScrollPosition;
 extern bool isScrollThumbDragging;
+extern bool hadMotionBetweenDownAndUp;
+extern Clay_Vector2 initialPointerPosition;
 #endif
 
 #endif

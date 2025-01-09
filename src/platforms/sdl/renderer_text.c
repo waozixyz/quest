@@ -1,4 +1,4 @@
-#include "renderers/clay_sdl_renderer_internal.h"
+#include "platforms/sdl/renderer_internal.h"
 
 Clay_Dimensions SDL2_MeasureText(Clay_String *text, Clay_TextElementConfig *config) {    
     // Validate font

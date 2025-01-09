@@ -1,4 +1,4 @@
-#include "renderers/clay_sdl_renderer_internal.h"
+#include "platforms/sdl/renderer_internal.h"
 #include "SDL2_gfxPrimitives.h"
 
 void DrawQuarterCircle(
