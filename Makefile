@@ -32,11 +32,10 @@ else ifeq ($(BUILD_TYPE),android)
         -Ivendor/SDL_image/include \
         -Ivendor/SDL_ttf \
 		-Ivendor/SDL2_gfx
-
-    LINKER_FLAGS = -shared -landroid -llog -lm \
-        -L$(dir $(TARGET)) \
-        -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_gfx
-
+	LINKER_FLAGS = -shared -landroid -llog -lm \
+		-L$(dir $(TARGET)) \
+		-lSDL2 -lSDL2_image -lSDL2_ttf \
+		vendor/SDL2_gfx/build-android-$(TARGET_ABI)/libSDL2_gfx.a
     SRCS = $(shell find $(SRC_DIR) -name "*.c")
     SRCS += vendor/cJSON/cJSON.c
 else ifeq ($(BUILD_TYPE),desktop)
@@ -107,12 +106,9 @@ build-sdl-gfx-android: build-sdl-android
 			-DANDROID_PLATFORM=android-21 \
 			-DSDL2_DIR=../../SDL/build-android-$$abi \
 			-DSDL2_INCLUDE_DIR=../../SDL/include \
-			-DSDL2_LIBRARY=../../SDL/build-android-$$abi/libSDL2.so \
-			-DBUILD_SHARED_LIBS=ON && \
-		make) && \
-		cp vendor/SDL2_gfx/build-android-$$abi/libSDL2_gfx.so android/app/src/main/jniLibs/$$abi/ ; \
+			-DSDL2_LIBRARY=../../SDL/build-android-$$abi/libSDL2.so && \
+		make) ; \
 	done
-
 
 
 build-sdl-image-android: build-sdl-gfx-android

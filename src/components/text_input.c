@@ -21,6 +21,10 @@ static void HandleTextInputClick(Clay_ElementId elementId, Clay_PointerData poin
         input->blink_timer = 0;
         input->cursor_position = input->text_length;
         focused_input = input;
+
+        #if defined(CLAY_MOBILE)
+        SDL_StartTextInput();
+        #endif
     }
 }
 void HandleGlobalClick(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {

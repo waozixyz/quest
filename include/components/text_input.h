@@ -6,6 +6,11 @@
 #include <string.h>
 #include <stdlib.h>
 
+#if defined(CLAY_MOBILE)
+#include <SDL.h>
+
+#endif
+
 #define MAX_TEXT_INPUT_LENGTH 256
 
 typedef struct {
