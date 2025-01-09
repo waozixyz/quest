@@ -58,15 +58,3 @@ void HandleNavInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo
         ACTIVE_PAGE = (uint32_t)userData;
     }
 }
-
-#ifndef __EMSCRIPTEN__
-// Scroll state variables
-bool isScrollDragging = false;
-int scrollDragStartY = 0;
-int scrollDragStartX = 0;
-Clay_Vector2 initialScrollPosition = {0, 0};
-bool isScrollThumbDragging = false;
-bool isHorizontalScrollThumbDragging = false;
-bool hadMotionBetweenDownAndUp = false;
-Clay_Vector2 initialPointerPosition = {0, 0};
-#endif

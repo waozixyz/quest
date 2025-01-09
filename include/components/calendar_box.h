@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include "../clay_extensions.h"
 #include "../../vendor/clay/clay.h"
-#include "../styles.h"
+#include "../config.h"
 #include <stdio.h>
 #include <math.h>
 

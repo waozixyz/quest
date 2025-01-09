@@ -1,5 +1,5 @@
 #include "utils.h"
-#include "renderers/clay_sdl_renderer.h"
+#include "platforms/sdl/renderer.h"
 #include <SDL_image.h>
 #include <errno.h>
 #include <unicode/uchar.h>

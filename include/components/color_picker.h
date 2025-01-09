@@ -3,7 +3,7 @@
 #include "../clay_extensions.h"
 #include "../../vendor/clay/clay.h"
 #include <stdio.h>
-#include "../styles.h"
+#include "../config.h"
 #include "modal.h"
 
 // Predefined color palette with 255.0f scale

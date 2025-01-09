@@ -2,7 +2,7 @@
 #define TEXT_INPUT_H
 
 #include "../../vendor/clay/clay.h"
-#include "../styles.h"
+#include "../config.h"
 #include <string.h>
 #include <stdlib.h>
 

@@ -10,7 +10,6 @@
 #include <SDL.h>
 #endif
 
-#include "../styles.h"
 #include "../config.h"
 #include "../utils.h"
 #include "../../vendor/clay/clay.h"

@@ -1,7 +1,7 @@
 #ifndef TIMELINE_PAGE_H
 #define TIMELINE_PAGE_H
 
-#include "../styles.h"
+#include "../config.h"
 
 void RenderTimelinePage(void);
 

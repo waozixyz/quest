@@ -1,7 +1,7 @@
 #ifndef ROUTINE_PAGE_H
 #define ROUTINE_PAGE_H
 
-#include "../styles.h"
+#include "../config.h"
 
 
 void RenderRoutinePage(void);

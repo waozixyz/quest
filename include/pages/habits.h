@@ -4,8 +4,7 @@
 #include "../clay_extensions.h"
 #include "../../vendor/clay/clay.h"
 #include "../state/habits_state.h"
-#include "../styles.h"
-#include "../events.h"
+#include "../config.h"
 
 
 

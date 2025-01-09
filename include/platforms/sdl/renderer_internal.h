@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 #include "renderer.h"
-#include "../../styles.h"
+#include "../../config.h"
 #include "../../utils.h"
 
 // Shared global variables

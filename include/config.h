@@ -51,17 +51,13 @@ extern const int DEFAULT_PADDING;
 // Navigation handler
 void HandleNavInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData);
 
-#ifndef __EMSCRIPTEN__
-#include <SDL.h>
-// Scroll state (for non-EMSCRIPTEN)
-extern bool isScrollDragging;
-extern bool isHorizontalScrollThumbDragging;
-extern int scrollDragStartY;
-extern int scrollDragStartX;
-extern Clay_Vector2 initialScrollPosition;
-extern bool isScrollThumbDragging;
-extern bool hadMotionBetweenDownAndUp;
-extern Clay_Vector2 initialPointerPosition;
-#endif
+
+
+typedef struct {
+    float delta_time;
+    bool isTextInput;
+    char text[32];
+    int key;
+} InputEvent;
 
 #endif
