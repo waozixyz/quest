@@ -24,6 +24,7 @@ extern const uint32_t FONT_ID_BODY_36;
 extern const uint32_t FONT_ID_TITLE_36;
 extern const uint32_t FONT_ID_MONOSPACE_24;
 extern const uint32_t FONT_ID_BODY_14;
+extern const uint32_t FONT_ID_BODY_18;
 
 // Colors
 extern const Clay_Color COLOR_BACKGROUND;

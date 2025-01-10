@@ -20,6 +20,7 @@ const uint32_t FONT_ID_BODY_36 = 3;
 const uint32_t FONT_ID_TITLE_36 = 4;
 const uint32_t FONT_ID_MONOSPACE_24 = 5;
 const uint32_t FONT_ID_BODY_14 = 6;
+const uint32_t FONT_ID_BODY_18 = 7;
 
 // Theme Colors
 const Clay_Color COLOR_BACKGROUND = (Clay_Color) {26, 15, 31, 255};  // #1a0f1f

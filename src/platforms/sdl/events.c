@@ -474,7 +474,8 @@ void InitializeSDL(SDL_Window* window, SDL_Renderer* renderer) {
         !load_font(FONT_ID_BODY_36, "Quicksand-Semibold.ttf", 36) ||
         !load_font(FONT_ID_TITLE_36, "Calistoga-Regular.ttf", 36) ||
         !load_font(FONT_ID_MONOSPACE_24, "Calistoga-Regular.ttf", 24) ||
-        !load_font(FONT_ID_BODY_14, "Quicksand-Semibold.ttf", 14)) {
+        !load_font(FONT_ID_BODY_14, "Quicksand-Semibold.ttf", 14) ||
+        !load_font(FONT_ID_BODY_18, "Quicksand-Semibold.ttf", 18)) {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to load one or more fonts");
         TTF_Quit();
         return;
