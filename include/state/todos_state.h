@@ -8,6 +8,7 @@
 #include "../../vendor/clay/clay.h"
 #include <string.h>
 #include <stdio.h>
+#include "../components/text_input.h"
 
 #define MAX_TODO_TEXT 256
 #define MAX_TODOS_PER_DAY 100
@@ -26,6 +27,8 @@ typedef struct {
     Todo todos[MAX_TODOS];
     size_t todos_count;
     char active_day[10];
+    uint32_t editing_todo_id;  // Add this
+    TextInput* todo_edit_input; // Add this
 } TodoCollection;
 
 // State management functions

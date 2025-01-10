@@ -41,7 +41,6 @@ void ToggleHabitStateForDay(Clay_ElementId elementId, Clay_PointerData pointerIn
 void RenderHabitsPage(void);
 
 // External state
-extern Modal delete_modal;
 extern HabitCollection habits;
 
 #endif // HABITS_H

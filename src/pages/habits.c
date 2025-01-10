@@ -21,7 +21,7 @@ Modal date_picker_modal = {
     .height = 500
 };
 
-Modal delete_modal = {
+Modal delete_habit_modal = {
     .is_open = false,
     .width = 300,  
     .height = 300 
@@ -118,7 +118,7 @@ static void HandleDeleteButtonClick(Clay_ElementId elementId, Clay_PointerData p
                 pending_delete_habit_id = habit_id;
                 strncpy(pending_delete_habit_name, habits.habits[i].name, MAX_HABIT_NAME - 1);
                 pending_delete_habit_name[MAX_HABIT_NAME - 1] = '\0';
-                delete_modal.is_open = true;
+                delete_habit_modal.is_open = true;
                 break;
             }
         }
@@ -129,13 +129,13 @@ static void HandleModalConfirm(Clay_ElementId elementId, Clay_PointerData pointe
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         DeleteHabit(&habits, pending_delete_habit_id);
         habits.is_editing_new_habit = false;  
-        delete_modal.is_open = false;
+        delete_habit_modal.is_open = false;
     }
 }
 
 static void HandleModalCancel(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
-        delete_modal.is_open = false;
+        delete_habit_modal.is_open = false;
     }
 }
 
@@ -231,8 +231,8 @@ void RenderDeleteModalContent() {
 }
 
 void RenderDeleteHabitModal(void) {
-    if (!delete_modal.is_open) return;
-    RenderModal(&delete_modal, RenderDeleteModalContent); 
+    if (!delete_habit_modal.is_open) return;
+    RenderModal(&delete_habit_modal, RenderDeleteModalContent); 
 }
 
 void HandleHabitNameSubmit(const char* text) {
