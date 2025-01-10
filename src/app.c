@@ -98,14 +98,13 @@ Clay_RenderCommandArray CreateLayout() {
 }
 
 #ifndef __EMSCRIPTEN__
-
 void RunGameLoop(SDL_Window* window, SDL_Renderer* renderer) {    
     SDL_Log("RunGameLoop started\n");
 
     InitializeSDL(window, renderer);
 
     uint32_t minSize = Clay_MinMemorySize();
-    uint32_t mobileMultiplier = 2;  // Double the memory on mobile
+    uint32_t mobileMultiplier = 2;
     uint32_t recommendedSize = minSize + (minSize * mobileMultiplier);
 
     void* arenaMemory = malloc(recommendedSize);
@@ -124,8 +123,18 @@ void RunGameLoop(SDL_Window* window, SDL_Renderer* renderer) {
     InitializeNavIcons(renderer);
     InitializePages(renderer);
 
+    // Add FPS management
+    const int FPS = 60;
+    const int FRAME_DELAY = 1000 / FPS;
+    Uint32 frameStart;
+    int frameTime;
+    int frameCount = 0;
+    Uint32 lastFPSUpdate = SDL_GetTicks();
+
     bool running = true;
     while (running) {
+        frameStart = SDL_GetTicks();
+
         HandleSDLEvents(&running);
 
         SDL_SetRenderDrawColor(renderer, 
@@ -145,6 +154,20 @@ void RunGameLoop(SDL_Window* window, SDL_Renderer* renderer) {
 
         Clay_SDL2_Render(renderer, commands);
         SDL_RenderPresent(renderer);
+
+        // Frame time management and FPS logging
+        frameTime = SDL_GetTicks() - frameStart;
+        if (frameTime < FRAME_DELAY) {
+            SDL_Delay(FRAME_DELAY - frameTime);
+        }
+
+        // Log FPS every second
+        frameCount++;
+        if (SDL_GetTicks() - lastFPSUpdate >= 1000) {
+            SDL_Log("FPS: %d", frameCount);
+            frameCount = 0;
+            lastFPSUpdate = SDL_GetTicks();
+        }
     }
 
     CleanupPages();
@@ -152,5 +175,4 @@ void RunGameLoop(SDL_Window* window, SDL_Renderer* renderer) {
     CleanupSDL();
     free(arenaMemory);
 }
-
 #endif

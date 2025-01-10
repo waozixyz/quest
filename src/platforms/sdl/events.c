@@ -18,6 +18,20 @@ float scrollDragStartY = 0;
 Clay_Vector2 initialScrollPosition = {0};
 
 
+typedef enum {
+    TOUCH_STATE_NONE,
+    TOUCH_STATE_DOWN,
+    TOUCH_STATE_DRAGGING,
+} TouchState;
+
+static TouchState currentTouchState = TOUCH_STATE_NONE;
+static SDL_FingerID activeTouchId = 0;  // Track the active touch
+static Uint32 lastTouchTime = 0;
+const Uint32 TOUCH_DEBOUNCE_MS = 200;  // Reduced from 300
+const Uint32 POST_CLICK_QUIET_PERIOD_MS = 250;  
+static Uint32 lastSuccessfulClickTime = 0;
+
+
 void HandlePointerDragging(float x, float y, Clay_ScrollContainerData* scrollData) {
     if (!scrollData) return;
 
@@ -335,112 +349,163 @@ void HandleSDLEvents(bool* running) {
                 }
                 break;
             case SDL_FINGERDOWN:
-                {
-                    int actualWidth, actualHeight;
-                    SDL_GetWindowSize(SDL_GetWindowFromID(event.tfinger.windowID), &actualWidth, &actualHeight);
-                    
-                    float screenX = event.tfinger.x * actualWidth;
-                    float screenY = event.tfinger.y * actualHeight;
-                    
-                    initialPointerPosition = (Clay_Vector2){
-                        screenX / globalScalingFactor,
-                        screenY / globalScalingFactor
-                    };
-                    
-                    Clay_SetPointerState(initialPointerPosition, false);
-                    hadMotionBetweenDownAndUp = false;
+            {
+                Uint32 currentTime = SDL_GetTicks();
+                
+                // Check both normal debounce and post-click quiet period
+                if (currentTime - lastTouchTime < TOUCH_DEBOUNCE_MS ||
+                    currentTime - lastSuccessfulClickTime < POST_CLICK_QUIET_PERIOD_MS) {
+                    SDL_Log("Touch ignored - in quiet period (debounce: %u ms, post-click: %u ms)", 
+                        currentTime - lastTouchTime,
+                        currentTime - lastSuccessfulClickTime);
+                    break;
+                }
+                
+                // Only handle the first touch if multiple touches occur
+                if (currentTouchState != TOUCH_STATE_NONE) {
+                    SDL_Log("Touch ignored - already handling a touch");
+                    break;
+                }
 
-                    // Don't immediately start scroll dragging on touch down
-                    // Instead, wait for some movement to determine if it's a scroll or tap
+                // Store this touch's ID as the active one
+                activeTouchId = event.tfinger.fingerId;
+                currentTouchState = TOUCH_STATE_DOWN;
+                
+                int actualWidth, actualHeight;
+                SDL_GetWindowSize(SDL_GetWindowFromID(event.tfinger.windowID), &actualWidth, &actualHeight);
+                
+                float screenX = event.tfinger.x * actualWidth;
+                float screenY = event.tfinger.y * actualHeight;
+                
+                SDL_Log("FINGER DOWN: x=%.2f, y=%.2f (screen: %dx%d)", 
+                        screenX, screenY, actualWidth, actualHeight);
+                
+                initialPointerPosition = (Clay_Vector2){
+                    screenX / globalScalingFactor,
+                    screenY / globalScalingFactor
+                };
+                
+                SDL_Log("Initial position (scaled): x=%.2f, y=%.2f (scale: %.2f)", 
+                        initialPointerPosition.x, initialPointerPosition.y, globalScalingFactor);
+                
+                Clay_SetPointerState(initialPointerPosition, false);
+                hadMotionBetweenDownAndUp = false;
+
+                // Find active scroll container if any
+                Clay_ScrollContainerData* scrollData = NULL;
+                for (int i = 0; i < activeScrollCount; i++) {
+                    scrollData = &activeScrollContainers[i];
+                    SDL_Log("Found active scroll container %d", i);
+                    break;
+                }
+
+                if (scrollData) {
+                    scrollDragStartX = screenX;
+                    scrollDragStartY = screenY;
+                    initialScrollPosition = *scrollData->scrollPosition;
+                }
+            }
+            break;
+
+            case SDL_FINGERMOTION:
+            {
+                // Ignore motion from non-active touches
+                if (event.tfinger.fingerId != activeTouchId || currentTouchState == TOUCH_STATE_NONE) {
+                    break;
+                }
+
+                int actualWidth, actualHeight;
+                SDL_GetWindowSize(SDL_GetWindowFromID(event.tfinger.windowID), &actualWidth, &actualHeight);
+                
+                float screenX = event.tfinger.x * actualWidth;
+                float screenY = event.tfinger.y * actualHeight;
+                
+                Clay_Vector2 currentPos = {
+                    screenX / globalScalingFactor,
+                    screenY / globalScalingFactor
+                };
+                
+                float dx = screenX - scrollDragStartX;
+                float dy = screenY - scrollDragStartY;
+                float moveDistance = sqrtf(dx*dx + dy*dy);
+                
+                SDL_Log("Motion distance: %.2f pixels", moveDistance);
+                
+                // Start dragging only if we've moved enough
+                if (currentTouchState == TOUCH_STATE_DOWN && moveDistance > 40.0f) {
+                    currentTouchState = TOUCH_STATE_DRAGGING;
+                    isScrollDragging = true;
+                    SDL_Log("Scroll drag started (distance threshold reached)");
+                }
+                
+                Clay_SetPointerState(currentPos, false);
+                
+                if (currentTouchState == TOUCH_STATE_DRAGGING) {
                     Clay_ScrollContainerData* scrollData = NULL;
                     for (int i = 0; i < activeScrollCount; i++) {
                         scrollData = &activeScrollContainers[i];
                         break;
                     }
-
                     if (scrollData) {
-                        scrollDragStartX = screenX;
-                        scrollDragStartY = screenY;
-                        initialScrollPosition = *scrollData->scrollPosition;
-                        // Don't set isScrollDragging immediately
+                        HandlePointerDragging(screenX, screenY, scrollData);
                     }
                 }
-                break;
-            case SDL_FINGERMOTION:
-                {
-                    int actualWidth, actualHeight;
-                    SDL_GetWindowSize(SDL_GetWindowFromID(event.tfinger.windowID), &actualWidth, &actualHeight);
-                    
-                    float screenX = event.tfinger.x * actualWidth;
-                    float screenY = event.tfinger.y * actualHeight;
-                    
-                    Clay_Vector2 currentPos = {
-                        screenX / globalScalingFactor,
-                        screenY / globalScalingFactor
-                    };
-                    
-                    // Calculate movement distance
-                    float dx = screenX - scrollDragStartX;
-                    float dy = screenY - scrollDragStartY;
-                    float moveDistance = sqrtf(dx*dx + dy*dy);
-                    
-                    // Increase threshold for scroll start on mobile
-                    if (!isScrollDragging && moveDistance > 40.0f) {  // Increased from 10 to 20
-                        isScrollDragging = true;
-                    }
-                    
-                    Clay_SetPointerState(currentPos, false);
-                    
-                    if (isScrollDragging) {
-                        Clay_ScrollContainerData* scrollData = NULL;
-                        for (int i = 0; i < activeScrollCount; i++) {
-                            scrollData = &activeScrollContainers[i];
-                            break;
-                        }
-                        if (scrollData) {
-                            HandlePointerDragging(screenX, screenY, scrollData);
-                        }
-                    }
-                    
-                    // Increase motion threshold for touch
-                    if (moveDistance > 15.0f) {  // Increased from 5 to 15
-                        hadMotionBetweenDownAndUp = true;
-                    }
+                
+                if (moveDistance > 15.0f) {
+                    hadMotionBetweenDownAndUp = true;
                 }
-                break;
+            }
+            break;
 
             case SDL_FINGERUP:
-                {
-                    int actualWidth, actualHeight;
-                    SDL_GetWindowSize(SDL_GetWindowFromID(event.tfinger.windowID), &actualWidth, &actualHeight);
-                    
-                    float screenX = event.tfinger.x * actualWidth;
-                    float screenY = event.tfinger.y * actualHeight;
-                    
-                    Clay_Vector2 upPosition = {
-                        screenX / globalScalingFactor,
-                        screenY / globalScalingFactor
-                    };
-                    
-                    float dx = upPosition.x - initialPointerPosition.x;
-                    float dy = upPosition.y - initialPointerPosition.y;
-                    float distanceSquared = dx*dx + dy*dy;
-                    
-                    // Increase the allowed movement for a touch
-                    if (distanceSquared < 100.0f) {  // Increased from 25 to 100 (10 pixels squared)
-                        Clay_SetPointerState(upPosition, true);
-                        SDL_Delay(1);
-                        Clay_SetPointerState(upPosition, false);
-                    } else {
-                        Clay_SetPointerState(upPosition, false);
-                    }
-                    
-                    isScrollThumbDragging = false;
-                    isHorizontalScrollThumbDragging = false;
-                    isScrollDragging = false;
-                    hadMotionBetweenDownAndUp = false;
+            {
+                // Ignore up events from non-active touches
+                if (event.tfinger.fingerId != activeTouchId || currentTouchState == TOUCH_STATE_NONE) {
+                    SDL_Log("Ignored non-active touch up event");
+                    break;
                 }
-                break;
+                
+                Uint32 currentTime = SDL_GetTicks();
+                lastTouchTime = currentTime;
+                
+                int actualWidth, actualHeight;
+                SDL_GetWindowSize(SDL_GetWindowFromID(event.tfinger.windowID), &actualWidth, &actualHeight);
+                
+                float screenX = event.tfinger.x * actualWidth;
+                float screenY = event.tfinger.y * actualHeight;
+                
+                Clay_Vector2 upPosition = {
+                    screenX / globalScalingFactor,
+                    screenY / globalScalingFactor
+                };
+                
+                float dx = (screenX - (initialPointerPosition.x * globalScalingFactor));
+                float dy = (screenY - (initialPointerPosition.y * globalScalingFactor));
+                float distanceSquared = dx*dx + dy*dy;
+                
+                // Only process as a tap if we haven't moved much and aren't dragging
+                if (distanceSquared < 100.0f && currentTouchState == TOUCH_STATE_DOWN) {
+                    SDL_Log("Processing as tap/click");
+                    Clay_SetPointerState(upPosition, true);
+                    SDL_Delay(25);
+                    Clay_SetPointerState(upPosition, false);
+                    lastSuccessfulClickTime = SDL_GetTicks();  // Record successful click time
+                } else {
+                    SDL_Log("Touch ignored - was dragging or moved too much");
+                    Clay_SetPointerState(upPosition, false);
+                }
+                
+                // Reset all states
+                currentTouchState = TOUCH_STATE_NONE;
+                activeTouchId = 0;
+                isScrollThumbDragging = false;
+                isHorizontalScrollThumbDragging = false;
+                isScrollDragging = false;
+                hadMotionBetweenDownAndUp = false;
+                
+                SDL_Log("Touch state reset");
+            }
+            break;
             case SDL_KEYDOWN:
                 input_event.isTextInput = false;
                 if (event.key.keysym.sym == SDLK_BACKSPACE) {

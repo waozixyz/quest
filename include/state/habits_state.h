@@ -42,6 +42,7 @@ typedef struct {
     time_t calendar_start_date;  
 } HabitCollection;
 
+
 // Public API
 void SaveHabits(HabitCollection* collection);
 void LoadHabits(HabitCollection* collection);

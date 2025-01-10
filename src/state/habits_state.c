@@ -1,6 +1,10 @@
 #include "state/habits_state.h"
 #include "storage_utils.h"
 
+
+static Uint32 lastCalendarToggleTime = 0;
+const Uint32 CALENDAR_TOGGLE_DEBOUNCE_MS = 250;
+
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 
@@ -262,10 +266,19 @@ void LoadHabits(HabitCollection* collection) {
 bool ToggleHabitDay(HabitCollection* collection, uint32_t day_index) {
     if (!collection) return false;
     
+    // Add debounce check
+    Uint32 currentTime = SDL_GetTicks();
+    if (currentTime - lastCalendarToggleTime < CALENDAR_TOGGLE_DEBOUNCE_MS) {
+        SDL_Log("Calendar toggle ignored - too soon (delta: %u ms)", 
+                currentTime - lastCalendarToggleTime);
+        return false;
+    }
+    lastCalendarToggleTime = currentTime;
+    
     Habit* habit = GetActiveHabit(collection);
     if (!habit) return false;
     
-    // Check if day exists and toggle it
+    // Rest of the function remains the same...
     for (size_t i = 0; i < habit->days_count; i++) {
         if (habit->calendar_days[i].day_index == day_index) {
             habit->calendar_days[i].completed = !habit->calendar_days[i].completed;
@@ -274,7 +287,6 @@ bool ToggleHabitDay(HabitCollection* collection, uint32_t day_index) {
         }
     }
 
-    // Add new day
     if (habit->days_count >= MAX_CALENDAR_DAYS) return false;
     
     HabitDay* new_day = &habit->calendar_days[habit->days_count++];
@@ -283,6 +295,7 @@ bool ToggleHabitDay(HabitCollection* collection, uint32_t day_index) {
     new_day->date = time(NULL);
     return true;
 }
+
 
 void UpdateCalendarStartDate(HabitCollection* collection, time_t new_start_date) {
     if (!collection) return;
