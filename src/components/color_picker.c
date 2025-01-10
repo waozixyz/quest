@@ -18,7 +18,8 @@ static void HandleColorHover(Clay_ElementId elementId, Clay_PointerData pointerI
 static void HandleCurrentColorClick(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         Modal* modal = (Modal*)userData;
-        modal->is_open = true;
+        OpenModal(modal);
+
     }
 }
 

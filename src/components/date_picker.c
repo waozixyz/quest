@@ -28,7 +28,7 @@ void InitializeDatePicker(time_t initial_date, void (*on_date_change)(time_t), M
 static void HandleDateClick(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         Modal* modal = (Modal*)userData;
-        modal->is_open = true;
+        OpenModal(modal);
     }
 }
 

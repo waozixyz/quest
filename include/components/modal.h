@@ -13,5 +13,6 @@ typedef struct {
 
 void RenderModal(Modal* modal, void (*render_content)(void));
 void CloseModal(Modal* modal);
+void OpenModal(Modal* modal);
 
 #endif // MODAL_H

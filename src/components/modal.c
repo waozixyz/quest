@@ -4,7 +4,18 @@ static void HandleBackdropClick(Clay_ElementId elementId, Clay_PointerData point
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         Modal* modal = (Modal*)userData;
         modal->is_open = false;
+        
+        #if defined(CLAY_MOBILE)
+        SDL_StopTextInput();
+        #endif
     }
+}
+void OpenModal(Modal* modal) {
+    modal->is_open = true;
+    
+    #if defined(CLAY_MOBILE)
+    SDL_StopTextInput();
+    #endif
 }
 
 void RenderModal(Modal* modal, void (*render_content)(void)) {
