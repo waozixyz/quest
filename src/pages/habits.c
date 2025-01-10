@@ -29,6 +29,8 @@ Modal delete_modal = {
 
 static Uint32 last_click_time = 0;
 static uint32_t last_clicked_habit_id = 0;
+static Uint32 lastNewTabTime = 0;
+const Uint32 NEW_TAB_DEBOUNCE_MS = 250;
 
 
 #ifndef __EMSCRIPTEN__
@@ -102,11 +104,17 @@ static void HandleHeaderTitleClick(Clay_ElementId elementId, Clay_PointerData po
     last_clicked_habit_id = active_habit->id;
 }
 
+
 static void HandleDeleteButtonClick(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         uint32_t habit_id = (uint32_t)userData;
         for (size_t i = 0; i < habits.habits_count; i++) {
             if (habits.habits[i].id == habit_id) {
+                // Close keyboard when opening delete modal
+                #ifdef CLAY_MOBILE
+                SDL_StopTextInput();
+                #endif
+                
                 pending_delete_habit_id = habit_id;
                 strncpy(pending_delete_habit_name, habits.habits[i].name, MAX_HABIT_NAME - 1);
                 pending_delete_habit_name[MAX_HABIT_NAME - 1] = '\0';
@@ -253,6 +261,15 @@ static void HandleConfirmButtonClick(Clay_ElementId elementId, Clay_PointerData 
 
 void HandleNewTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        // Add debounce check
+        Uint32 currentTime = SDL_GetTicks();
+        if (currentTime - lastNewTabTime < NEW_TAB_DEBOUNCE_MS) {
+            SDL_Log("New tab ignored - too soon (delta: %u ms)", 
+                    currentTime - lastNewTabTime);
+            return;
+        }
+        lastNewTabTime = currentTime;
+
         AddNewHabit(&habits);
         habits.is_editing_new_habit = true;
         habits.active_habit_id = habits.habits[habits.habits_count - 1].id;

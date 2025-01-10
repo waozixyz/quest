@@ -53,4 +53,11 @@ void AddNewHabit(HabitCollection* collection);
 Habit* GetHabitById(HabitCollection* collection, uint32_t id);
 void UpdateCalendarStartDate(HabitCollection* collection, time_t new_start_date);
 void DeleteHabit(HabitCollection* collection, uint32_t habit_id);
+
+
+// Platform-specific initialization
+#ifndef __EMSCRIPTEN__
+#include "SDL.h"
+#endif
+
 #endif

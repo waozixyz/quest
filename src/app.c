@@ -123,18 +123,8 @@ void RunGameLoop(SDL_Window* window, SDL_Renderer* renderer) {
     InitializeNavIcons(renderer);
     InitializePages(renderer);
 
-    // Add FPS management
-    const int FPS = 60;
-    const int FRAME_DELAY = 1000 / FPS;
-    Uint32 frameStart;
-    int frameTime;
-    int frameCount = 0;
-    Uint32 lastFPSUpdate = SDL_GetTicks();
-
     bool running = true;
     while (running) {
-        frameStart = SDL_GetTicks();
-
         HandleSDLEvents(&running);
 
         SDL_SetRenderDrawColor(renderer, 
@@ -155,19 +145,6 @@ void RunGameLoop(SDL_Window* window, SDL_Renderer* renderer) {
         Clay_SDL2_Render(renderer, commands);
         SDL_RenderPresent(renderer);
 
-        // Frame time management and FPS logging
-        frameTime = SDL_GetTicks() - frameStart;
-        if (frameTime < FRAME_DELAY) {
-            SDL_Delay(FRAME_DELAY - frameTime);
-        }
-
-        // Log FPS every second
-        frameCount++;
-        if (SDL_GetTicks() - lastFPSUpdate >= 1000) {
-            SDL_Log("FPS: %d", frameCount);
-            frameCount = 0;
-            lastFPSUpdate = SDL_GetTicks();
-        }
     }
 
     CleanupPages();

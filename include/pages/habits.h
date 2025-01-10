@@ -6,49 +6,42 @@
 #include "../state/habits_state.h"
 #include "../config.h"
 #include "../components/modal.h"
-
-
-
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
 
-
-
-// Add modal rendering function declarations
+// Modal functions
 void RenderDeleteHabitModal(void);
 void RenderDeleteModalContent(void);
 
+// Habit tab bar functions
 void RenderHabitTabBar(void);
 void HandleNewTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData);
 void HandleTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData);
 void HandleHabitNameSubmit(const char* text);
 
+// Platform-specific initialization
 #ifndef __EMSCRIPTEN__
 #include "SDL.h"
 void InitializeHabitTabBar(SDL_Renderer* renderer);
-#endif
-void CleanupHabitTabBar(void);
-
-
-
-extern Modal delete_modal;
-
-
-
-void RenderHabitsPage(void);
-void ToggleHabitStateForDay(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData);
-#ifndef __EMSCRIPTEN__
-#include "SDL.h"
 void InitializeHabitsPage(SDL_Renderer* renderer);
-
 #else
 void InitializeHabitsPage(void);
-
 #endif
-void CleanupHabitsPage(void);
-void HandleHabitsPageInput(InputEvent event);
 
+// Cleanup functions
+void CleanupHabitTabBar(void);
+void CleanupHabitsPage(void);
+
+// Event handling
+void HandleHabitsPageInput(InputEvent event);
+void ToggleHabitStateForDay(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData);
+
+// Main page render function
+void RenderHabitsPage(void);
+
+// External state
+extern Modal delete_modal;
 extern HabitCollection habits;
 
 #endif // HABITS_H

@@ -53,9 +53,18 @@ void InitializeTodosPage(void) {
     todo_input = CreateTextInput(OnTodoInputChanged, OnTodoInputSubmit);
 }
 #else
+static SDL_Texture* check_texture = NULL;
+
 void InitializeTodosPage(SDL_Renderer* renderer) {
     LoadTodos(&todo_collection);
     todo_input = CreateTextInput(OnTodoInputChanged, OnTodoInputSubmit);
+
+    // Load check texture
+    SDL_Surface* check_surface = load_image("icons/check.png");
+    if (check_surface) {
+        check_texture = SDL_CreateTextureFromSurface(renderer, check_surface);
+        SDL_FreeSurface(check_surface);
+    }
 
     for (int i = 0; i < 7; i++) {
         if (day_symbols_textures[i]) {
@@ -102,13 +111,15 @@ static void HandleTabInteraction(Clay_ElementId elementId, Clay_PointerData poin
         SaveTodos(&todo_collection);
     }
 }
-
 void RenderTodoTab(const char* day, const DaySymbol* symbol, bool active, int index) {
     char id_buffer[32];
     
+    // Increase padding on larger screens
+    int horizontal_padding = windowWidth >= BREAKPOINT_MEDIUM ? 32 : 16;
+    
     CLAY(CLAY_IDI(id_buffer, index),
         CLAY_LAYOUT({ 
-            .padding = { 16, 8 }, 
+            .padding = { horizontal_padding, 8 }, 
             .childGap = 8,
             .childAlignment = { CLAY_ALIGN_X_CENTER, CLAY_ALIGN_Y_CENTER }
         }),
@@ -135,16 +146,18 @@ void RenderTodoTab(const char* day, const DaySymbol* symbol, bool active, int in
         CLAY_IMAGE({ 
             .sourceDimensions = symbol->dimensions,
             .imageData = day_symbols_textures[index]
-            
         })
         #endif
         ){}
-
-        Clay_String day_str = { .chars = day, .length = strlen(day) };
-        CLAY_TEXT(day_str, 
-            CLAY_TEXT_CONFIG({ .fontSize = 16, .textColor = COLOR_TEXT }));
     }
 }
+
+static void HandleSubmitButtonClick(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        OnTodoInputSubmit(GetTextInputText(todo_input));
+    }
+}
+
 
 void RenderTodoItem(const Todo* todo, int index) {
     char id_buffer[32];
@@ -176,13 +189,20 @@ void RenderTodosPage() {
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
             .padding = { 32, 32 },
             .childGap = 24,
-            .layoutDirection = CLAY_TOP_TO_BOTTOM
+            .layoutDirection = CLAY_TOP_TO_BOTTOM,
+            .childAlignment = { .x = CLAY_ALIGN_X_CENTER } 
         })
     ) {
-        // Render tabs
         CLAY(CLAY_LAYOUT({ 
+            .sizing = { 
+                windowWidth > BREAKPOINT_MEDIUM + 40 ? 
+                    CLAY_SIZING_FIXED(BREAKPOINT_MEDIUM + 40) : 
+                    CLAY_SIZING_GROW(),
+                CLAY_SIZING_FIT(0)
+            },
             .childGap = 8,
-            .layoutDirection = CLAY_LEFT_TO_RIGHT
+            .layoutDirection = CLAY_LEFT_TO_RIGHT,
+            .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
         })) {
             for (int i = 0; i < 7; i++) {
                 RenderTodoTab(DAYS[i], &DAY_SYMBOLS[i], 
@@ -190,19 +210,73 @@ void RenderTodosPage() {
             }
         }
 
-        // Todo input
+        // Todo input with max width
         if (todo_input) {
-            RenderTextInput(todo_input, 1);
-        }
+                CLAY(CLAY_LAYOUT({
+                    .sizing = {
+                        windowWidth > BREAKPOINT_MEDIUM + 40 ? 
+                            CLAY_SIZING_FIXED(BREAKPOINT_MEDIUM + 40) : 
+                            CLAY_SIZING_GROW(),
+                        CLAY_SIZING_FIT(0)
+                    },
+                    .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                    .childGap = 8
+                })) {
+                    // Input field
+                    CLAY(CLAY_LAYOUT({
+                        .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) }
+                    })) {
+                        RenderTextInput(todo_input, 1);
+                    }
 
-        // Todo list
+                    // Submit button
+                    CLAY(CLAY_ID("SubmitTodoButton"),
+                        CLAY_LAYOUT({
+                            .sizing = { CLAY_SIZING_FIXED(32), CLAY_SIZING_FIXED(32) },
+                            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }
+                        }),
+                        CLAY_RECTANGLE({
+                            .color = Clay_Hovered() ? COLOR_SUCCESS : COLOR_SECONDARY,
+                            .cornerRadius = CLAY_CORNER_RADIUS(4),
+                            .cursorPointer = true
+                        }),
+                        Clay_OnHover(HandleSubmitButtonClick, 0)
+                    ) {
+                        #ifdef __EMSCRIPTEN__
+                        CLAY(CLAY_LAYOUT({
+                            .sizing = { CLAY_SIZING_FIXED(24), CLAY_SIZING_FIXED(24) }
+                        }),
+                        CLAY_IMAGE({
+                            .sourceDimensions = { 24, 24 },
+                            .sourceURL = CLAY_STRING("icons/check.png")
+                        })) {}
+                        #else
+                        CLAY(CLAY_LAYOUT({
+                            .sizing = { CLAY_SIZING_FIXED(24), CLAY_SIZING_FIXED(24) }
+                        }),
+                        CLAY_IMAGE({
+                            .sourceDimensions = { 24, 24 },
+                            .imageData = check_texture // Make sure to add this to the textures array
+                        })) {}
+                        #endif
+                    }
+                }
+            }
+
+
+        // Todo list with max width
         size_t todos_count;
         Todo* todos = GetTodosByDay(&todo_collection, 
                                   todo_collection.active_day, 
                                   &todos_count);
 
         CLAY(CLAY_LAYOUT({ 
-            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
+            .sizing = { 
+                windowWidth > BREAKPOINT_MEDIUM + 40 ? 
+                    CLAY_SIZING_FIXED(BREAKPOINT_MEDIUM + 40) : 
+                    CLAY_SIZING_GROW(),
+                CLAY_SIZING_GROW() 
+            },
             .childGap = 8,
             .layoutDirection = CLAY_TOP_TO_BOTTOM
         })) {
