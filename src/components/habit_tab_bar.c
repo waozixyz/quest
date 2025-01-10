@@ -2,15 +2,188 @@
 
 #ifndef __EMSCRIPTEN__
 static SDL_Texture* check_texture = NULL;
+static SDL_Texture* edit_texture = NULL;
+static SDL_Texture* trash_texture = NULL;
 
 void InitializeHabitTabBar(SDL_Renderer* renderer) {
-    // Load the check texture
-    SDL_Surface* surface = load_image("icons/check.png");
+    SDL_Surface* surface;
 
+    surface = load_image("icons/check.png");
     check_texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
+
+    surface = load_image("icons/edit.png");
+    edit_texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
+
+    surface = load_image("icons/trash.png");
+    trash_texture = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
 }
 #endif
+
+static DeleteHabitModal delete_modal = {0};
+
+static void HandleEditButtonClick(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        uint32_t habit_id = (uint32_t)userData;
+        habits.is_editing_new_habit = true;
+        habits.active_habit_id = habit_id;
+        
+        if (habits.habit_name_input) {
+            for (size_t i = 0; i < habits.habits_count; i++) {
+                if (habits.habits[i].id == habit_id) {
+                    SetTextInputText(habits.habit_name_input, habits.habits[i].name);
+                    break;
+                }
+            }
+        }
+        #ifdef CLAY_MOBILE
+        SDL_StartTextInput();
+        #endif
+    }
+}
+
+static void HandleDeleteButtonClick(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        uint32_t habit_id = (uint32_t)userData;
+        for (size_t i = 0; i < habits.habits_count; i++) {
+            if (habits.habits[i].id == habit_id) {
+                delete_modal.is_open = true;
+                delete_modal.habit_id = habit_id;
+                strncpy(delete_modal.habit_name, habits.habits[i].name, MAX_HABIT_NAME - 1);
+                delete_modal.habit_name[MAX_HABIT_NAME - 1] = '\0';
+                break;
+            }
+        }
+    }
+}
+
+static void HandleModalConfirm(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        DeleteHabit(&habits, delete_modal.habit_id);
+        delete_modal.is_open = false;
+    }
+}
+
+static void HandleModalCancel(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        delete_modal.is_open = false;
+    }
+}
+static void RenderDeleteModal() {
+    if (!delete_modal.is_open) return;
+
+    CLAY(CLAY_ID("DeleteModalOverlay"),
+        CLAY_LAYOUT({
+            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
+            .childAlignment = { CLAY_ALIGN_X_CENTER, CLAY_ALIGN_Y_CENTER }
+        }),
+        CLAY_RECTANGLE({ .color = { 0, 0, 0, 128 } })
+    ) {
+        CLAY(CLAY_ID("DeleteModalContent"),
+            CLAY_LAYOUT({
+                .sizing = { CLAY_SIZING_FIXED(300), CLAY_SIZING_FIT(0) },
+                .padding = { 16, 16 },
+                .childGap = 16,
+                .layoutDirection = CLAY_TOP_TO_BOTTOM
+            }),
+            CLAY_RECTANGLE({ 
+                .color = COLOR_BACKGROUND,
+                .cornerRadius = CLAY_CORNER_RADIUS(8)
+            })
+        ) {
+            // Modal title
+            CLAY_TEXT(CLAY_STRING("Delete Habit"), 
+                CLAY_TEXT_CONFIG({
+                    .fontSize = 20,
+                    .fontId = FONT_ID_BODY_24,
+                    .textColor = COLOR_TEXT
+                })
+            );
+
+            // Modal message container
+            CLAY(CLAY_LAYOUT({
+                .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                .childGap = 4
+            })) {
+                CLAY_TEXT(CLAY_STRING("Are you sure you want to delete \""),
+                    CLAY_TEXT_CONFIG({
+                        .fontSize = 16,
+                        .fontId = FONT_ID_BODY_16,
+                        .textColor = COLOR_TEXT
+                    })
+                );
+                CLAY_TEXT(CLAY_STRING(delete_modal.habit_name),
+                    CLAY_TEXT_CONFIG({
+                        .fontSize = 16,
+                        .fontId = FONT_ID_BODY_16,
+                        .textColor = COLOR_TEXT
+                    })
+                );
+                CLAY_TEXT(CLAY_STRING("\"?"),
+                    CLAY_TEXT_CONFIG({
+                        .fontSize = 16,
+                        .fontId = FONT_ID_BODY_16,
+                        .textColor = COLOR_TEXT
+                    })
+                );
+            }
+
+            // Buttons container
+            CLAY(CLAY_LAYOUT({
+                .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                .childGap = 8,
+                .childAlignment = { .x = CLAY_ALIGN_X_RIGHT }
+            })) {
+                // Cancel button
+                CLAY(CLAY_ID("CancelButton"),
+                    CLAY_LAYOUT({
+                        .padding = { 8, 8 },
+                        .sizing = { CLAY_SIZING_FIT(0), CLAY_SIZING_FIT(0) }
+                    }),
+                    CLAY_RECTANGLE({
+                        .color = COLOR_PANEL,
+                        .cornerRadius = CLAY_CORNER_RADIUS(4),
+                        .cursorPointer = true
+                    }),
+                    Clay_OnHover(HandleModalCancel, 0)
+                ) {
+                    CLAY_TEXT(CLAY_STRING("Cancel"),
+                        CLAY_TEXT_CONFIG({
+                            .fontSize = 16,
+                            .fontId = FONT_ID_BODY_16,
+                            .textColor = COLOR_TEXT
+                        })
+                    );
+                }
+
+                // Delete button
+                CLAY(CLAY_ID("ConfirmButton"),
+                    CLAY_LAYOUT({
+                        .padding = { 8, 8 },
+                        .sizing = { CLAY_SIZING_FIT(0), CLAY_SIZING_FIT(0) }
+                    }),
+                    CLAY_RECTANGLE({
+                        .color = COLOR_DANGER,
+                        .cornerRadius = CLAY_CORNER_RADIUS(4),
+                        .cursorPointer = true
+                    }),
+                    Clay_OnHover(HandleModalConfirm, 0)
+                ) {
+                    CLAY_TEXT(CLAY_STRING("Delete"),
+                        CLAY_TEXT_CONFIG({
+                            .fontSize = 16,
+                            .fontId = FONT_ID_BODY_16,
+                            .textColor = COLOR_TEXT
+                        })
+                    );
+                }
+            }
+        }
+    }
+}
+
 
 void HandleHabitNameSubmit(const char* text) {
     if (text[0] != '\0') {
@@ -32,9 +205,20 @@ void HandleHabitNameSubmit(const char* text) {
 static void HandleConfirmButtonClick(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         HandleHabitNameSubmit(GetTextInputText(habits.habit_name_input));
+        #ifdef CLAY_MOBILE
+        SDL_StopTextInput();  // Hide the soft keyboard
+        #endif
     }
 }
 
+
+void HandleNewTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        AddNewHabit(&habits);
+        habits.is_editing_new_habit = true;
+        habits.active_habit_id = habits.habits[habits.habits_count - 1].id;
+    }
+}
 
 
 static void RenderHabitTab(const Habit* habit) {
@@ -46,7 +230,8 @@ static void RenderHabitTab(const Habit* habit) {
             .padding = { 16, 8 },
             .childGap = 8,
             .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
-            .sizing = { CLAY_SIZING_FIT({ .min = 150 }), CLAY_SIZING_FIT(0) } // Add minimum width
+            .sizing = { CLAY_SIZING_FIT({ .min = 150 }), CLAY_SIZING_FIXED(48) },
+            .layoutDirection = CLAY_LEFT_TO_RIGHT
         }),
         CLAY_RECTANGLE({
             .color = isActive ? COLOR_PRIMARY :
@@ -57,64 +242,153 @@ static void RenderHabitTab(const Habit* habit) {
         Clay_OnHover(HandleTabInteraction, habit->id)
     ) {
         if (isEditing) {
-            // Container for input and confirm button
+            // Container for input and buttons
             CLAY(CLAY_LAYOUT({
                 .childGap = 8,
                 .layoutDirection = CLAY_LEFT_TO_RIGHT,
                 .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
                 .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) }
             })) {
-                // Text input with proper sizing
+                // Text input
                 CLAY(CLAY_LAYOUT({
                     .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) }
                 })) {
                     RenderTextInput(habits.habit_name_input, habit->id);
                 }
-                // Confirm button
-                CLAY(CLAY_IDI("ConfirmHabitName", habit->id),
-                    CLAY_LAYOUT({
-                        .sizing = { CLAY_SIZING_FIXED(32), CLAY_SIZING_FIXED(32) },
-                        .childAlignment = { CLAY_ALIGN_X_CENTER, CLAY_ALIGN_Y_CENTER }
-                    }),
-                    CLAY_RECTANGLE({
-                        .color = Clay_Hovered() ? COLOR_SUCCESS : COLOR_SECONDARY,
-                        .cornerRadius = CLAY_CORNER_RADIUS(4),
-                        .cursorPointer = true
-                    }),
-                    Clay_OnHover(HandleConfirmButtonClick, 0)
-                ) {
-                    #ifdef __EMSCRIPTEN__
-                    CLAY(CLAY_LAYOUT({
-                        .sizing = { CLAY_SIZING_FIXED(24), CLAY_SIZING_FIXED(24) }
-                    }),
-                    CLAY_IMAGE({
-                        .sourceDimensions = { 24, 24 },
-                        .sourceURL = CLAY_STRING("icons/check.png")
-                    })) {}
-                    #else
-                    CLAY(CLAY_LAYOUT({
-                        .sizing = { CLAY_SIZING_FIXED(24), CLAY_SIZING_FIXED(24) }
-                    }),
-                    CLAY_IMAGE({
-                        .sourceDimensions = { 24, 24 },
-                        .imageData = check_texture
-                    })) {}
-                    #endif
+
+                // Action buttons container
+                CLAY(CLAY_LAYOUT({
+                    .childGap = 8,
+                    .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                    .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
+                })) {
+                    // Trash button
+                    CLAY(CLAY_IDI("DeleteButton", habit->id),
+                        CLAY_LAYOUT({
+                            .sizing = { CLAY_SIZING_FIXED(32), CLAY_SIZING_FIXED(32) },
+                            .childAlignment = { CLAY_ALIGN_X_CENTER, CLAY_ALIGN_Y_CENTER }
+                        }),
+                        CLAY_RECTANGLE({
+                            .color = Clay_Hovered() ? COLOR_DANGER : COLOR_PANEL,
+                            .cornerRadius = CLAY_CORNER_RADIUS(4),
+                            .cursorPointer = true
+                        }),
+                        Clay_OnHover(HandleDeleteButtonClick, habit->id)
+                    ) {
+                        #ifdef __EMSCRIPTEN__
+                        CLAY(CLAY_LAYOUT({
+                            .sizing = { CLAY_SIZING_FIXED(24), CLAY_SIZING_FIXED(24) }
+                        }),
+                        CLAY_IMAGE({
+                            .sourceDimensions = { 24, 24 },
+                            .sourceURL = CLAY_STRING("icons/trash.png")
+                        })) {}
+                        #else
+                        CLAY(CLAY_LAYOUT({
+                            .sizing = { CLAY_SIZING_FIXED(24), CLAY_SIZING_FIXED(24) }
+                        }),
+                        CLAY_IMAGE({
+                            .sourceDimensions = { 24, 24 },
+                            .imageData = trash_texture
+                        })) {}
+                        #endif
+                    }
+
+                    // Confirm button
+                    CLAY(CLAY_IDI("ConfirmHabitName", habit->id),
+                        CLAY_LAYOUT({
+                            .sizing = { CLAY_SIZING_FIXED(32), CLAY_SIZING_FIXED(32) },
+                            .childAlignment = { CLAY_ALIGN_X_CENTER, CLAY_ALIGN_Y_CENTER }
+                        }),
+                        CLAY_RECTANGLE({
+                            .color = Clay_Hovered() ? COLOR_SUCCESS : COLOR_SECONDARY,
+                            .cornerRadius = CLAY_CORNER_RADIUS(4),
+                            .cursorPointer = true
+                        }),
+                        Clay_OnHover(HandleConfirmButtonClick, 0)
+                    ) {
+                        #ifdef __EMSCRIPTEN__
+                        CLAY(CLAY_LAYOUT({
+                            .sizing = { CLAY_SIZING_FIXED(24), CLAY_SIZING_FIXED(24) }
+                        }),
+                        CLAY_IMAGE({
+                            .sourceDimensions = { 24, 24 },
+                            .sourceURL = CLAY_STRING("icons/check.png")
+                        })) {}
+                        #else
+                        CLAY(CLAY_LAYOUT({
+                            .sizing = { CLAY_SIZING_FIXED(24), CLAY_SIZING_FIXED(24) }
+                        }),
+                        CLAY_IMAGE({
+                            .sourceDimensions = { 24, 24 },
+                            .imageData = check_texture
+                        })) {}
+                        #endif
+                    }
                 }
             }
         } else {
-            CLAY_TEXT(CLAY_STRING(habit->name), CLAY_TEXT_CONFIG({
-                .fontSize = 20,
-                .fontId = FONT_ID_BODY_24,
-                .textColor = COLOR_TEXT
-            }));
+            // Normal tab content
+            CLAY(CLAY_LAYOUT({
+                .childGap = 8,
+                .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
+                .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) }
+            })) {
+                // Habit name
+                CLAY(CLAY_LAYOUT({
+                    .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) }
+                })) {
+                    CLAY_TEXT(CLAY_STRING(habit->name), CLAY_TEXT_CONFIG({
+                        .fontSize = 14,
+                        .fontId = FONT_ID_BODY_14,
+                        .textColor = COLOR_TEXT,
+                        .wrapMode = CLAY_TEXT_WRAP_NONE
+                    }));
+                }
+                
+                if (isActive) {
+                    // Edit button
+                    CLAY(CLAY_IDI("EditButton", habit->id),
+                        CLAY_LAYOUT({
+                            .sizing = { CLAY_SIZING_FIXED(32), CLAY_SIZING_FIXED(32) },
+                            .childAlignment = { CLAY_ALIGN_X_CENTER, CLAY_ALIGN_Y_CENTER }
+                        }),
+                        CLAY_RECTANGLE({
+                            .color = Clay_Hovered() ? COLOR_PRIMARY_HOVER : COLOR_PANEL,
+                            .cornerRadius = CLAY_CORNER_RADIUS(4),
+                            .cursorPointer = true
+                        }),
+                        Clay_OnHover(HandleEditButtonClick, habit->id)
+                    ) {
+                        #ifdef __EMSCRIPTEN__
+                        CLAY(CLAY_LAYOUT({
+                            .sizing = { CLAY_SIZING_FIXED(24), CLAY_SIZING_FIXED(24) }
+                        }),
+                        CLAY_IMAGE({
+                            .sourceDimensions = { 24, 24 },
+                            .sourceURL = CLAY_STRING("icons/edit.png")
+                        })) {}
+                        #else
+                        CLAY(CLAY_LAYOUT({
+                            .sizing = { CLAY_SIZING_FIXED(24), CLAY_SIZING_FIXED(24) }
+                        }),
+                        CLAY_IMAGE({
+                            .sourceDimensions = { 24, 24 },
+                            .imageData = edit_texture
+                        })) {}
+                        #endif
+                    }
+                }
+            }
         }
     }
 }
+
 void RenderHabitTabBar() {
     CLAY(CLAY_ID("HabitTabsContainer"),
         CLAY_LAYOUT({
-            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIXED(80) }
+            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIXED(90) }
         }),
         CLAY_RECTANGLE({ 
             .color = COLOR_SECONDARY
@@ -153,50 +427,17 @@ void RenderHabitTabBar() {
             }
         }
     }
-}
-void HandleNewTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
-    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
-        AddNewHabit(&habits);
-        habits.is_editing_new_habit = true;
-        habits.active_habit_id = habits.habits[habits.habits_count - 1].id;
-    }
+
+    // Render delete confirmation modal if open
+    RenderDeleteModal();
 }
 
 void HandleTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
-    static uint32_t last_click_id = 0;
-    static time_t last_click_time = 0;
-    static const float DOUBLE_CLICK_TIME = 0.3f; // 300ms for double click
-
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         uint32_t habit_id = (uint32_t)userData;
-        time_t current_time = time(NULL);
-        
-        // Check for double click
-        if (habit_id == last_click_id && 
-            (difftime(current_time, last_click_time) < DOUBLE_CLICK_TIME)) {
-            habits.is_editing_new_habit = true;
-            habits.active_habit_id = habit_id;
-            if (habits.habit_name_input) {
-                // Find the habit and set its name as current input text
-                for (size_t i = 0; i < habits.habits_count; i++) {
-                    if (habits.habits[i].id == habit_id) {
-                        SetTextInputText(habits.habit_name_input, habits.habits[i].name);
-                        break;
-                    }
-                }
-            } else {
-                printf("Error: habit_name_input is NULL\n");
-            }
-        
-        } else {
-            // Single click - just set active
-            habits.is_editing_new_habit = false;
-            habits.active_habit_id = habit_id;
-            SaveHabits(&habits);
-        }
-
-        last_click_id = habit_id;
-        last_click_time = current_time;
+        habits.is_editing_new_habit = false;
+        habits.active_habit_id = habit_id;
+        SaveHabits(&habits);
     }
 }
 
@@ -206,6 +447,13 @@ void CleanupHabitTabBar(void) {
         SDL_DestroyTexture(check_texture);
         check_texture = NULL;
     }
+    if (edit_texture) {
+        SDL_DestroyTexture(edit_texture);
+        edit_texture = NULL;
+    }
+    if (trash_texture) {
+        SDL_DestroyTexture(trash_texture);
+        trash_texture = NULL;
+    }
     #endif
 }
-

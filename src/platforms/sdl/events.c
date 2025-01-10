@@ -107,15 +107,57 @@ void HandleSDLEvents(bool* running) {
             case SDL_QUIT:
                 *running = false;
                 break;
-
+            // Modify the window resize event handling
             case SDL_WINDOWEVENT:
                 if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
                     windowWidth = event.window.data1 / globalScalingFactor;
                     windowHeight = event.window.data2 / globalScalingFactor;
+                                                            
+                    // Get ALL scroll containers in the app dynamically
+                    Clay_ScrollContainerData scrollContainersToCheck[16] = {0};
+                    int scrollContainerCount = 0;
+
+                    // Iterate through ALL layout elements to find scroll containers
+                    for (uint32_t i = 0; i < Clay__layoutElements.length && scrollContainerCount < 16; i++) {
+                        Clay_LayoutElement *element = Clay_LayoutElementArray_Get(&Clay__layoutElements, i);
+                        
+                        // Check if this element has scroll configuration
+                        for (int32_t configIndex = 0; configIndex < element->elementConfigs.length; configIndex++) {
+                            Clay_ElementConfig *config = Clay__ElementConfigArraySlice_Get(&element->elementConfigs, configIndex);
+                            
+                            if (config->type == CLAY__ELEMENT_CONFIG_TYPE_SCROLL_CONTAINER) {
+                                Clay_ScrollContainerData scrollData = Clay_GetScrollContainerData((Clay_ElementId){.id = element->id});
+                                
+                                if (scrollData.found) {
+                                    scrollContainersToCheck[scrollContainerCount++] = scrollData;
+                                    break;  // Only add each element once
+                                }
+                            }
+                        }
+                    }
+
+                    printf("Total scroll containers found: %d\n", scrollContainerCount);
+
+                    // Process each found scroll container
+                    for (int i = 0; i < scrollContainerCount; i++) {
+                        Clay_ScrollContainerData* data = &scrollContainersToCheck[i];
+                    
+                        // Reset horizontal scroll if content now fits
+                        if (data->config.horizontal && 
+                            data->contentDimensions.width <= windowWidth) {
+                            data->scrollPosition->x = 0;
+                        }
+                        
+                        // Reset vertical scroll if content now fits
+                        if (data->config.vertical && 
+                            data->contentDimensions.height <= windowHeight) {
+                            data->scrollPosition->y = 0;
+                        }
+                    }
+
                     Clay_SetLayoutDimensions((Clay_Dimensions){windowWidth, windowHeight});
                 }
                 break;
-
             case SDL_MOUSEWHEEL: {
                 float scrollMultiplier = 15.0f / globalScalingFactor;
                 Clay_Vector2 scrollDelta = {0, 0};
@@ -285,59 +327,111 @@ void HandleSDLEvents(bool* running) {
                     isScrollDragging = false;
                 }
                 break;
-
-            case SDL_FINGERUP:
-                {
-                    Clay_Vector2 upPosition = {
-                        event.tfinger.x * windowWidth / globalScalingFactor,
-                        event.tfinger.y * windowHeight / globalScalingFactor
-                    };
-                    
-                    // Only trigger the click if motion was minimal
-                    float dx = upPosition.x - initialPointerPosition.x;
-                    float dy = upPosition.y - initialPointerPosition.y;
-                    float distanceSquared = dx*dx + dy*dy;
-                    if (distanceSquared < 25.0f) { // 5 pixels squared
-                        Clay_SetPointerState(upPosition, true);  // Trigger the click
-                    }
-                    
-                    Clay_SetPointerState(upPosition, false);
-                }
-                break;
-
             case SDL_FINGERDOWN:
                 {
+                    int actualWidth, actualHeight;
+                    SDL_GetWindowSize(SDL_GetWindowFromID(event.tfinger.windowID), &actualWidth, &actualHeight);
+                    
+                    float screenX = event.tfinger.x * actualWidth;
+                    float screenY = event.tfinger.y * actualHeight;
                     
                     initialPointerPosition = (Clay_Vector2){
-                        event.tfinger.x * windowWidth / globalScalingFactor,
-                        event.tfinger.y * windowHeight / globalScalingFactor
+                        screenX / globalScalingFactor,
+                        screenY / globalScalingFactor
                     };
-                    hadMotionBetweenDownAndUp = false;
                     
+                    Clay_SetPointerState(initialPointerPosition, false);
+                    hadMotionBetweenDownAndUp = false;
+
+                    // Don't immediately start scroll dragging on touch down
+                    // Instead, wait for some movement to determine if it's a scroll or tap
+                    Clay_ScrollContainerData* scrollData = NULL;
+                    for (int i = 0; i < activeScrollCount; i++) {
+                        scrollData = &activeScrollContainers[i];
+                        break;
+                    }
+
+                    if (scrollData) {
+                        scrollDragStartX = screenX;
+                        scrollDragStartY = screenY;
+                        initialScrollPosition = *scrollData->scrollPosition;
+                        // Don't set isScrollDragging immediately
+                    }
                 }
                 break;
-                    
-
             case SDL_FINGERMOTION:
                 {
-                    float x = event.tfinger.x * windowWidth;
-                    float y = event.tfinger.y * windowHeight;
+                    int actualWidth, actualHeight;
+                    SDL_GetWindowSize(SDL_GetWindowFromID(event.tfinger.windowID), &actualWidth, &actualHeight);
+                    
+                    float screenX = event.tfinger.x * actualWidth;
+                    float screenY = event.tfinger.y * actualHeight;
+                    
                     Clay_Vector2 currentPos = {
-                        x / globalScalingFactor,
-                        y / globalScalingFactor
+                        screenX / globalScalingFactor,
+                        screenY / globalScalingFactor
                     };
+                    
+                    // Calculate movement distance
+                    float dx = screenX - scrollDragStartX;
+                    float dy = screenY - scrollDragStartY;
+                    float moveDistance = sqrtf(dx*dx + dy*dy);
+                    
+                    // Increase threshold for scroll start on mobile
+                    if (!isScrollDragging && moveDistance > 40.0f) {  // Increased from 10 to 20
+                        isScrollDragging = true;
+                    }
                     
                     Clay_SetPointerState(currentPos, false);
                     
-                    
-                    if (isScrollThumbDragging || isHorizontalScrollThumbDragging || isScrollDragging) {
+                    if (isScrollDragging) {
                         Clay_ScrollContainerData* scrollData = NULL;
                         for (int i = 0; i < activeScrollCount; i++) {
                             scrollData = &activeScrollContainers[i];
                             break;
                         }
-                        HandlePointerDragging(x, y, scrollData);
+                        if (scrollData) {
+                            HandlePointerDragging(screenX, screenY, scrollData);
+                        }
                     }
+                    
+                    // Increase motion threshold for touch
+                    if (moveDistance > 15.0f) {  // Increased from 5 to 15
+                        hadMotionBetweenDownAndUp = true;
+                    }
+                }
+                break;
+
+            case SDL_FINGERUP:
+                {
+                    int actualWidth, actualHeight;
+                    SDL_GetWindowSize(SDL_GetWindowFromID(event.tfinger.windowID), &actualWidth, &actualHeight);
+                    
+                    float screenX = event.tfinger.x * actualWidth;
+                    float screenY = event.tfinger.y * actualHeight;
+                    
+                    Clay_Vector2 upPosition = {
+                        screenX / globalScalingFactor,
+                        screenY / globalScalingFactor
+                    };
+                    
+                    float dx = upPosition.x - initialPointerPosition.x;
+                    float dy = upPosition.y - initialPointerPosition.y;
+                    float distanceSquared = dx*dx + dy*dy;
+                    
+                    // Increase the allowed movement for a touch
+                    if (distanceSquared < 100.0f) {  // Increased from 25 to 100 (10 pixels squared)
+                        Clay_SetPointerState(upPosition, true);
+                        SDL_Delay(1);
+                        Clay_SetPointerState(upPosition, false);
+                    } else {
+                        Clay_SetPointerState(upPosition, false);
+                    }
+                    
+                    isScrollThumbDragging = false;
+                    isHorizontalScrollThumbDragging = false;
+                    isScrollDragging = false;
+                    hadMotionBetweenDownAndUp = false;
                 }
                 break;
             case SDL_KEYDOWN:
@@ -379,7 +473,8 @@ void InitializeSDL(SDL_Window* window, SDL_Renderer* renderer) {
         !load_font(FONT_ID_BODY_24, "Quicksand-Semibold.ttf", 24) ||
         !load_font(FONT_ID_BODY_36, "Quicksand-Semibold.ttf", 36) ||
         !load_font(FONT_ID_TITLE_36, "Calistoga-Regular.ttf", 36) ||
-        !load_font(FONT_ID_MONOSPACE_24, "Calistoga-Regular.ttf", 24)) {
+        !load_font(FONT_ID_MONOSPACE_24, "Calistoga-Regular.ttf", 24) ||
+        !load_font(FONT_ID_BODY_14, "Quicksand-Semibold.ttf", 14)) {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to load one or more fonts");
         TTF_Quit();
         return;

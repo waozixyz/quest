@@ -1,6 +1,6 @@
 #include "components/home_card.h"
 
-const int CONER_RADIUS = 10;
+const int CORNER_RADIUS = 10;
 void RenderHomeCard(uint32_t index) {
     float screenWidth = (float)windowWidth;
 
@@ -39,14 +39,14 @@ void RenderHomeCard(uint32_t index) {
         }),
         CLAY_RECTANGLE({ 
             .color = Clay_Hovered() ? COLOR_CARD_HOVER : COLOR_CARD,
-            .cornerRadius = CLAY_CORNER_RADIUS(CONER_RADIUS),
+            .cornerRadius = CLAY_CORNER_RADIUS(CORNER_RADIUS),
             .cursorPointer = true
         }),
         CLAY_BORDER({
             .top = Clay_Hovered() ? (Clay_Border){ .width = 2, .color = COLOR_PRIMARY } : (Clay_Border){ .width = 2, .color = COLOR_BACKGROUND },
             .cornerRadius = { 
-                .topLeft = CONER_RADIUS,
-                .topRight = CONER_RADIUS, 
+                .topLeft = CORNER_RADIUS,
+                .topRight = CORNER_RADIUS, 
                 .bottomLeft = 0, 
                 .bottomRight = 0 
             }

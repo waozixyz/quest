@@ -19,6 +19,7 @@ const uint32_t FONT_ID_BODY_24 = 2;
 const uint32_t FONT_ID_BODY_36 = 3;
 const uint32_t FONT_ID_TITLE_36 = 4;
 const uint32_t FONT_ID_MONOSPACE_24 = 5;
+const uint32_t FONT_ID_BODY_14 = 6;
 
 // Theme Colors
 const Clay_Color COLOR_BACKGROUND = (Clay_Color) {26, 15, 31, 255};  // #1a0f1f
@@ -49,6 +50,7 @@ const Clay_Color COLOR_BORDER_FOCUSED = (Clay_Color) {148, 47, 74, 255}; // #942
 const Clay_Color COLOR_TEXT = (Clay_Color) {230, 221, 233, 255};     // #e6dde9
 const Clay_Color COLOR_TEXT_SECONDARY = (Clay_Color) {184, 168, 192, 255}; // #b8a8c0
 const Clay_Color COLOR_CURSOR = (Clay_Color){255, 107, 151, 255};    // Using COLOR_ACCENT for cursor
+const Clay_Color COLOR_DANGER = (Clay_Color){255, 99, 71, 266};
 
 const int DEFAULT_PADDING = 32;
 

@@ -161,6 +161,61 @@ static void LoadHabitsJSON(HabitCollection* collection) {
     cJSON_Delete(root);
 }
 #endif
+void DeleteHabit(HabitCollection* collection, uint32_t habit_id) {
+    if (!collection) return;
+    
+    // Find the habit index
+    int delete_index = -1;
+    for (size_t i = 0; i < collection->habits_count; i++) {
+        if (collection->habits[i].id == habit_id) {
+            delete_index = i;
+            break;
+        }
+    }
+    
+    if (delete_index == -1) return;
+    
+    // Shift remaining habits left and update their IDs
+    for (size_t i = delete_index; i < collection->habits_count - 1; i++) {
+        collection->habits[i] = collection->habits[i + 1];
+        collection->habits[i].id = i;  // Update ID to match new position
+    }
+    collection->habits_count--;
+    
+    // If we deleted the active habit, switch to the previous habit if possible
+    if (collection->active_habit_id == habit_id) {
+        if (collection->habits_count > 0) {
+            if (delete_index > 0) {
+                // Switch to previous habit
+                collection->active_habit_id = delete_index - 1;
+            } else {
+                // If we deleted first habit, switch to new first habit
+                collection->active_habit_id = 0;
+            }
+        }
+    } else if (collection->active_habit_id > habit_id) {
+        // If active habit was after deleted habit, update its ID
+        collection->active_habit_id--;
+    }
+    
+    SaveHabits(collection);
+}
+
+void AddNewHabit(HabitCollection* collection) {
+    if (!collection || collection->habits_count >= MAX_HABITS) return;
+    
+    Habit* new_habit = &collection->habits[collection->habits_count];
+    snprintf(new_habit->name, MAX_HABIT_NAME, "Habit %zu", collection->habits_count + 1);
+    new_habit->id = collection->habits_count;  // ID matches position
+    new_habit->color = COLOR_PRIMARY;
+    new_habit->days_count = 0;
+    
+    collection->habits_count++;
+    collection->active_habit_id = new_habit->id;
+    
+    SaveHabits(collection);
+}
+
 
 void SaveHabits(HabitCollection* collection) {
     if (!collection) return;
@@ -247,21 +302,6 @@ void UpdateHabitColor(HabitCollection* collection, Clay_Color color) {
 
 Habit* GetActiveHabit(HabitCollection* collection) {
     return GetHabitById(collection, collection->active_habit_id);
-}
-
-void AddNewHabit(HabitCollection* collection) {
-    if (!collection || collection->habits_count >= MAX_HABITS) return;
-    
-    Habit* new_habit = &collection->habits[collection->habits_count];
-    snprintf(new_habit->name, MAX_HABIT_NAME, "Habit %zu", collection->habits_count + 1);
-    new_habit->id = collection->habits_count;
-    new_habit->color = COLOR_PRIMARY;
-    new_habit->days_count = 0;
-    
-    collection->habits_count++;
-    collection->active_habit_id = new_habit->id;
-    
-    SaveHabits(collection);
 }
 
 Habit* GetHabitById(HabitCollection* collection, uint32_t id) {

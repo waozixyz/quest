@@ -5,6 +5,12 @@
 #include "../config.h"
 #include "../utils.h"
 
+typedef struct {
+    bool is_open;
+    uint32_t habit_id;
+    char habit_name[MAX_HABIT_NAME];
+} DeleteHabitModal;
+
 void RenderHabitTabBar();
 void HandleNewTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData);
 void HandleTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData);

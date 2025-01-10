@@ -23,6 +23,7 @@ extern const uint32_t FONT_ID_BODY_24;
 extern const uint32_t FONT_ID_BODY_36;
 extern const uint32_t FONT_ID_TITLE_36;
 extern const uint32_t FONT_ID_MONOSPACE_24;
+extern const uint32_t FONT_ID_BODY_14;
 
 // Colors
 extern const Clay_Color COLOR_BACKGROUND;
@@ -45,7 +46,7 @@ extern const Clay_Color COLOR_BORDER_FOCUSED;
 extern const Clay_Color COLOR_TEXT;
 extern const Clay_Color COLOR_TEXT_SECONDARY;
 extern const Clay_Color COLOR_CURSOR;
-
+extern const Clay_Color COLOR_DANGER;
 extern const int DEFAULT_PADDING;
 
 // Navigation handler
