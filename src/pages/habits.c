@@ -19,6 +19,13 @@ Modal date_picker_modal = {
     .height = 500
 };
 
+
+Modal delete_modal = {
+    .is_open = false,
+    .width = 300,  
+    .height = 300 
+};
+
 void HandleDateChange(time_t new_date) {
     habits.calendar_start_date = new_date;
     SaveHabits(&habits);
@@ -120,6 +127,7 @@ void RenderHabitsPage() {
     ) {
         // Habit tabs
         RenderHabitTabBar();
+        
         // Color picker and date picker on the same row
         CLAY(CLAY_ID("ColorAndDatePickerContainer"),
             CLAY_LAYOUT({
@@ -132,11 +140,15 @@ void RenderHabitsPage() {
         ) {
             RenderColorPicker(active_habit->color, HandleColorChange, &color_picker_modal);
             RenderDatePicker(habits.calendar_start_date, HandleDateChange, &date_picker_modal);
+            RenderDeleteHabitModal();
+
         }
 
         CLAY(CLAY_ID("DayLabels"), 
             CLAY_LAYOUT({
-                .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
+                .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) },
+                .padding = { 0, 8 },
+                .childGap = 8,
                 .childAlignment = { .x = CLAY_ALIGN_X_CENTER}
             })
         ) {
@@ -169,7 +181,7 @@ void RenderHabitsPage() {
                         .sizing = { 
                             CLAY_SIZING_FIXED(labelWidth), 
                             CLAY_SIZING_FIT(0) 
-                        }, 
+                        },
                         .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
                     })) { 
                         Clay_String day_str = {
@@ -183,14 +195,14 @@ void RenderHabitsPage() {
 
         CLAY(CLAY_ID("CalendarScrollContainer"),
             CLAY_LAYOUT({
-                .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
+                .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) },
                 .childAlignment = { .x = CLAY_ALIGN_X_CENTER}
             }),
             CLAY_SCROLL({ .vertical = true })
         ) {
             CLAY(CLAY_ID("CalendarGrid"),
                 CLAY_LAYOUT({
-                    .sizing = { CLAY_SIZING_FIT(0), CLAY_SIZING_GROW() },
+                    .sizing = { CLAY_SIZING_FIT(0), CLAY_SIZING_FIT(0) },
                     .childGap = 32,
                     .layoutDirection = CLAY_TOP_TO_BOTTOM,
                     .padding = { 16, 16 }

@@ -5,12 +5,18 @@
 #include "../../vendor/clay/clay.h"
 #include "../state/habits_state.h"
 #include "../config.h"
+#include "../components/modal.h"
 
 
 
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
+
+
+extern Modal delete_modal;
+
+
 
 void RenderHabitsPage(void);
 void ToggleHabitStateForDay(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData);

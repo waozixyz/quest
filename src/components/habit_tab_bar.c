@@ -22,7 +22,8 @@ void InitializeHabitTabBar(SDL_Renderer* renderer) {
 }
 #endif
 
-static DeleteHabitModal delete_modal = {0};
+static uint32_t pending_delete_habit_id = 0;
+static char pending_delete_habit_name[MAX_HABIT_NAME] = {0};
 
 static void HandleEditButtonClick(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
@@ -49,10 +50,10 @@ static void HandleDeleteButtonClick(Clay_ElementId elementId, Clay_PointerData p
         uint32_t habit_id = (uint32_t)userData;
         for (size_t i = 0; i < habits.habits_count; i++) {
             if (habits.habits[i].id == habit_id) {
+                pending_delete_habit_id = habit_id;
+                strncpy(pending_delete_habit_name, habits.habits[i].name, MAX_HABIT_NAME - 1);
+                pending_delete_habit_name[MAX_HABIT_NAME - 1] = '\0';
                 delete_modal.is_open = true;
-                delete_modal.habit_id = habit_id;
-                strncpy(delete_modal.habit_name, habits.habits[i].name, MAX_HABIT_NAME - 1);
-                delete_modal.habit_name[MAX_HABIT_NAME - 1] = '\0';
                 break;
             }
         }
@@ -61,7 +62,7 @@ static void HandleDeleteButtonClick(Clay_ElementId elementId, Clay_PointerData p
 
 static void HandleModalConfirm(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
-        DeleteHabit(&habits, delete_modal.habit_id);
+        DeleteHabit(&habits, pending_delete_habit_id);
         delete_modal.is_open = false;
     }
 }
@@ -71,57 +72,70 @@ static void HandleModalCancel(Clay_ElementId elementId, Clay_PointerData pointer
         delete_modal.is_open = false;
     }
 }
-static void RenderDeleteModal() {
-    if (!delete_modal.is_open) return;
-
-    CLAY(CLAY_ID("DeleteModalOverlay"),
+void RenderDeleteModalContent() {
+    CLAY(CLAY_ID("DeleteModalContent"),
         CLAY_LAYOUT({
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
-            .childAlignment = { CLAY_ALIGN_X_CENTER, CLAY_ALIGN_Y_CENTER }
-        }),
-        CLAY_RECTANGLE({ .color = { 0, 0, 0, 128 } })
+            .childGap = 24,  // Increase gap
+            .layoutDirection = CLAY_TOP_TO_BOTTOM
+        })
     ) {
-        CLAY(CLAY_ID("DeleteModalContent"),
-            CLAY_LAYOUT({
-                .sizing = { CLAY_SIZING_FIXED(300), CLAY_SIZING_FIT(0) },
-                .padding = { 16, 16 },
-                .childGap = 16,
-                .layoutDirection = CLAY_TOP_TO_BOTTOM
-            }),
-            CLAY_RECTANGLE({ 
-                .color = COLOR_BACKGROUND,
-                .cornerRadius = CLAY_CORNER_RADIUS(8)
+        // Title
+        CLAY_TEXT(CLAY_STRING("Delete Habit"), 
+            CLAY_TEXT_CONFIG({
+                .fontSize = 24,  // Larger font
+                .fontId = FONT_ID_BODY_24,
+                .textColor = COLOR_TEXT
             })
-        ) {
-            // Modal title
-            CLAY_TEXT(CLAY_STRING("Delete Habit"), 
+        );
+
+        // Message
+        CLAY_TEXT(CLAY_STRING("Are you sure you want to delete:"),
+            CLAY_TEXT_CONFIG({
+                .fontSize = 16,
+                .fontId = FONT_ID_BODY_16,
+                .textColor = COLOR_TEXT
+            })
+        );
+
+        // Habit name in its own container with different styling
+        CLAY(CLAY_LAYOUT({
+            .padding = { 16, 16 },
+            .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
+        }),
+        CLAY_RECTANGLE({
+            .color = COLOR_PANEL,
+            .cornerRadius = CLAY_CORNER_RADIUS(4)
+        })) {
+            CLAY_TEXT(CLAY_STRING(pending_delete_habit_name),
                 CLAY_TEXT_CONFIG({
-                    .fontSize = 20,
-                    .fontId = FONT_ID_BODY_24,
+                    .fontSize = 18,
+                    .fontId = FONT_ID_BODY_16,
                     .textColor = COLOR_TEXT
                 })
             );
+        }
 
-            // Modal message container
-            CLAY(CLAY_LAYOUT({
-                .layoutDirection = CLAY_LEFT_TO_RIGHT,
-                .childGap = 4
-            })) {
-                CLAY_TEXT(CLAY_STRING("Are you sure you want to delete \""),
-                    CLAY_TEXT_CONFIG({
-                        .fontSize = 16,
-                        .fontId = FONT_ID_BODY_16,
-                        .textColor = COLOR_TEXT
-                    })
-                );
-                CLAY_TEXT(CLAY_STRING(delete_modal.habit_name),
-                    CLAY_TEXT_CONFIG({
-                        .fontSize = 16,
-                        .fontId = FONT_ID_BODY_16,
-                        .textColor = COLOR_TEXT
-                    })
-                );
-                CLAY_TEXT(CLAY_STRING("\"?"),
+        // Buttons container
+        CLAY(CLAY_LAYOUT({
+            .layoutDirection = CLAY_LEFT_TO_RIGHT,
+            .childGap = 8,
+            .childAlignment = { .x = CLAY_ALIGN_X_RIGHT }
+        })) {
+            // Cancel button
+            CLAY(CLAY_ID("CancelButton"),
+                CLAY_LAYOUT({
+                    .padding = { 8, 8 },
+                    .sizing = { CLAY_SIZING_FIT(0), CLAY_SIZING_FIT(0) }
+                }),
+                CLAY_RECTANGLE({
+                    .color = COLOR_PANEL,
+                    .cornerRadius = CLAY_CORNER_RADIUS(4),
+                    .cursorPointer = true
+                }),
+                Clay_OnHover(HandleModalCancel, 0)
+            ) {
+                CLAY_TEXT(CLAY_STRING("Cancel"),
                     CLAY_TEXT_CONFIG({
                         .fontSize = 16,
                         .fontId = FONT_ID_BODY_16,
@@ -130,61 +144,34 @@ static void RenderDeleteModal() {
                 );
             }
 
-            // Buttons container
-            CLAY(CLAY_LAYOUT({
-                .layoutDirection = CLAY_LEFT_TO_RIGHT,
-                .childGap = 8,
-                .childAlignment = { .x = CLAY_ALIGN_X_RIGHT }
-            })) {
-                // Cancel button
-                CLAY(CLAY_ID("CancelButton"),
-                    CLAY_LAYOUT({
-                        .padding = { 8, 8 },
-                        .sizing = { CLAY_SIZING_FIT(0), CLAY_SIZING_FIT(0) }
-                    }),
-                    CLAY_RECTANGLE({
-                        .color = COLOR_PANEL,
-                        .cornerRadius = CLAY_CORNER_RADIUS(4),
-                        .cursorPointer = true
-                    }),
-                    Clay_OnHover(HandleModalCancel, 0)
-                ) {
-                    CLAY_TEXT(CLAY_STRING("Cancel"),
-                        CLAY_TEXT_CONFIG({
-                            .fontSize = 16,
-                            .fontId = FONT_ID_BODY_16,
-                            .textColor = COLOR_TEXT
-                        })
-                    );
-                }
-
-                // Delete button
-                CLAY(CLAY_ID("ConfirmButton"),
-                    CLAY_LAYOUT({
-                        .padding = { 8, 8 },
-                        .sizing = { CLAY_SIZING_FIT(0), CLAY_SIZING_FIT(0) }
-                    }),
-                    CLAY_RECTANGLE({
-                        .color = COLOR_DANGER,
-                        .cornerRadius = CLAY_CORNER_RADIUS(4),
-                        .cursorPointer = true
-                    }),
-                    Clay_OnHover(HandleModalConfirm, 0)
-                ) {
-                    CLAY_TEXT(CLAY_STRING("Delete"),
-                        CLAY_TEXT_CONFIG({
-                            .fontSize = 16,
-                            .fontId = FONT_ID_BODY_16,
-                            .textColor = COLOR_TEXT
-                        })
-                    );
-                }
+            // Delete button
+            CLAY(CLAY_ID("ConfirmButton"),
+                CLAY_LAYOUT({
+                    .padding = { 8, 8 },
+                    .sizing = { CLAY_SIZING_FIT(0), CLAY_SIZING_FIT(0) }
+                }),
+                CLAY_RECTANGLE({
+                    .color = COLOR_DANGER,
+                    .cornerRadius = CLAY_CORNER_RADIUS(4),
+                    .cursorPointer = true
+                }),
+                Clay_OnHover(HandleModalConfirm, 0)
+            ) {
+                CLAY_TEXT(CLAY_STRING("Delete"),
+                    CLAY_TEXT_CONFIG({
+                        .fontSize = 16,
+                        .fontId = FONT_ID_BODY_16,
+                        .textColor = COLOR_TEXT
+                    })
+                );
             }
         }
     }
 }
-
-
+void RenderDeleteHabitModal(void) {
+    if (!delete_modal.is_open) return;
+    RenderModal(&delete_modal, RenderDeleteModalContent); 
+}
 void HandleHabitNameSubmit(const char* text) {
     if (text[0] != '\0') {
         // Find the active habit and update its name
@@ -225,12 +212,17 @@ static void RenderHabitTab(const Habit* habit) {
     bool isActive = habits.active_habit_id == habit->id;
     bool isEditing = habits.is_editing_new_habit && isActive;
 
+    int minWidth = isEditing ? 200 : (strlen(habit->name) * 10 + 48); 
+    
     CLAY(CLAY_IDI("HabitTab", habit->id),
         CLAY_LAYOUT({
             .padding = { 16, 8 },
             .childGap = 8,
             .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
-            .sizing = { CLAY_SIZING_FIT({ .min = 150 }), CLAY_SIZING_FIXED(48) },
+            .sizing = { 
+                CLAY_SIZING_FIXED(minWidth), // Use fixed width based on content
+                CLAY_SIZING_FIXED(48) 
+            },
             .layoutDirection = CLAY_LEFT_TO_RIGHT
         }),
         CLAY_RECTANGLE({
@@ -427,9 +419,6 @@ void RenderHabitTabBar() {
             }
         }
     }
-
-    // Render delete confirmation modal if open
-    RenderDeleteModal();
 }
 
 void HandleTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
