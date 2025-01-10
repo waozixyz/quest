@@ -399,8 +399,8 @@ static void RenderHabitHeader() {
             Clay_OnHover(HandleHeaderTitleClick, 0)
             ) {
                 CLAY_TEXT(CLAY_STRING(active_habit->name), CLAY_TEXT_CONFIG({
-                    .fontSize = 18,
-                    .fontId = FONT_ID_BODY_18,
+                    .fontSize = 24,
+                    .fontId = FONT_ID_BODY_24,
                     .textColor = COLOR_TEXT
                 }));
             }
@@ -411,7 +411,8 @@ static void RenderHabitHeader() {
 void RenderHabitTabBar() {
     CLAY(CLAY_ID("HabitTabsContainer"),
         CLAY_LAYOUT({
-            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIXED(62) }
+            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIXED(62) },
+            .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
         }),
         CLAY_RECTANGLE({ 
             .color = COLOR_SECONDARY
@@ -562,7 +563,8 @@ void RenderHabitsPage() {
     CLAY(CLAY_ID("HabitsContainer"),
         CLAY_LAYOUT({
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
-            .layoutDirection = CLAY_TOP_TO_BOTTOM
+            .layoutDirection = CLAY_TOP_TO_BOTTOM,
+            .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
         })
     ) {
         RenderHabitTabBar();
@@ -571,11 +573,17 @@ void RenderHabitsPage() {
         
         CLAY(CLAY_ID("ColorAndDatePickerContainer"),
             CLAY_LAYOUT({
-                .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) },
+                .sizing = { 
+                    windowWidth > BREAKPOINT_MEDIUM + 40 ? CLAY_SIZING_FIXED(BREAKPOINT_MEDIUM + 40) : CLAY_SIZING_GROW(),
+                    CLAY_SIZING_FIT(0) 
+                },
                 .childGap = 0,
                 .layoutDirection = CLAY_LEFT_TO_RIGHT,
-                .padding = { 0, 0 },
-                .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
+                .padding = { 8, 0 },
+                .childAlignment = { 
+                    .x = CLAY_ALIGN_X_CENTER,  // Center the container
+                    .y = CLAY_ALIGN_Y_CENTER 
+                }
             })
         ) {
             RenderColorPicker(active_habit->color, HandleColorChange, &color_picker_modal);

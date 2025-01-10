@@ -136,8 +136,6 @@ void HandleSDLEvents(bool* running) {
                         }
                     }
 
-                    printf("Total scroll containers found: %d\n", scrollContainerCount);
-
                     // Process each found scroll container
                     for (int i = 0; i < scrollContainerCount; i++) {
                         Clay_ScrollContainerData* data = &scrollContainersToCheck[i];
@@ -170,13 +168,22 @@ void HandleSDLEvents(bool* running) {
                 }
 
                 if (activeScroll) {
-                    bool preferHorizontal = (activeScroll->contentDimensions.width > activeScroll->contentDimensions.height) ||
-                                          (activeScroll->config.horizontal && !activeScroll->config.vertical);
+                    // Check if we have horizontal scroll input (from touchpad)
+                    if (event.wheel.x != 0 && activeScroll->config.horizontal) {
+                        // Note: We negate x because positive values should scroll right
+                        scrollDelta.x = -event.wheel.x * scrollMultiplier;
+                    }
+                    // If no horizontal scroll OR horizontal scrolling is disabled,
+                    // handle vertical scrolling
+                    else if (event.wheel.y != 0) {
+                        bool preferHorizontal = (activeScroll->contentDimensions.width > activeScroll->contentDimensions.height) ||
+                                            (activeScroll->config.horizontal && !activeScroll->config.vertical);
 
-                    if (preferHorizontal) {
-                        scrollDelta.x = event.wheel.y * scrollMultiplier;
-                    } else {
-                        scrollDelta.y = event.wheel.y * scrollMultiplier;
+                        if (preferHorizontal && activeScroll->config.horizontal) {
+                            scrollDelta.x = event.wheel.y * scrollMultiplier;
+                        } else if (activeScroll->config.vertical) {
+                            scrollDelta.y = event.wheel.y * scrollMultiplier;
+                        }
                     }
                 }
 
