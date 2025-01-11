@@ -304,7 +304,9 @@ void RenderTodoTab(const char* day, const DaySymbol* symbol, bool active, int in
         CLAY_RECTANGLE({ 
             .color = active ? COLOR_SECONDARY : 
                      (Clay_Hovered() ? COLOR_PRIMARY_HOVER : COLOR_BACKGROUND),
-            .cornerRadius = CLAY_CORNER_RADIUS(4)
+            .cornerRadius = CLAY_CORNER_RADIUS(4),
+            .cursorPointer = true
+
         }),
         Clay_OnHover(HandleTabInteraction, index)
     ) {

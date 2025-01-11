@@ -1,0 +1,35 @@
+name: Web Build and Deploy
+
+on:
+  push:
+    branches: [ axis ]
+  pull_request:
+    branches: [ axis ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v12
+
+      - name: Create Build Directory
+        run: mkdir -p build/clay
+
+      - name: Build Web Version
+        run: make BUILD_TYPE=web
+
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v2.0
+        with:
+          publish-dir: './build/clay'
+          production-branch: main
+          deploy-message: "Deploy from GitHub Actions"
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        timeout-minutes: 1

@@ -1,0 +1,38 @@
+name: Linux Build
+
+on:
+  push:
+    branches: [ axis ]
+  pull_request:
+    branches: [ axis ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            clang \
+            libsdl2-dev \
+            libsdl2-image-dev \
+            libsdl2-ttf-dev \
+            libsdl2-gfx-dev
+
+      - name: Create Build Directory
+        run: mkdir -p build/clay
+
+      - name: Build Desktop Version
+        run: make BUILD_TYPE=desktop
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-build
+          path: build/clay/game

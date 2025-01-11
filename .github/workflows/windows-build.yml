@@ -1,0 +1,67 @@
+name: Windows Build
+
+on:
+  push:
+    branches: [ axis ]
+  pull_request:
+    branches: [ axis ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            git
+            make
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-clang
+            mingw-w64-x86_64-SDL2
+            mingw-w64-x86_64-SDL2_image
+            mingw-w64-x86_64-SDL2_ttf
+            mingw-w64-x86_64-SDL2_gfx
+
+      - name: Create Build Directory
+        run: mkdir -p build/clay
+
+      - name: Build Desktop Version
+        run: |
+          export PATH="/mingw64/bin:$PATH"
+          make BUILD_TYPE=desktop CC=clang
+
+      - name: Copy DLL Dependencies
+        run: |
+          cp /mingw64/bin/SDL2.dll build/clay/
+          cp /mingw64/bin/SDL2_image.dll build/clay/
+          cp /mingw64/bin/SDL2_ttf.dll build/clay/
+          cp /mingw64/bin/SDL2_gfx-1-0-0.dll build/clay/
+          cp /mingw64/bin/libwinpthread-1.dll build/clay/
+          cp /mingw64/bin/libstdc++-6.dll build/clay/
+          cp /mingw64/bin/libgcc_s_seh-1.dll build/clay/
+          cp /mingw64/bin/zlib1.dll build/clay/
+          cp /mingw64/bin/libpng16-16.dll build/clay/
+          cp /mingw64/bin/libjpeg-8.dll build/clay/
+          cp /mingw64/bin/libfreetype-6.dll build/clay/
+
+      - name: Create ZIP Archive
+        run: |
+          cd build
+          7z a -tzip windows-build.zip clay/*
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-build
+          path: build/windows-build.zip
