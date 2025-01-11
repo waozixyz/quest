@@ -10,15 +10,12 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
 #include "config.h"
-#endif
 
 #if defined(CLAY_MOBILE)
 #include <pthread.h>
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
 #include <jni.h>
-
-
 
 typedef struct {
     SDL_Window* window;
@@ -59,5 +56,5 @@ int ScaleUIToInt(float value);
 SDL_FRect ScaleRect(SDL_Rect rect);
 SDL_FRect ScaleRectF(SDL_FRect rect);
 
-
+#endif
 #endif // UTILS_H

@@ -1,9 +1,9 @@
 #include "state/habits_state.h"
-#include "storage_utils.h"
 
-
+#ifndef __EMSCRIPTEN__
 static Uint32 lastCalendarToggleTime = 0;
 const Uint32 CALENDAR_TOGGLE_DEBOUNCE_MS = 250;
+#endif
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -12,6 +12,7 @@ EM_JS(void, JS_SaveHabits, (const HabitCollection* collection), {});
 EM_JS(void, JS_LoadHabits, (HabitCollection* collection), {});
 
 #else
+#include "storage_utils.h"
 #include "../../vendor/cJSON/cJSON.h"
 #include <stdlib.h>
 #include <time.h>
@@ -266,6 +267,7 @@ void LoadHabits(HabitCollection* collection) {
 bool ToggleHabitDay(HabitCollection* collection, uint32_t day_index) {
     if (!collection) return false;
     
+    #ifndef __EMSCRIPTEN__
     // Add debounce check
     Uint32 currentTime = SDL_GetTicks();
     if (currentTime - lastCalendarToggleTime < CALENDAR_TOGGLE_DEBOUNCE_MS) {
@@ -274,11 +276,11 @@ bool ToggleHabitDay(HabitCollection* collection, uint32_t day_index) {
         return false;
     }
     lastCalendarToggleTime = currentTime;
+    #endif
     
     Habit* habit = GetActiveHabit(collection);
     if (!habit) return false;
     
-    // Rest of the function remains the same...
     for (size_t i = 0; i < habit->days_count; i++) {
         if (habit->calendar_days[i].day_index == day_index) {
             habit->calendar_days[i].completed = !habit->calendar_days[i].completed;
@@ -295,7 +297,6 @@ bool ToggleHabitDay(HabitCollection* collection, uint32_t day_index) {
     new_day->date = time(NULL);
     return true;
 }
-
 
 void UpdateCalendarStartDate(HabitCollection* collection, time_t new_start_date) {
     if (!collection) return;

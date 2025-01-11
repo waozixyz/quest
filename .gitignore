@@ -3,6 +3,7 @@ habits.json
 todos.json
 
 # Build directories
+.xmake/
 build/
 out/
 

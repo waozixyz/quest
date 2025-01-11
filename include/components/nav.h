@@ -1,19 +1,17 @@
 #ifndef NAV_H
 #define NAV_H
 
+#include "../config.h"
 #include "../clay_extensions.h"
+#include "../../vendor/clay/clay.h"
+#include <string.h>
 
-#ifdef __EMSCRIPTEN__
-#define CLAY_EXTEND_CONFIG_IMAGE Clay_String sourceURL;
-#else
+#ifndef __EMSCRIPTEN__
 #include <SDL_image.h>
 #include <SDL.h>
-#endif
-
-#include "../config.h"
 #include "../utils.h"
-#include "../../vendor/clay/clay.h"
 
+#endif
 
 #ifndef __EMSCRIPTEN__
 void InitializeNavIcons(SDL_Renderer* renderer);

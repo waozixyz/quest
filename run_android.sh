@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+# Set NDK path
+export NDK_PATH="/opt/android-ndk"
+
 # Get device ABI
 DEVICE_ABI=$(adb shell getprop ro.product.cpu.abi)
 echo "Device ABI: $DEVICE_ABI"
@@ -9,8 +12,14 @@ echo "Device ABI: $DEVICE_ABI"
 case $DEVICE_ABI in
     "arm64-v8a"|"armeabi-v7a"|"x86_64"|"x86")
         echo "Building Android app for $DEVICE_ABI..."
-        # Modify make command to build only for current ABI
-        make build-android ANDROID_ABIS=$DEVICE_ABI
+        # Build SDL dependencies for specific ABI
+        xmake build_sdl_android --ARCH=$DEVICE_ABI
+        # Configure xmake for Android with specific ABI
+        xmake f -p android --arch=$DEVICE_ABI --ndk=$NDK_PATH
+        # Build the project
+        xmake
+        # Build the APK using Gradle
+        cd android && ./gradlew assembleDebug
         ;;
     *)
         echo "Unsupported ABI: $DEVICE_ABI"
@@ -19,7 +28,7 @@ case $DEVICE_ABI in
 esac
 
 echo "Installing APKs..."
-cd android/app/build/outputs/apk/debug
+cd app/build/outputs/apk/debug
 
 # Choose appropriate APK based on device ABI
 case $DEVICE_ABI in
@@ -40,7 +49,7 @@ esac
 echo "Installing $APK..."
 adb install -r "$APK"
 
-cd ../../../../../
+cd ../../../../
 
 echo "Starting app..."
 adb shell am start -n xyz.waozi.myquest/.MainActivity
@@ -61,4 +70,3 @@ adb logcat \
     *:S \
     *:I \
     | grep -v -E "SignalStrength|NetworkController|DisplayPowerController|MotionDetector|WindowManager|InputReader|InputDispatcher|Counters|VerifyUtils|Finsky|HWComposer"
-    

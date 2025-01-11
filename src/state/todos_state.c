@@ -1,5 +1,4 @@
 #include "state/todos_state.h"
-#include "storage_utils.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -8,6 +7,7 @@ EM_JS(void, JS_SaveTodos, (const TodoCollection* collection), {});
 EM_JS(void, JS_LoadTodos, (TodoCollection* collection), {});
 
 #else
+#include "storage_utils.h"
 #include "../../vendor/cJSON/cJSON.h"
 #include <time.h>
 

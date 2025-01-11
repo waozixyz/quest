@@ -27,10 +27,13 @@ Modal delete_habit_modal = {
     .height = 300 
 };
 
+
+#ifndef __EMSCRIPTEN__
 static Uint32 last_click_time = 0;
 static uint32_t last_clicked_habit_id = 0;
 static Uint32 lastNewTabTime = 0;
 const Uint32 NEW_TAB_DEBOUNCE_MS = 250;
+#endif
 
 
 #ifndef __EMSCRIPTEN__
@@ -73,7 +76,8 @@ static void HandleEditButtonClick(Clay_ElementId elementId, Clay_PointerData poi
         #endif
     }
 }
-static void HandleHeaderTitleClick(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+
+void HandleHeaderTitleClick(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state != CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         return;
     }
@@ -83,6 +87,7 @@ static void HandleHeaderTitleClick(Clay_ElementId elementId, Clay_PointerData po
         return;
     }
 
+    #ifndef __EMSCRIPTEN__
     Uint32 current_time = SDL_GetTicks();
     
     // Check if this is a double click on the same habit
@@ -102,6 +107,9 @@ static void HandleHeaderTitleClick(Clay_ElementId elementId, Clay_PointerData po
 
     last_click_time = current_time;
     last_clicked_habit_id = active_habit->id;
+    #else
+    HandleEditButtonClick(elementId, pointerInfo, userData);
+    #endif
 }
 
 
@@ -234,7 +242,6 @@ void RenderDeleteHabitModal(void) {
     if (!delete_habit_modal.is_open) return;
     RenderModal(&delete_habit_modal, RenderDeleteModalContent); 
 }
-
 void HandleHabitNameSubmit(const char* text) {
     if (text[0] != '\0') {
         for (size_t i = 0; i < habits.habits_count; i++) {
@@ -247,6 +254,10 @@ void HandleHabitNameSubmit(const char* text) {
         habits.is_editing_new_habit = false;
         SaveHabits(&habits);
         ClearTextInput(habits.habit_name_input);
+
+        #ifndef __EMSCRIPTEN__
+        SDL_StopTextInput();
+        #endif
     }
 }
 
@@ -259,8 +270,10 @@ static void HandleConfirmButtonClick(Clay_ElementId elementId, Clay_PointerData 
     }
 }
 
+
 void HandleNewTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        #ifndef __EMSCRIPTEN__
         // Add debounce check
         Uint32 currentTime = SDL_GetTicks();
         if (currentTime - lastNewTabTime < NEW_TAB_DEBOUNCE_MS) {
@@ -269,6 +282,7 @@ void HandleNewTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerI
             return;
         }
         lastNewTabTime = currentTime;
+        #endif
 
         AddNewHabit(&habits);
         habits.is_editing_new_habit = true;
@@ -531,9 +545,11 @@ void HandleHabitsPageInput(InputEvent event) {
     
     if (!habits.is_editing_new_habit) return;
     
+    #ifndef __EMSCRIPTEN__
     if (event.delta_time > 0) {
         UpdateTextInput(habits.habit_name_input, 0, event.delta_time);
     }
+    #endif
 
     if (event.isTextInput) {
         UpdateTextInput(habits.habit_name_input, event.text[0], event.delta_time);
@@ -541,15 +557,15 @@ void HandleHabitsPageInput(InputEvent event) {
         UpdateTextInput(habits.habit_name_input, event.key, event.delta_time);
     }
 }
-
 void CleanupHabitsPage() {
     if (habits.habit_name_input) {
         DestroyTextInput(habits.habit_name_input);
         habits.habit_name_input = NULL;
     }
+    #ifndef __EMSCRIPTEN__
     CleanupHabitTabBar();
+    #endif
 }
-
 void RenderHabitsPage() {
     LoadHabits(&habits);
     Habit* active_habit = GetActiveHabit(&habits);

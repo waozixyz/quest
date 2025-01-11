@@ -1,5 +1,6 @@
 #ifndef STORAGE_UTILS_H
 #define STORAGE_UTILS_H
+#ifndef __EMSCRIPTEN__
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,4 +38,5 @@ char* read_file_contents(const char* path, long* file_size);
 const char* get_habits_file_path(StorageConfig* config);
 const char* get_todos_file_path(StorageConfig* config);
 
+#endif
 #endif // STORAGE_UTILS_H

@@ -1,4 +1,5 @@
 #include "storage_utils.h"
+#ifndef __EMSCRIPTEN__
 
 int ensure_directory_exists(const char* path) {
     struct stat st = {0};
@@ -186,3 +187,4 @@ char* read_file_contents(const char* path, long* file_size) {
     buffer[*file_size] = '\0';  // Null-terminate
     return buffer;
 }
+#endif

@@ -2,13 +2,27 @@
 #define APP_H
 
 #include "config.h"
+#include "components/nav.h"
+#include "pages/home.h"
+#include "pages/habits.h"
+#include "pages/todos.h"
+#include "pages/timeline.h"
+#include "pages/routine.h"
+
+#include "clay_extensions.h"
+#include "../vendor/clay/clay.h"
+
+#ifndef __EMSCRIPTEN__
+#include "platforms/sdl/events.h"
+#include "platforms/sdl/renderer.h"
+#include "utils.h"
+
+#include <SDL.h>
+#endif
 
 #ifdef __EMSCRIPTEN__
 void InitializePages(void);
 #else
-#include <SDL.h>
-#include "platforms/sdl/events.h"
-
 void InitializePages(SDL_Renderer* renderer);
 void HandleSDLEvents(bool* running);
 void RunGameLoop(SDL_Window* window, SDL_Renderer* renderer);

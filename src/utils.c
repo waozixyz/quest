@@ -1,3 +1,5 @@
+#ifndef __EMSCRIPTEN__
+
 #include "utils.h"
 #include "platforms/sdl/renderer.h"
 #include <SDL_image.h>
@@ -302,3 +304,5 @@ SDL_FRect ScaleRectF(SDL_FRect rect) {
         rect.h * globalScalingFactor
     };
 }
+
+#endif

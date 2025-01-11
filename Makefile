@@ -10,6 +10,7 @@ ANDROID_ABIS ?= armeabi-v7a arm64-v8a x86 x86_64
 ifeq ($(BUILD_TYPE),web)
 	CC = emcc
 	CFLAGS = -Wall -Werror -Os -DCLAY_WASM -mbulk-memory --target=wasm32 
+	INCLUDE_FLAGS += -Ivendor/clay
 	LINKER_FLAGS = \
 		-Wl,--strip-all \
 		-Wl,--export-dynamic \
@@ -22,7 +23,13 @@ ifeq ($(BUILD_TYPE),web)
 		-s EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]' \
 		-s EXPORTED_FUNCTIONS='["_main", "_printf"]'
 	TARGET = $(BUILD_DIR)/index.wasm
-	SRCS = $(shell find $(SRC_DIR) -name "*.c" ! -path "$(SRC_DIR)/renderers/*")
+	SRCS = $(shell find $(SRC_DIR) -name "*.c" ! -path "$(SRC_DIR)/platforms/*")
+	SRCS += vendor/clay/clay.c
+
+	# Create specific rule for clay.c
+	$(BUILD_DIR)/vendor/clay/clay.o: vendor/clay/clay.c
+		@mkdir -p $(dir $@)
+		$(CC) $(CFLAGS) $(INCLUDE_FLAGS) -c $< -o $@
 else ifeq ($(BUILD_TYPE),android)
     CFLAGS = -Wall -Werror -O2 -DCLAY_MOBILE -fPIC
     INCLUDE_FLAGS += \

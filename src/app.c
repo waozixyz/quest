@@ -1,21 +1,4 @@
 #include "app.h"
-#include "config.h"
-#include "components/nav.h"
-#include "pages/home.h"
-#include "pages/habits.h"
-#include "pages/todos.h"
-#include "pages/timeline.h"
-#include "pages/routine.h"
-#include "utils.h"
-
-#include "clay_extensions.h"
-#include "../vendor/clay/clay.h"
-
-#ifndef __EMSCRIPTEN__
-#include "platforms/sdl/events.h"
-#include "platforms/sdl/renderer.h"
-
-#endif
 
 bool pages_initialized = false;
 

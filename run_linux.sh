@@ -2,7 +2,6 @@
 # build.sh
 
 # Initial build
-make BUILD_TYPE=desktop && ./build/clay/game
-
+xmake && ./build/clay/myquest
 
 
