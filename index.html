@@ -498,6 +498,70 @@ async function init() {
                     console.error(error.stack);
                 }
             },
+            deleteHabitFunction: (collectionPtr, habit_id) => {
+                try {
+                    const stored = localStorage.getItem("habitsData");
+                    if (!stored) return;
+
+                    let habitsData = JSON.parse(stored);
+                    
+                    // Find and remove the habit
+                    const habitIndex = habitsData.habits.findIndex(h => h.id === habit_id);
+                    if (habitIndex === -1) return;
+                    
+                    habitsData.habits.splice(habitIndex, 1);
+                    
+                    // Update remaining habit IDs to match their array positions
+                    habitsData.habits.forEach((habit, index) => {
+                        habit.id = index;
+                    });
+                    
+                    // Update active_habit_id if needed
+                    if (habitsData.active_habit_id === habit_id) {
+                        if (habitsData.habits.length > 0) {
+                            if (habitIndex > 0) {
+                                habitsData.active_habit_id = habitIndex - 1;
+                            } else {
+                                habitsData.active_habit_id = 0;
+                            }
+                        }
+                    } else if (habitsData.active_habit_id > habit_id) {
+                        habitsData.active_habit_id--;
+                    }
+                    
+                    localStorage.setItem("habitsData", JSON.stringify(habitsData));
+                } catch (error) {
+                    console.error("Error in deleteHabitFunction:", error);
+                }
+            },
+            addNewHabitFunction: (collectionPtr) => {
+                try {
+                    const stored = localStorage.getItem("habitsData");
+                    let habitsData = stored ? JSON.parse(stored) : { habits: [], active_habit_id: 0 };
+                    
+                    const newHabitId = habitsData.habits.length;
+                    
+                    // Create new habit with default values
+                    const newHabit = {
+                        id: newHabitId,
+                        name: `Habit ${newHabitId + 1}`,
+                        color: {
+                            r: 148,  // Default primary color values
+                            g: 47,
+                            b: 74,
+                            a: 255
+                        },
+                        calendar_days: []
+                    };
+                    
+                    habitsData.habits.push(newHabit);
+                    habitsData.active_habit_id = newHabitId;
+                    
+                    localStorage.setItem("habitsData", JSON.stringify(habitsData));
+                } catch (error) {
+                    console.error("Error in addNewHabitFunction:", error);
+                }
+            },
             JS_SaveTodos: (collectionPtr) => {
                 try {
                     const memory = new DataView(instance.exports.memory.buffer);
@@ -680,7 +744,92 @@ async function init() {
                     console.error("Error in JS_LoadHabits:", error);
                     console.error(error.stack);
                 }
-            }
+            },
+            addTodoFunction: (collectionPtr, textPtr) => {
+                try {
+                    const stored = localStorage.getItem("todosData");
+                    let todosData = stored ? JSON.parse(stored) : { todos: [], active_day: "Monday" };
+                    
+                    // Read the text from memory
+                    let text = "";
+                    const textDecoder = new TextDecoder();
+                    for (let i = 0; i < 256; i++) {  // MAX_TODO_TEXT
+                        const char = memoryDataView.getUint8(textPtr + i);
+                        if (char === 0) break;
+                        text += String.fromCharCode(char);
+                    }
+                    
+                    const newTodo = {
+                        id: todosData.todos.length,
+                        text: text,
+                        position: todosData.todos.length,
+                        completed: false,
+                        created_at: Date.now(),
+                        day: todosData.active_day
+                    };
+                    
+                    todosData.todos.push(newTodo);
+                    localStorage.setItem("todosData", JSON.stringify(todosData));
+                } catch (error) {
+                    console.error("Error in addTodoFunction:", error);
+                }
+            },
+
+            deleteTodoFunction: (collectionPtr, todoId) => {
+                try {
+                    const stored = localStorage.getItem("todosData");
+                    if (!stored) return;
+
+                    let todosData = JSON.parse(stored);
+                    todosData.todos = todosData.todos.filter(todo => todo.id !== todoId);
+                    
+                    // Update remaining todo IDs and positions
+                    todosData.todos.forEach((todo, index) => {
+                        todo.id = index;
+                        todo.position = index;
+                    });
+                    
+                    localStorage.setItem("todosData", JSON.stringify(todosData));
+                } catch (error) {
+                    console.error("Error in deleteTodoFunction:", error);
+                }
+            },
+
+            toggleTodoFunction: (collectionPtr, todoId) => {
+                try {
+                    const stored = localStorage.getItem("todosData");
+                    if (!stored) return;
+
+                    let todosData = JSON.parse(stored);
+                    const todo = todosData.todos.find(t => t.id === todoId);
+                    if (todo) {
+                        todo.completed = !todo.completed;
+                        localStorage.setItem("todosData", JSON.stringify(todosData));
+                    }
+                } catch (error) {
+                    console.error("Error in toggleTodoFunction:", error);
+                }
+            },
+
+            setActiveDayFunction: (collectionPtr, dayPtr) => {
+                try {
+                    const stored = localStorage.getItem("todosData");
+                    let todosData = stored ? JSON.parse(stored) : { todos: [], active_day: "Monday" };
+                    
+                    // Read the day from memory
+                    let day = "";
+                    for (let i = 0; i < 10; i++) {
+                        const char = memoryDataView.getUint8(dayPtr + i);
+                        if (char === 0) break;
+                        day += String.fromCharCode(char);
+                    }
+                    
+                    todosData.active_day = day;
+                    localStorage.setItem("todosData", JSON.stringify(todosData));
+                } catch (error) {
+                    console.error("Error in setActiveDayFunction:", error);
+                }
+            },
         },
         wasi_snapshot_preview1: {
             proc_exit: () => {},

@@ -1,5 +1,8 @@
 #include "app.h"
 
+
+#include "clay_extensions.h"
+#include "../../vendor/clay/clay.h"
 bool pages_initialized = false;
 
 #ifdef __EMSCRIPTEN__

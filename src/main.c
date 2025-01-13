@@ -2,7 +2,15 @@
 #include "config.h"
 
 #ifdef __EMSCRIPTEN__
+#define CLAY_IMPLEMENTATION
+#endif
+
+#include "clay_extensions.h"
+#include "../../vendor/clay/clay.h"
+
+#ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+
 
 CLAY_WASM_EXPORT("UpdateDrawFrame") Clay_RenderCommandArray UpdateDrawFrame(
     float width, 

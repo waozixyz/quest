@@ -159,7 +159,11 @@ void RenderDeleteTodoModalContent() {
             .color = COLOR_PANEL,
             .cornerRadius = CLAY_CORNER_RADIUS(4)
         })) {
-            CLAY_TEXT(CLAY_STRING(pending_delete_todo_text),
+            Clay_String todo_text = {
+                .length = strlen(pending_delete_todo_text),
+                .chars = pending_delete_todo_text
+            };
+            CLAY_TEXT(todo_text,
                 CLAY_TEXT_CONFIG({
                     .fontSize = 18,
                     .fontId = FONT_ID_BODY_16,
@@ -293,8 +297,8 @@ void RenderTodoTab(const char* day, const DaySymbol* symbol, bool active, int in
     
     // Increase padding on larger screens
     int horizontal_padding = windowWidth >= BREAKPOINT_MEDIUM ? 32 : 16;
-    
-    CLAY(CLAY_IDI(id_buffer, index),
+
+    CLAY(Clay__AttachId(Clay__HashString((Clay_String){.chars = id_buffer, .length = strlen(id_buffer)}, index, 0)),
         CLAY_LAYOUT({ 
             .padding = { horizontal_padding, 8 }, 
             .childGap = 8,
@@ -402,7 +406,7 @@ void RenderTodoItem(const Todo* todo, int index) {
     
     bool is_editing = todo_collection.editing_todo_id == todo->id;
     
-    CLAY(CLAY_IDI(id_buffer, index),
+    CLAY(Clay__AttachId(Clay__HashString((Clay_String){.chars = id_buffer, .length = strlen(id_buffer)}, index, 0)),
         CLAY_LAYOUT({ 
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) },
             .padding = { 16, 8 },

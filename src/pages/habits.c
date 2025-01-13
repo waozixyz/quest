@@ -179,7 +179,11 @@ void RenderDeleteModalContent() {
             .color = COLOR_PANEL,
             .cornerRadius = CLAY_CORNER_RADIUS(4)
         })) {
-            CLAY_TEXT(CLAY_STRING(pending_delete_habit_name),
+            Clay_String habit_name = {
+                .length = strlen(pending_delete_habit_name),
+                .chars = pending_delete_habit_name
+            };
+            CLAY_TEXT(habit_name,
                 CLAY_TEXT_CONFIG({
                     .fontSize = 18,
                     .fontId = FONT_ID_BODY_16,
@@ -310,7 +314,11 @@ static void RenderHabitTab(const Habit* habit) {
         }),
         Clay_OnHover(HandleTabInteraction, habit->id)
     ) {
-        CLAY_TEXT(CLAY_STRING(habit->name), CLAY_TEXT_CONFIG({
+        Clay_String habit_str = {
+            .length = strlen(habit->name),
+            .chars = habit->name
+        };
+        CLAY_TEXT(habit_str, CLAY_TEXT_CONFIG({
             .fontSize = 14,
             .fontId = FONT_ID_BODY_14,
             .textColor = COLOR_TEXT,
@@ -429,7 +437,11 @@ static void RenderHabitHeader() {
             }),
             Clay_OnHover(HandleHeaderTitleClick, 0)
             ) {
-                CLAY_TEXT(CLAY_STRING(active_habit->name), CLAY_TEXT_CONFIG({
+                Clay_String active_name = {
+                    .length = strlen(active_habit->name),
+                    .chars = active_habit->name
+                };
+                CLAY_TEXT(active_name, CLAY_TEXT_CONFIG({
                     .fontSize = 24,
                     .fontId = FONT_ID_BODY_24,
                     .textColor = COLOR_TEXT

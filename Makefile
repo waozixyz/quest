@@ -24,12 +24,7 @@ ifeq ($(BUILD_TYPE),web)
 		-s EXPORTED_FUNCTIONS='["_main", "_printf"]'
 	TARGET = $(BUILD_DIR)/index.wasm
 	SRCS = $(shell find $(SRC_DIR) -name "*.c" ! -path "$(SRC_DIR)/platforms/*")
-	SRCS += vendor/clay/clay.c
-
-	# Create specific rule for clay.c
-	$(BUILD_DIR)/vendor/clay/clay.o: vendor/clay/clay.c
-		@mkdir -p $(dir $@)
-		$(CC) $(CFLAGS) $(INCLUDE_FLAGS) -c $< -o $@
+	
 else ifeq ($(BUILD_TYPE),android)
     CFLAGS = -Wall -Werror -O2 -DCLAY_MOBILE -fPIC
     INCLUDE_FLAGS += \

@@ -8,10 +8,6 @@
 #include "pages/todos.h"
 #include "pages/timeline.h"
 #include "pages/routine.h"
-
-#include "clay_extensions.h"
-#include "../vendor/clay/clay.h"
-
 #ifndef __EMSCRIPTEN__
 #include "platforms/sdl/events.h"
 #include "platforms/sdl/renderer.h"

@@ -5,7 +5,8 @@
 pkill ran
 
 # Initial build
-make clean && make BUILD_TYPE=web
+xmake f -p wasm
+xmake
 
 # Store current directory
 ROOT_DIR=$(pwd)
@@ -33,7 +34,7 @@ fi
 
 # Watch for changes and rebuild
 
-echo "Watching for changes in $ROOT_DIR/src, index.html, and Makefile"
-while inotifywait -r -e modify "$ROOT_DIR/src" "$ROOT_DIR/index.html" "$ROOT_DIR/Makefile"; do
+echo "Watching for changes in $ROOT_DIR/src and index.html"
+while inotifywait -r -e modify "$ROOT_DIR/src" "$ROOT_DIR/index.html"; do
     make clean && make all
 done

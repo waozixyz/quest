@@ -3,8 +3,13 @@
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 
+
 EM_JS(void, JS_SaveTodos, (const TodoCollection* collection), {});
 EM_JS(void, JS_LoadTodos, (TodoCollection* collection), {});
+EM_JS(void, addTodoFunction, (TodoCollection* collection, const char* text));
+EM_JS(void, deleteTodoFunction, (TodoCollection* collection, uint32_t id));
+EM_JS(void, toggleTodoFunction, (TodoCollection* collection, uint32_t id));
+EM_JS(void, setActiveDayFunction, (TodoCollection* collection, const char* day));
 
 #else
 #include "storage_utils.h"
@@ -122,50 +127,69 @@ void SaveTodos(TodoCollection* collection) {
 
 void AddTodo(TodoCollection* collection, const char* text) {
     if (!collection || !text || collection->todos_count >= MAX_TODOS) return;
+    #ifdef __EMSCRIPTEN__
+        addTodoFunction(collection, text);
+        JS_LoadTodos(collection);  // Reload the collection after adding
+    #else
+        Todo* new_todo = &collection->todos[collection->todos_count];
+        new_todo->id = collection->todos_count;
+        strncpy(new_todo->text, text, MAX_TODO_TEXT - 1);
+        new_todo->position = collection->todos_count;
+        new_todo->completed = false;
+        new_todo->created_at = time(NULL);
+        strcpy(new_todo->day, collection->active_day);
 
-    Todo* new_todo = &collection->todos[collection->todos_count];
-    new_todo->id = collection->todos_count;
-    strncpy(new_todo->text, text, MAX_TODO_TEXT - 1);
-    new_todo->position = collection->todos_count;
-    new_todo->completed = false;
-    new_todo->created_at = time(NULL);
-    strcpy(new_todo->day, collection->active_day);
-
-    collection->todos_count++;
-    SaveTodos(collection);
+        collection->todos_count++;
+        SaveTodos(collection);
+    #endif
 }
 
 void DeleteTodo(TodoCollection* collection, uint32_t id) {
     if (!collection) return;
-
-    for (size_t i = 0; i < collection->todos_count; i++) {
-        if (collection->todos[i].id == id) {
-            // Shift remaining todos left
-            memmove(&collection->todos[i], 
-                    &collection->todos[i + 1],
-                    (collection->todos_count - i - 1) * sizeof(Todo));
-            collection->todos_count--;
-            SaveTodos(collection);
-            return;
+    #ifdef __EMSCRIPTEN__
+        deleteTodoFunction(collection, id);
+        JS_LoadTodos(collection);
+    #else
+        for (size_t i = 0; i < collection->todos_count; i++) {
+            if (collection->todos[i].id == id) {
+                // Shift remaining todos left
+                memmove(&collection->todos[i], 
+                        &collection->todos[i + 1],
+                        (collection->todos_count - i - 1) * sizeof(Todo));
+                collection->todos_count--;
+                SaveTodos(collection);
+                return;
+            }
         }
-    }
+    #endif
 }
 
 void ToggleTodo(TodoCollection* collection, uint32_t id) {
     if (!collection) return;
 
-    for (size_t i = 0; i < collection->todos_count; i++) {
-        if (collection->todos[i].id == id) {
-            collection->todos[i].completed = !collection->todos[i].completed;
-            SaveTodos(collection);
-            return;
+    #ifdef __EMSCRIPTEN__
+        toggleTodoFunction(collection, id);
+        JS_LoadTodos(collection); 
+    #else
+        for (size_t i = 0; i < collection->todos_count; i++) {
+            if (collection->todos[i].id == id) {
+                collection->todos[i].completed = !collection->todos[i].completed;
+                SaveTodos(collection);
+                return;
+            }
         }
-    }
+    #endif
 }
 
 void SetActiveDay(TodoCollection* collection, const char* day) {
     if (!collection || !day) return;
+    
+    #ifdef __EMSCRIPTEN__
+        setActiveDayFunction(collection, day);
+        JS_LoadTodos(collection);  // Reload the collection after changing the day
+    #else
     strncpy(collection->active_day, day, 9);
+    #endif
 }
 
 Todo* GetTodosByDay(TodoCollection* collection, const char* day, size_t* count) {

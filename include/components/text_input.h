@@ -1,6 +1,7 @@
 #ifndef TEXT_INPUT_H
 #define TEXT_INPUT_H
 
+#include "../clay_extensions.h"
 #include "../../vendor/clay/clay.h"
 #include "../config.h"
 #include <string.h>

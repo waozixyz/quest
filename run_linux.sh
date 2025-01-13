@@ -2,6 +2,6 @@
 # build.sh
 
 # Initial build
-xmake && ./build/clay/myquest
+xmake f -p linux && xmake && ./build/clay/main
 
 
