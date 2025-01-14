@@ -1,7 +1,7 @@
 -- Project config
 set_project("MyQuest")
 set_version("1.0")
-set_languages("c11")
+set_languages("c99")
 add_rules("mode.debug", "mode.release")
 
 add_includedirs("include")
@@ -61,6 +61,7 @@ end
 -- Desktop platforms configuration
 if is_plat("linux", "macosx", "windows") then
     add_defines("CLAY_DESKTOP")
+    
     add_includedirs("vendor/cJSON", "/usr/include/SDL2") 
     add_files("vendor/cJSON/cJSON.c")
     
@@ -109,6 +110,14 @@ target("main")
         end)
     else
         set_kind("binary")
+        set_toolset("cc", "clang")
+
+        add_cflags("-Wall", "-Werror", "-O2")
+        add_cflags("-Wno-unused-variable")
+        add_cflags("-Wno-missing-braces")
+
+
+
         set_targetdir("build/clay")
         
         after_build(function (target)
@@ -118,7 +127,7 @@ target("main")
     end
     
     add_files("src/**.c")
-    set_languages("c11")
+    set_languages("c99")
 -- SDL Android build task
 task("build_sdl_android")
     set_menu {

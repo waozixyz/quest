@@ -15,19 +15,6 @@ void Clay_SDL2_SetRenderScale(float scale) {
     renderScaleFactor = scale;
 }
 
-void* Clay_AllocateAligned(size_t alignment, size_t size) {
-    #ifdef CLAY_MOBILE
-        // Use Android-compatible aligned allocation
-        void* ptr = NULL;
-        if (posix_memalign(&ptr, alignment, size) != 0) {
-            return NULL;
-        }
-        return ptr;
-    #else
-        return aligned_alloc(alignment, size);
-    #endif
-}
-
 SDL_FRect ScaleBoundingBox(Clay_BoundingBox box) {
     return (SDL_FRect) {
         .x = box.x * renderScaleFactor,
@@ -131,7 +118,7 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
 
                 // Use aligned allocation
                 size_t bufferSize = text.length + 1;
-                char* cloned = (char*)Clay_AllocateAligned(8, bufferSize);
+                char* cloned = (char*)AllocateAligned(8, bufferSize);
                 
                 if (!cloned) {
                     SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
@@ -190,7 +177,8 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
 
                 SDL_DestroyTexture(texture);
                 SDL_FreeSurface(surface);
-                free(cloned);
+                FreeAligned(cloned);
+
                 break;
             }
             case CLAY_RENDER_COMMAND_TYPE_IMAGE: {                

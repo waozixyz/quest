@@ -3,11 +3,12 @@
 #include "config.h"
 #include "utils.h"
 #include <string.h>
-#include "clay_extensions.h"
-#define CLAY_IMPLEMENTATION
 
+#include "clay_extensions.h"
 #include "../../vendor/clay/clay.h"
 #include "platforms/sdl/renderer.h"
+
+
 
 
 
@@ -47,26 +48,36 @@ typedef struct {
     Clay_BoundingBox boundingBox;
     bool found;
 } ElementBoundingData;
+
 ElementBoundingData GetElementBoundingData(Clay_ElementId elementId) {
     ElementBoundingData result = {0};
     
-    Clay_ScrollContainerData scrollData = Clay_GetScrollContainerData(elementId);
+    // Use Clay_GetElementData to retrieve bounding box
+    Clay_ElementData elementData = Clay_GetElementData(elementId);
     
-    if (scrollData.found) {
-        Clay_LayoutElementHashMapItem *hashMapItem = Clay__GetHashMapItem(elementId.id);
+    if (elementData.found) {
+        // Get scroll container data to verify and get dimensions
+        Clay_ScrollContainerData scrollData = Clay_GetScrollContainerData(elementId);
         
-        if (hashMapItem && hashMapItem->layoutElement) {
-            // Use the bounding box from the hash map item
+        if (scrollData.found) {
             result.found = true;
-            result.boundingBox.x = hashMapItem->boundingBox.x;  // This gives the x position
-            result.boundingBox.y = hashMapItem->boundingBox.y;  // This gives the y position
+            result.boundingBox = elementData.boundingBox;
+            
+            // Optional: Ensure dimensions match scroll container data
             result.boundingBox.width = scrollData.scrollContainerDimensions.width;
             result.boundingBox.height = scrollData.scrollContainerDimensions.height;
+            
+            printf("Bounding Box Debug:\n");
+            printf("  Element ID: %u\n", elementId.id);
+            printf("  X: %.2f, Y: %.2f\n", result.boundingBox.x, result.boundingBox.y);
+            printf("  Width: %.2f\n", result.boundingBox.width);
+            printf("  Height: %.2f\n", result.boundingBox.height);
         }
     }
     
     return result;
 }
+
 void HandlePointerDragging(float x, float y, Clay_ScrollContainerData* scrollData) {
     if (!scrollData) return;
 
@@ -671,7 +682,7 @@ void HandleSDLEvents(bool* running) {
 
             case SDL_TEXTINPUT:
                 input_event.isTextInput = true;
-                strncpy(input_event.text, event.text.text, sizeof(input_event.text) - 1);
+                strlcpy(input_event.text, event.text.text, sizeof(input_event.text));
                 HandlePageInput(input_event);
                 break;
         }

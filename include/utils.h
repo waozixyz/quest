@@ -5,6 +5,11 @@
 #include <string.h>
 #include <stdbool.h>
 
+
+size_t strlcpy(char *dst, const char *src, size_t dstsize);
+void* AllocateAligned(size_t alignment, size_t size);
+void FreeAligned(void *ptr);
+
 #ifndef __EMSCRIPTEN__
 
 #include <SDL.h>

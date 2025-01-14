@@ -29,7 +29,6 @@ extern const float SCROLLBAR_FADE_DURATION;
 extern const float SCROLLBAR_HIDE_DELAY;
 
 // Utility functions
-void* Clay_AllocateAligned(size_t alignment, size_t size);
 SDL_FRect ScaleBoundingBox(Clay_BoundingBox box);
 
 // Shape rendering functions

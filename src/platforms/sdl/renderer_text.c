@@ -1,4 +1,5 @@
 #include "platforms/sdl/renderer_internal.h"
+#include "utils.h"
 
 Clay_Dimensions SDL2_MeasureText(Clay_String *text, Clay_TextElementConfig *config) {    
     // Validate font
@@ -20,7 +21,7 @@ Clay_Dimensions SDL2_MeasureText(Clay_String *text, Clay_TextElementConfig *conf
 
     // Allocate buffer with proper alignment and checks
     size_t bufferSize = text->length + 1;
-    char* chars = (char*)Clay_AllocateAligned(8, bufferSize);
+    char* chars = (char*)AllocateAligned(8, bufferSize);
     
     if (!chars) {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, 
@@ -51,7 +52,7 @@ Clay_Dimensions SDL2_MeasureText(Clay_String *text, Clay_TextElementConfig *conf
         return (Clay_Dimensions){0, 0};
     }
 
-    free(chars);
+    FreeAligned(chars);
     return (Clay_Dimensions) {
         .width = (float)width,
         .height = (float)height,

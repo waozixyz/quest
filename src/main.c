@@ -1,9 +1,7 @@
 #include "app.h"
 #include "config.h"
 
-#ifdef __EMSCRIPTEN__
 #define CLAY_IMPLEMENTATION
-#endif
 
 #include "clay_extensions.h"
 #include "../../vendor/clay/clay.h"

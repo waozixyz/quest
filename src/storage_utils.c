@@ -1,4 +1,8 @@
 #include "storage_utils.h"
+#include <utils.h>
+
+
+
 #ifndef __EMSCRIPTEN__
 
 int ensure_directory_exists(const char* path) {
@@ -64,7 +68,7 @@ void determine_storage_directory(StorageConfig* config) {
 
     for (int i = 0; i < 3; i++) {
         if (ensure_directory_exists(potential_paths[i]) == 0) {
-            strncpy(config->root_dir, potential_paths[i], MAX_PATH_LENGTH - 1);
+            strlcpy(config->root_dir, full_path, MAX_PATH_LENGTH);
             break;
         }
     }
@@ -90,7 +94,7 @@ void determine_storage_directory(StorageConfig* config) {
         
         // Ensure directory exists, creating parent directories if needed
         if (ensure_directory_exists(full_path) == 0) {
-            strncpy(config->root_dir, full_path, MAX_PATH_LENGTH - 1);
+            strlcpy(config->root_dir, full_path, MAX_PATH_LENGTH);
         } else {
             // Fallback to current directory if directory creation fails
             SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, 
