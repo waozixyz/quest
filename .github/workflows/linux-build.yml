@@ -49,7 +49,7 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-
+      
       - name: Build in Docker
         id: build
         run: |
@@ -69,11 +69,8 @@ jobs:
               libsdl2-ttf-dev \
               libsdl2-gfx-dev && \
             cd /src && \
-            mkdir -p /root/.local/bin && \
-            wget https://xmake.io/shget.text -O install.sh && \
-            chmod +x install.sh && \
-            ./install.sh -b /root/.local/bin && \
-            export PATH=/root/.local/bin:\$PATH && \
+            wget https://xmake.io/shget.text -O - | bash && \
+            . ~/.xmake/profile && \
             XMAKE_ROOT=y \
             CC=clang \
             CFLAGS='--target=${{ matrix.triple }}' \
