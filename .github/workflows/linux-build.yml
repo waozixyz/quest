@@ -36,10 +36,16 @@ jobs:
             triple: riscv64-linux-gnu
       fail-fast: false
     runs-on: ubuntu-latest
-    container:
-      image: ${{ matrix.docker_image }}
     
     steps:
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: all
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
       - name: Install Git
         run: |
           apt-get update
@@ -49,6 +55,9 @@ jobs:
         with:
           submodules: 'recursive'
 
+      - name: Pull architecture-specific Docker image
+        run: docker pull ${{ matrix.docker_image }}
+    
       - name: Install build dependencies
         run: |
           DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -100,6 +109,7 @@ jobs:
           CXXFLAGS: "--target=${{ matrix.triple }}"
           LDFLAGS: "--target=${{ matrix.triple }}"
         run: |
+          XMAKE_ROOT=y
           xmake clean
           xmake f -p linux -a ${{ matrix.arch }} --toolchain=clang -y
           xmake -y
