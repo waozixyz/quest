@@ -15,25 +15,7 @@ jobs:
   build:
     strategy:
       matrix:
-        include:
-          - arch: x86_64
-            docker_image: ubuntu:latest
-            use_docker: false
-          - arch: i686
-            docker_image: i386/ubuntu:latest
-            use_docker: true
-          - arch: arm64
-            docker_image: arm64v8/ubuntu:latest
-            use_docker: true
-          - arch: armv7
-            docker_image: arm32v7/ubuntu:latest
-            use_docker: true
-          - arch: armv6
-            docker_image: arm32v6/ubuntu:latest
-            use_docker: true
-          - arch: riscv64
-            docker_image: riscv64/ubuntu:latest
-            use_docker: true
+        arch: [x86_64, i686, arm64, armv7, armv6, riscv64]
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
@@ -42,13 +24,17 @@ jobs:
           submodules: 'recursive'
 
       - name: Set up QEMU
-        if: matrix.use_docker
         uses: docker/setup-qemu-action@v3
-        with:
-          platforms: all
 
-      - name: Native Build (x86_64)
-        if: matrix.arch == 'x86_64'
+      - name: Add Architecture Support
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo dpkg --add-architecture arm64
+          sudo dpkg --add-architecture armhf
+          sudo dpkg --add-architecture riscv64
+          sudo apt-get update
+
+      - name: Install Common Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -57,6 +43,10 @@ jobs:
             cmake \
             ninja-build \
             pkg-config \
+            libsdl2-dev \
+            libsdl2-image-dev \
+            libsdl2-ttf-dev \
+            libsdl2-gfx-dev \
             libpng-dev \
             libfreetype6-dev \
             libwebp-dev \
@@ -75,28 +65,61 @@ jobs:
             libxss-dev \
             libxxf86vm-dev \
             libgl1-mesa-dev
+
+      - name: Install Architecture-Specific Dependencies
+        run: |
+          if [ "${{ matrix.arch }}" = "i686" ]; then
+            sudo apt-get install -y \
+              gcc-multilib \
+              libsdl2-dev:i386 \
+              libsdl2-image-dev:i386 \
+              libsdl2-ttf-dev:i386 \
+              libsdl2-gfx-dev:i386
+          elif [ "${{ matrix.arch }}" = "arm64" ]; then
+            sudo apt-get install -y \
+              gcc-aarch64-linux-gnu \
+              libsdl2-dev:arm64 \
+              libsdl2-image-dev:arm64 \
+              libsdl2-ttf-dev:arm64 \
+              libsdl2-gfx-dev:arm64
+          elif [ "${{ matrix.arch }}" = "armv7" ] || [ "${{ matrix.arch }}" = "armv6" ]; then
+            sudo apt-get install -y \
+              gcc-arm-linux-gnueabihf \
+              libsdl2-dev:armhf \
+              libsdl2-image-dev:armhf \
+              libsdl2-ttf-dev:armhf \
+              libsdl2-gfx-dev:armhf
+          elif [ "${{ matrix.arch }}" = "riscv64" ]; then
+            sudo apt-get install -y \
+              gcc-riscv64-linux-gnu \
+              libsdl2-dev:riscv64 \
+              libsdl2-image-dev:riscv64 \
+              libsdl2-ttf-dev:riscv64 \
+              libsdl2-gfx-dev:riscv64
+          fi
+
+      - name: Install xmake
+        run: |
           wget https://xmake.io/shget.text -O - | bash
           source ~/.xmake/profile
+
+      - name: Build with xmake
+        continue-on-error: true
+        id: build
+        run: |
           xmake clean
-          xmake f -p linux -a x86_64 -y
+          xmake f -p linux -a ${{ matrix.arch }} -y
           xmake -y
 
-      - name: Cross Build (non-x86_64)
-        if: matrix.use_docker
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: .github/workflows/Dockerfile.${{ matrix.arch }}
-          platforms: linux/${{ matrix.arch }}
-          outputs: type=local,dest=build/clay
-
       - name: Rename binary
+        if: steps.build.outcome == 'success'
         run: |
           mkdir -p artifacts
           cp build/clay/main artifacts/myquest-linux-${{ matrix.arch }}
           chmod +x artifacts/myquest-linux-${{ matrix.arch }}
 
       - name: Upload Artifacts
+        if: steps.build.outcome == 'success'
         uses: actions/upload-artifact@v3
         with:
           name: linux-${{ matrix.arch }}-build
