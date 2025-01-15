@@ -3,8 +3,13 @@ name: Windows Build
 on:
   push:
     branches: [ axis ]
+    tags:
+      - 'v*.*.*'
   pull_request:
     branches: [ axis ]
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -35,6 +40,7 @@ jobs:
             mingw-w64-x86_64-libjpeg-turbo
             mingw-w64-x86_64-libtiff
             mingw-w64-x86_64-libwebp
+            unzip
 
       - name: Install xmake
         run: |
@@ -78,9 +84,11 @@ jobs:
       
       - name: Generate timestamp
         id: timestamp
+        if: "!startsWith(github.ref, 'refs/tags/')"
         run: echo "timestamp=$(date +'%Y%m%d-%H%M')" >> $GITHUB_OUTPUT
 
-      - name: Create Release
+      - name: Create Nightly Release
+        if: "!startsWith(github.ref, 'refs/tags/')"
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -89,5 +97,19 @@ jobs:
           name: Development Build ${{ steps.timestamp.outputs.timestamp }}
           draft: false
           prerelease: true
+          files: |
+            build/windows-build.zip
+
+      - name: Create Tagged Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
           files: |
             build/windows-build.zip
