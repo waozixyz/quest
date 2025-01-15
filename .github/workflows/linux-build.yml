@@ -20,18 +20,28 @@ jobs:
           sudo apt-get install -y \
             build-essential \
             clang \
+            cmake \
+            ninja-build \
+            pkg-config \
             libpng-dev \
-            libfreetype-dev \
+            libfreetype6-dev \
             libwebp-dev \
             libtiff-dev \
             libjpeg-dev \
-            cmake \
-            ninja-build
+            libharfbuzz-dev \
+            libgraphite2-dev \
+            wayland-protocols \
+            libwayland-dev \
+            libx11-dev \
+            libxext-dev \
+            libxrandr-dev \
+            libxcursor-dev \
+            libxfixes-dev \
+            libxi-dev \
+            libxss-dev \
+            libxxf86vm-dev \
+            libgl1-mesa-dev
 
-      - name: Install xmake
-        run: |
-          wget https://xmake.io/shget.text -O - | bash
-          source ~/.xmake/profile
       - name: Install xmake
         run: |
           wget https://xmake.io/shget.text -O - | bash
@@ -65,4 +75,3 @@ jobs:
           prerelease: true
           files: |
             build/clay/main
-          
