@@ -5,7 +5,7 @@ set_languages("c99")
 add_rules("mode.debug", "mode.release")
 
 add_includedirs("include")
-
+    
 -- Android platform configuration
 if is_plat("android") then
     add_defines("CLAY_MOBILE")
@@ -58,23 +58,35 @@ if is_plat("wasm") then
                 "-s EXPORTED_FUNCTIONS=['_main','_printf']",
                 {force = true})
 end
--- Desktop platforms configuration
+
 if is_plat("linux", "macosx", "windows") then
     add_defines("CLAY_DESKTOP")
+    
+    -- For Linux cross-compilation
+    if is_plat("linux") then
+        set_toolset("cc", "clang")
+        if is_arch("arm64", "aarch64") then
+            add_cxflags("--target=aarch64-linux-gnu")
+        elseif is_arch("armv7", "armv7l") then
+            add_cxflags("--target=arm-linux-gnueabihf")
+        elseif is_arch("armv6", "armv6l") then
+            add_cxflags("--target=arm-linux-gnueabihf -march=armv6")
+        elseif is_arch("riscv64") then
+            add_cxflags("--target=riscv64-linux-gnu")
+        elseif is_arch("i386") then
+            add_cxflags("-m32")
+        end
+    end
     
     add_includedirs("vendor/cJSON") 
     add_files("vendor/cJSON/cJSON.c")
     
-    -- Add all required packages
     add_requires("libsdl", {configs = {shared = true}})
     add_requires("libsdl_image", {configs = {shared = true}})
     add_requires("libsdl_ttf", {configs = {shared = true}})
     add_requires("libsdl_gfx", {configs = {shared = true}})
     
-    -- Add the packages to the project
     add_packages("libsdl", "libsdl_image", "libsdl_ttf", "libsdl_gfx")
-    
-    -- Link against math library
     add_links("m")
 end
 
