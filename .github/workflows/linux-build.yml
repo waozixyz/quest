@@ -90,9 +90,11 @@ jobs:
         run: |
           wget https://xmake.io/shget.text -O - | bash
           . ~/.xmake/profile
+          echo "PATH=${HOME}/.xmake/bin:${PATH}" >> $GITHUB_ENV
 
       - name: Build with xmake
         id: build
+        shell: bash
         env:
           CC: clang
           CXX: clang++
@@ -100,9 +102,9 @@ jobs:
           CXXFLAGS: "--target=${{ matrix.triple }}"
           LDFLAGS: "--target=${{ matrix.triple }}"
         run: |
-          xmake clean
-          xmake f -p linux -a ${{ matrix.arch }} --toolchain=clang -y
-          xmake -y
+          ${HOME}/.xmake/bin/xmake clean
+          ${HOME}/.xmake/bin/xmake f -p linux -a ${{ matrix.arch }} --toolchain=clang -y
+          ${HOME}/.xmake/bin/xmake -y
 
       - name: Prepare artifacts
         if: steps.build.outcome == 'success'
