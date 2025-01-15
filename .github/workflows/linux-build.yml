@@ -15,7 +15,7 @@ jobs:
   build:
     strategy:
       matrix:
-        arch: [x64, x86, arm64, armv7, armv6, riscv64]
+        arch: [x86_64, i686, arm64, armv7, armv6, riscv64]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -52,10 +52,14 @@ jobs:
             libxss-dev \
             libxxf86vm-dev \
             libgl1-mesa-dev
-
+      - name: Add i386 Architecture Support
+        if: matrix.arch == 'i686'
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
       - name: Install Architecture-Specific Dependencies
         run: |
-          if [ "${{ matrix.arch }}" = "x86" ]; then
+          if [ "${{ matrix.arch }}" = "i686" ]; then
             sudo apt-get install -y \
               gcc-multilib \
               g++-multilib \
@@ -87,9 +91,9 @@ jobs:
       - name: Set cross compilation flags
         id: flags
         run: |
-          if [ "${{ matrix.arch }}" = "x64" ]; then
+          if [ "${{ matrix.arch }}" = "x86_64" ]; then
             echo "arch_flag=x86_64" >> $GITHUB_OUTPUT
-          elif [ "${{ matrix.arch }}" = "x86" ]; then
+          elif [ "${{ matrix.arch }}" = "i686" ]; then
             echo "arch_flag=i386" >> $GITHUB_OUTPUT
           elif [ "${{ matrix.arch }}" = "arm64" ]; then
             echo "arch_flag=arm64" >> $GITHUB_OUTPUT
