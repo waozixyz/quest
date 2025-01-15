@@ -15,7 +15,26 @@ jobs:
   build:
     strategy:
       matrix:
-        arch: [x86_64, i686, arm64, armv7, armv6, riscv64]
+        include:
+          - arch: x86_64
+            docker_image: ubuntu:latest
+            use_docker: false
+          - arch: i686
+            docker_image: i386/ubuntu:latest
+            use_docker: true
+          - arch: arm64
+            docker_image: arm64v8/ubuntu:latest
+            use_docker: true
+          - arch: armv7
+            docker_image: arm32v7/ubuntu:latest
+            use_docker: true
+          - arch: armv6
+            docker_image: arm32v6/ubuntu:latest
+            use_docker: true
+          - arch: riscv64
+            docker_image: riscv64/ubuntu:latest
+            use_docker: true
+      fail-fast: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,9 +42,13 @@ jobs:
           submodules: 'recursive'
 
       - name: Set up QEMU
+        if: matrix.use_docker
         uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
 
-      - name: Install Common Dependencies
+      - name: Native Build (x86_64)
+        if: matrix.arch == 'x86_64'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -52,64 +75,20 @@ jobs:
             libxss-dev \
             libxxf86vm-dev \
             libgl1-mesa-dev
-      - name: Add i386 Architecture Support
-        if: matrix.arch == 'i686'
-        run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get update
-      - name: Install Architecture-Specific Dependencies
-        run: |
-          if [ "${{ matrix.arch }}" = "i686" ]; then
-            sudo apt-get install -y \
-              gcc-multilib \
-              g++-multilib \
-              lib32stdc++-11-dev \
-              lib32gcc-11-dev \
-              libx11-dev:i386 \
-              libxext-dev:i386 \
-              libxrandr-dev:i386 \
-              libxcursor-dev:i386 \
-              libxfixes-dev:i386 \
-              libxi-dev:i386 \
-              libxss-dev:i386 \
-              libxxf86vm-dev:i386 \
-              libgl1-mesa-dev:i386 \
-              libpng-dev:i386 \
-              libfreetype6-dev:i386
-          elif [ "${{ matrix.arch }}" = "arm64" ]; then
-            sudo apt-get install -y gcc-aarch64-linux-gnu
-          elif [ "${{ matrix.arch }}" = "armv7" ] || [ "${{ matrix.arch }}" = "armv6" ]; then
-            sudo apt-get install -y gcc-arm-linux-gnueabihf
-          elif [ "${{ matrix.arch }}" = "riscv64" ]; then
-            sudo apt-get install -y gcc-riscv64-linux-gnu
-          fi
-      - name: Install xmake
-        run: |
           wget https://xmake.io/shget.text -O - | bash
           source ~/.xmake/profile
-
-      - name: Set cross compilation flags
-        id: flags
-        run: |
-          if [ "${{ matrix.arch }}" = "x86_64" ]; then
-            echo "arch_flag=x86_64" >> $GITHUB_OUTPUT
-          elif [ "${{ matrix.arch }}" = "i686" ]; then
-            echo "arch_flag=i386" >> $GITHUB_OUTPUT
-          elif [ "${{ matrix.arch }}" = "arm64" ]; then
-            echo "arch_flag=arm64" >> $GITHUB_OUTPUT
-          elif [ "${{ matrix.arch }}" = "armv7" ]; then
-            echo "arch_flag=armv7" >> $GITHUB_OUTPUT
-          elif [ "${{ matrix.arch }}" = "armv6" ]; then
-            echo "arch_flag=armv6" >> $GITHUB_OUTPUT
-          elif [ "${{ matrix.arch }}" = "riscv64" ]; then
-            echo "arch_flag=riscv64" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Build with xmake
-        run: |
           xmake clean
-          xmake f -p linux -a ${{ steps.flags.outputs.arch_flag }} -y
+          xmake f -p linux -a x86_64 -y
           xmake -y
+
+      - name: Cross Build (non-x86_64)
+        if: matrix.use_docker
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: .github/workflows/Dockerfile.${{ matrix.arch }}
+          platforms: linux/${{ matrix.arch }}
+          outputs: type=local,dest=build/clay
 
       - name: Rename binary
         run: |
@@ -130,6 +109,7 @@ jobs:
 
       - name: Create Nightly Release
         if: "!startsWith(github.ref, 'refs/tags/')"
+        continue-on-error: true
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -143,6 +123,7 @@ jobs:
 
       - name: Create Tagged Release
         if: startsWith(github.ref, 'refs/tags/')
+        continue-on-error: true
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

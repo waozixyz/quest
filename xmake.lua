@@ -58,36 +58,46 @@ if is_plat("wasm") then
                 "-s EXPORTED_FUNCTIONS=['_main','_printf']",
                 {force = true})
 end
-
 if is_plat("linux", "macosx", "windows") then
     add_defines("CLAY_DESKTOP")
     
     -- For Linux cross-compilation
     if is_plat("linux") then
         set_toolset("cc", "clang")
+        
+        -- Configure based on architecture
         if is_arch("arm64", "aarch64") then
             add_cxflags("--target=aarch64-linux-gnu")
+            add_includedirs("/usr/aarch64-linux-gnu/include")
+            add_linkdirs("/usr/aarch64-linux-gnu/lib")
         elseif is_arch("armv7", "armv7l") then
             add_cxflags("--target=arm-linux-gnueabihf")
+            add_includedirs("/usr/arm-linux-gnueabihf/include")
+            add_linkdirs("/usr/arm-linux-gnueabihf/lib")
         elseif is_arch("armv6", "armv6l") then
             add_cxflags("--target=arm-linux-gnueabihf -march=armv6")
+            add_includedirs("/usr/arm-linux-gnueabihf/include")
+            add_linkdirs("/usr/arm-linux-gnueabihf/lib")
         elseif is_arch("riscv64") then
             add_cxflags("--target=riscv64-linux-gnu")
+            add_includedirs("/usr/riscv64-linux-gnu/include")
+            add_linkdirs("/usr/riscv64-linux-gnu/lib")
         elseif is_arch("i386") then
             add_cxflags("-m32")
+            add_includedirs("/usr/include/i386-linux-gnu")
+            add_linkdirs("/usr/lib/i386-linux-gnu")
         end
     end
     
     add_includedirs("vendor/cJSON") 
     add_files("vendor/cJSON/cJSON.c")
     
-    add_requires("libsdl", {configs = {shared = true}})
-    add_requires("libsdl_image", {configs = {shared = true}})
-    add_requires("libsdl_ttf", {configs = {shared = true}})
-    add_requires("libsdl_gfx", {configs = {shared = true}})
-    
-    add_packages("libsdl", "libsdl_image", "libsdl_ttf", "libsdl_gfx")
+    -- Direct SDL linking instead of using packages
+    add_links("SDL2", "SDL2_image", "SDL2_ttf", "SDL2_gfx")
     add_links("m")
+    
+    -- Add SDL includes
+    add_includedirs("/usr/include/SDL2")
 end
 
 -- Main target configuration
