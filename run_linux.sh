@@ -1,7 +1,12 @@
 #!/bin/bash
-# build.sh
+# run_linux.sh
 
-# Initial build
-xmake f -p linux && xmake && ./build/clay/main
+# Clean previous build
+xmake clean
 
+# Configure and build with new packages
+xmake f -p linux
+xmake
 
+# Run the executable
+./build/clay/main

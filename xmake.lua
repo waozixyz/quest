@@ -62,17 +62,19 @@ end
 if is_plat("linux", "macosx", "windows") then
     add_defines("CLAY_DESKTOP")
     
-    add_includedirs("vendor/cJSON", "/usr/include/SDL2") 
+    add_includedirs("vendor/cJSON") 
     add_files("vendor/cJSON/cJSON.c")
     
-    add_requires("libsdl2", "libsdl_image", "libsdl_ttf", "sdl2_gfx")
-    add_packages("libsdl2", "libsdl_image", "libsdl_ttf", "sdl2_gfx")
+    -- Add all required packages
+    add_requires("libsdl", {configs = {shared = true}})
+    add_requires("libsdl_image", {configs = {shared = true}})
+    add_requires("libsdl_ttf", {configs = {shared = true}})
+    add_requires("libsdl_gfx", {configs = {shared = true}})
     
-    -- Match the exact order from Android section:
-    add_links("SDL2")
-    add_links("SDL2_gfx")
-    add_links("SDL2_image") 
-    add_links("SDL2_ttf")
+    -- Add the packages to the project
+    add_packages("libsdl", "libsdl_image", "libsdl_ttf", "libsdl_gfx")
+    
+    -- Link against math library
     add_links("m")
 end
 
