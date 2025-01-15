@@ -56,7 +56,22 @@ jobs:
       - name: Install Architecture-Specific Dependencies
         run: |
           if [ "${{ matrix.arch }}" = "x86" ]; then
-            sudo apt-get install -y gcc-multilib
+            sudo apt-get install -y \
+              gcc-multilib \
+              g++-multilib \
+              lib32stdc++-11-dev \
+              lib32gcc-11-dev \
+              libx11-dev:i386 \
+              libxext-dev:i386 \
+              libxrandr-dev:i386 \
+              libxcursor-dev:i386 \
+              libxfixes-dev:i386 \
+              libxi-dev:i386 \
+              libxss-dev:i386 \
+              libxxf86vm-dev:i386 \
+              libgl1-mesa-dev:i386 \
+              libpng-dev:i386 \
+              libfreetype6-dev:i386
           elif [ "${{ matrix.arch }}" = "arm64" ]; then
             sudo apt-get install -y gcc-aarch64-linux-gnu
           elif [ "${{ matrix.arch }}" = "armv7" ] || [ "${{ matrix.arch }}" = "armv6" ]; then
@@ -64,7 +79,6 @@ jobs:
           elif [ "${{ matrix.arch }}" = "riscv64" ]; then
             sudo apt-get install -y gcc-riscv64-linux-gnu
           fi
-
       - name: Install xmake
         run: |
           wget https://xmake.io/shget.text -O - | bash
