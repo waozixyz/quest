@@ -53,7 +53,7 @@ void RenderModal(Modal* modal, void (*render_content)(void)) {
                 CLAY_SIZING_FIXED(modal->width),
                 CLAY_SIZING_FIXED(modal->height)
             },
-            .padding = { 20, 20 }
+            .padding = { 20, 20, 20, 20 }
         }),
         CLAY_RECTANGLE({ 
             .color = COLOR_BACKGROUND_HOVER,

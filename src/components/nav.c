@@ -102,7 +102,7 @@ void RenderNavigationMenu() {
         CLAY_LAYOUT({ 
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIXED(60) },
             .childGap = 16,
-            .padding = { 16, 0 },
+            .padding = { 16, 16, 16, 16 },
             .childAlignment = { .y = CLAY_ALIGN_Y_CENTER, .x = CLAY_ALIGN_X_CENTER }
         }),
         CLAY_RECTANGLE({ .color = COLOR_SECONDARY })

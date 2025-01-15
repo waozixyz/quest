@@ -96,7 +96,7 @@ void RenderColorPicker(Clay_Color current_color, void (*on_color_change)(Clay_Co
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT() },
             .childGap = 10,
             .layoutDirection = CLAY_LEFT_TO_RIGHT,
-            .padding = { 16, 16 }
+            .padding = { 16, 16, 16, 16 }
         })
     ) {
         // Current Color Display with click handler

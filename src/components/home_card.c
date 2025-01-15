@@ -33,7 +33,7 @@ void RenderHomeCard(uint32_t index) {
     CLAY(CLAY_IDI("HomeCard", index), 
         CLAY_LAYOUT({ 
             .sizing = { CLAY_SIZING_PERCENT(cardWidthPercent), CLAY_SIZING_FIXED(200) },
-            .padding = { 24, 24 },
+            .padding = { 24, 24, 24, 24 },
             .childGap = 16,
             .layoutDirection = CLAY_TOP_TO_BOTTOM
         }),

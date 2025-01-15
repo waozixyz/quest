@@ -16,7 +16,7 @@ void RenderHomePage() {
     CLAY(CLAY_ID("HomeScrollContainer"), 
         CLAY_LAYOUT({ 
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
-            .padding = { 32, 32 },
+            .padding = { 32, 32, 32, 32 },
             .childGap = 32,
             .layoutDirection = CLAY_TOP_TO_BOTTOM
         }),

@@ -152,7 +152,7 @@ void RenderDeleteTodoModalContent() {
         );
 
         CLAY(CLAY_LAYOUT({
-            .padding = { 16, 16 },
+            .padding = { 16, 16, 16, 16 },
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
         }),
         CLAY_RECTANGLE({
@@ -179,7 +179,7 @@ void RenderDeleteTodoModalContent() {
         })) {
             CLAY(CLAY_ID("CancelButton"),
                 CLAY_LAYOUT({
-                    .padding = { 8, 8 },
+                    .padding = { 8, 8, 8, 8 },
                     .sizing = { CLAY_SIZING_FIT(0), CLAY_SIZING_FIT(0) }
                 }),
                 CLAY_RECTANGLE({
@@ -200,7 +200,7 @@ void RenderDeleteTodoModalContent() {
 
             CLAY(CLAY_ID("ConfirmDeleteButton"),
                 CLAY_LAYOUT({
-                    .padding = { 8, 8 },
+                    .padding = { 8, 8, 8, 8 },
                     .sizing = { CLAY_SIZING_FIT(0), CLAY_SIZING_FIT(0) }
                 }),
                 CLAY_RECTANGLE({
@@ -247,7 +247,7 @@ void RenderDeleteTodoModal(void) {
                 CLAY_SIZING_FIXED(delete_todo_modal.width), 
                 CLAY_SIZING_FIXED(delete_todo_modal.height) 
             },
-            .padding = { 24, 24 }
+            .padding = { 24, 24, 24, 24 }
         }),
         CLAY_FLOATING({
             .parentId = Clay__HashString(CLAY_STRING("TodosContainer"), 0, 0).id,
@@ -300,7 +300,7 @@ void RenderTodoTab(const char* day, const DaySymbol* symbol, bool active, int in
 
     CLAY(Clay__AttachId(Clay__HashString((Clay_String){.chars = id_buffer, .length = strlen(id_buffer)}, index, 0)),
         CLAY_LAYOUT({ 
-            .padding = { horizontal_padding, 8 }, 
+            .padding = { horizontal_padding, horizontal_padding, 8, 8 }, 
             .childGap = 8,
             .childAlignment = { CLAY_ALIGN_X_CENTER, CLAY_ALIGN_Y_CENTER }
         }),
@@ -409,7 +409,7 @@ void RenderTodoItem(const Todo* todo, int index) {
     CLAY(Clay__AttachId(Clay__HashString((Clay_String){.chars = id_buffer, .length = strlen(id_buffer)}, index, 0)),
         CLAY_LAYOUT({ 
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) },
-            .padding = { 16, 8 },
+            .padding = { 16, 16, 8, 8 },
             .childGap = 16,
             .childAlignment = { CLAY_ALIGN_X_LEFT, CLAY_ALIGN_Y_CENTER },
             .layoutDirection = CLAY_LEFT_TO_RIGHT
@@ -551,7 +551,7 @@ void RenderTodosPage() {
     CLAY(CLAY_ID("TodosContainer"), 
         CLAY_LAYOUT({ 
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
-            .padding = { 32, 32 },
+            .padding = { 32, 32, 32, 32 },
             .childGap = 24,
             .layoutDirection = CLAY_TOP_TO_BOTTOM,
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER } 

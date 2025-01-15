@@ -133,7 +133,7 @@ static void RenderDatePickerModal(void) {
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
             .childGap = 20,
             .layoutDirection = CLAY_TOP_TO_BOTTOM,
-            .padding = { 20, 20 }
+            .padding = { 20, 20, 20, 20 }
         })
     ) {
         // Title
@@ -151,7 +151,7 @@ static void RenderDatePickerModal(void) {
         })) {
             CLAY_TEXT(CLAY_STRING("Year:"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = COLOR_TEXT }));
             
-            CLAY(CLAY_LAYOUT({ .padding = { 10, 5 }}),
+            CLAY(CLAY_LAYOUT({ .padding = { 10, 10, 5, 5 }}),
                 CLAY_RECTANGLE({ .color = COLOR_SECONDARY }),
                 Clay_OnHover(HandleYearChange, -1)
             ) {
@@ -161,7 +161,7 @@ static void RenderDatePickerModal(void) {
             Clay_String year_obj = { .chars = year_str, .length = strlen(year_str) };
             CLAY_TEXT(year_obj, CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = COLOR_TEXT }));
 
-            CLAY(CLAY_LAYOUT({ .padding = { 10, 5 }}),
+            CLAY(CLAY_LAYOUT({ .padding = { 10, 10, 5, 5 }}),
                 CLAY_RECTANGLE({ .color = COLOR_SECONDARY }),
                 Clay_OnHover(HandleYearChange, 1)
             ) {
@@ -176,7 +176,7 @@ static void RenderDatePickerModal(void) {
         })) {
             CLAY_TEXT(CLAY_STRING("Month:"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = COLOR_TEXT }));
             
-            CLAY(CLAY_LAYOUT({ .padding = { 10, 5 }}),
+            CLAY(CLAY_LAYOUT({ .padding = { 10, 10, 5, 5 }}),
                 CLAY_RECTANGLE({ .color = COLOR_SECONDARY }),
                 Clay_OnHover(HandleMonthChange, -1)
             ) {
@@ -186,7 +186,7 @@ static void RenderDatePickerModal(void) {
             Clay_String month_obj = { .chars = month_str, .length = strlen(month_str) };
             CLAY_TEXT(month_obj, CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = COLOR_TEXT }));
 
-            CLAY(CLAY_LAYOUT({ .padding = { 10, 5 }}),
+            CLAY(CLAY_LAYOUT({ .padding = { 10, 10, 5, 5 }}),
                 CLAY_RECTANGLE({ .color = COLOR_SECONDARY }),
                 Clay_OnHover(HandleMonthChange, 1)
             ) {
@@ -201,7 +201,7 @@ static void RenderDatePickerModal(void) {
         })) {
             CLAY_TEXT(CLAY_STRING("Day:"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = COLOR_TEXT }));
             
-            CLAY(CLAY_LAYOUT({ .padding = { 10, 5 }}),
+            CLAY(CLAY_LAYOUT({ .padding = { 10, 10, 5, 5 }}),
                 CLAY_RECTANGLE({ .color = COLOR_SECONDARY }),
                 Clay_OnHover(HandleDayChange, -1)
             ) {
@@ -211,7 +211,7 @@ static void RenderDatePickerModal(void) {
             Clay_String day_obj = { .chars = day_str, .length = strlen(day_str) };
             CLAY_TEXT(day_obj, CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = COLOR_TEXT }));
 
-            CLAY(CLAY_LAYOUT({ .padding = { 10, 5 }}),
+            CLAY(CLAY_LAYOUT({ .padding = { 10, 10, 5, 5 }}),
                 CLAY_RECTANGLE({ .color = COLOR_SECONDARY }),
                 Clay_OnHover(HandleDayChange, 1)
             ) {
@@ -220,8 +220,8 @@ static void RenderDatePickerModal(void) {
         }
 
         // Save Button
-        CLAY(CLAY_LAYOUT({ .padding = { 0, 10 }})) {
-            CLAY(CLAY_LAYOUT({ .padding = { 20, 10 }}),
+        CLAY(CLAY_LAYOUT({ .padding = { 0, 0, 10, 10 }})) {
+            CLAY(CLAY_LAYOUT({ .padding = { 20, 20, 10, 10 }}),
                 CLAY_RECTANGLE({
                     .color = COLOR_SUCCESS,
                     .cursorPointer = true,
@@ -256,11 +256,11 @@ void RenderDatePicker(time_t current_date, void (*on_date_change)(time_t), Modal
     CLAY(CLAY_ID("DatePickerContainer"),
         CLAY_LAYOUT({
             .sizing = { CLAY_SIZING_FIT(), CLAY_SIZING_FIT() },
-            .padding = { 16, 16 }
+            .padding = { 16, 16, 16, 16 }
         })
     ) {
         CLAY(CLAY_ID("DateDisplay"),
-            CLAY_LAYOUT({ .padding = { 10, 5 }}),
+            CLAY_LAYOUT({ .padding = { 10, 10, 5, 5 }}),
             CLAY_RECTANGLE({
                 .color = COLOR_SECONDARY,
                 .cursorPointer = true,

@@ -172,7 +172,7 @@ void RenderDeleteModalContent() {
         );
 
         CLAY(CLAY_LAYOUT({
-            .padding = { 16, 16 },
+            .padding = { 16, 16, 16, 16 },
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
         }),
         CLAY_RECTANGLE({
@@ -199,7 +199,7 @@ void RenderDeleteModalContent() {
         })) {
             CLAY(CLAY_ID("CancelButton"),
                 CLAY_LAYOUT({
-                    .padding = { 8, 8 },
+                    .padding = { 8, 8, 8, 8 },
                     .sizing = { CLAY_SIZING_FIT(0), CLAY_SIZING_FIT(0) }
                 }),
                 CLAY_RECTANGLE({
@@ -220,7 +220,7 @@ void RenderDeleteModalContent() {
 
             CLAY(CLAY_ID("ConfirmButton"),
                 CLAY_LAYOUT({
-                    .padding = { 8, 8 },
+                    .padding = { 8, 8, 8, 8 },
                     .sizing = { CLAY_SIZING_FIT(0), CLAY_SIZING_FIT(0) }
                 }),
                 CLAY_RECTANGLE({
@@ -299,7 +299,7 @@ static void RenderHabitTab(const Habit* habit) {
     
     CLAY(CLAY_IDI("HabitTab", habit->id),
         CLAY_LAYOUT({
-            .padding = { 16, 0 },
+            .padding = { 16, 16, 16, 16 },
             .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
             .sizing = { 
                 CLAY_SIZING_FIT(0),
@@ -334,7 +334,7 @@ static void RenderHabitHeader() {
 
     CLAY(CLAY_ID("HabitHeader"),
         CLAY_LAYOUT({
-            .padding = { 16, 16 },
+            .padding = { 16, 16, 16, 16 },
             .childGap = 16,
             .layoutDirection = CLAY_LEFT_TO_RIGHT,
             .childAlignment = { 
@@ -465,7 +465,7 @@ void RenderHabitTabBar() {
             CLAY_LAYOUT({
                 .sizing = { CLAY_SIZING_FIT(), CLAY_SIZING_GROW() },
                 .childGap = 8,
-                .padding = { 16, 16 },
+                .padding = { 16, 16, 16, 16 },
                 .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
                 .layoutDirection = CLAY_LEFT_TO_RIGHT
             }),
@@ -476,7 +476,7 @@ void RenderHabitTabBar() {
             }
 
             CLAY(CLAY_ID("NewHabitTab"),
-                CLAY_LAYOUT({ .padding = { 16, 0 } }),
+                CLAY_LAYOUT({ .padding = { 16, 16 } }),
                 CLAY_RECTANGLE({
                     .color = Clay_Hovered() ? COLOR_PRIMARY_HOVER : COLOR_PANEL,
                     .cornerRadius = CLAY_CORNER_RADIUS(5),
@@ -624,7 +624,7 @@ void RenderHabitsPage() {
                 },
                 .childGap = 0,
                 .layoutDirection = CLAY_LEFT_TO_RIGHT,
-                .padding = { 8, 0 },
+                .padding = { 8, 8, 0, 0 },
                 .childAlignment = { 
                     .x = CLAY_ALIGN_X_CENTER,  // Center the container
                     .y = CLAY_ALIGN_Y_CENTER 
@@ -639,7 +639,7 @@ void RenderHabitsPage() {
         CLAY(CLAY_ID("DayLabels"), 
             CLAY_LAYOUT({
                 .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) },
-                .padding = { 0, 8 },
+                .padding = { 0, 0, 8, 8 },
                 .childGap = 8,
                 .childAlignment = { .x = CLAY_ALIGN_X_CENTER}
             })
@@ -689,7 +689,7 @@ void RenderHabitsPage() {
                     .sizing = { CLAY_SIZING_FIT(0), CLAY_SIZING_FIT(0) },
                     .childGap = 32,
                     .layoutDirection = CLAY_TOP_TO_BOTTOM,
-                    .padding = { 16, 16 }
+                    .padding = { 16, 16, 16, 16 }
                 })
             ) {
                 struct tm end_date = start_date;
