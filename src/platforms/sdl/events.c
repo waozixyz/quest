@@ -8,10 +8,6 @@
 #include "../../vendor/clay/clay.h"
 #include "platforms/sdl/renderer.h"
 
-
-
-
-
 typedef enum {
     TOUCH_STATE_NONE,
     TOUCH_STATE_DOWN,
@@ -79,12 +75,6 @@ ElementBoundingData GetElementBoundingData(Clay_ElementId elementId) {
             // Optional: Ensure dimensions match scroll container data
             result.boundingBox.width = scrollData.scrollContainerDimensions.width;
             result.boundingBox.height = scrollData.scrollContainerDimensions.height;
-            
-            printf("Bounding Box Debug:\n");
-            printf("  Element ID: %u\n", elementId.id);
-            printf("  X: %.2f, Y: %.2f\n", result.boundingBox.x, result.boundingBox.y);
-            printf("  Width: %.2f\n", result.boundingBox.width);
-            printf("  Height: %.2f\n", result.boundingBox.height);
         }
     }
     
@@ -162,12 +152,6 @@ void HandlePointerDragging(float x, float y, Clay_ScrollContainerData* scrollDat
 
 
 Clay_ScrollContainerData* FindActiveScrollContainer(Clay_Vector2 pointerPosition) {
-    printf("\n=== FindActiveScrollContainer ===\n");
-    printf("Current active container: %p\n", (void*)activeScrollContainer);
-    printf("Current active container ID: %u\n", activeScrollContainerId);
-    printf("Pointer Position: (%.2f, %.2f)\n", pointerPosition.x, pointerPosition.y);
-    printf("Page: %u\n", ACTIVE_PAGE);
-
     Clay_SetPointerState(pointerPosition, false);
 
     // Select the appropriate container array based on active page
@@ -188,7 +172,6 @@ Clay_ScrollContainerData* FindActiveScrollContainer(Clay_Vector2 pointerPosition
             numContainers = numTodosContainers;
             break;
         default:
-            printf("Invalid page number: %u\n", ACTIVE_PAGE);
             return NULL;
     }
 
@@ -200,32 +183,15 @@ Clay_ScrollContainerData* FindActiveScrollContainer(Clay_Vector2 pointerPosition
         
         Clay_ScrollContainerData scrollData = Clay_GetScrollContainerData(elementId);
         
-        printf("\nChecking Container: %s\n", currentContainers[i]);
-        printf("  Found: %s\n", scrollData.found ? "Yes" : "No");
-        printf("  Element ID: %u\n", elementId.id);
-        
         if (scrollData.found) {
-            printf("  Dimensions: %.2f x %.2f\n", 
-                   scrollData.scrollContainerDimensions.width,
-                   scrollData.scrollContainerDimensions.height);
-            printf("  Content Dimensions: %.2f x %.2f\n",
-                   scrollData.contentDimensions.width,
-                   scrollData.contentDimensions.height);
-            printf("  Scroll Position: (%.2f, %.2f)\n",
-                   scrollData.scrollPosition->x,
-                   scrollData.scrollPosition->y);
             
             bool isOver = Clay_PointerOver(elementId);
-            printf("  Pointer Over: %s\n", isOver ? "Yes" : "No");
             
             if (isOver) {
-                printf("  Allocating new scroll container...\n");
                 Clay_ScrollContainerData* activeScroll = malloc(sizeof(Clay_ScrollContainerData));
                 if (activeScroll) {
                     *activeScroll = scrollData;
                     activeScrollContainerId = elementId.id;
-                    printf("  Successfully allocated: %p\n", (void*)activeScroll);
-                    printf("  New container ID: %u\n", activeScrollContainerId);
                     return activeScroll;
                 } else {
                     printf("  Failed to allocate memory!\n");
@@ -233,8 +199,6 @@ Clay_ScrollContainerData* FindActiveScrollContainer(Clay_Vector2 pointerPosition
             }
         }
     }
-    printf("No active container found\n");
-    printf("==============================\n");
     return NULL;
 }
 
@@ -292,24 +256,11 @@ void HandleScrollContainerDragging(float x, float y) {
 }
 
 void ResetScrollContainer() {
-    printf("\n=== ResetScrollContainer ===\n");
-    printf("Before reset:\n");
-    printf("  isScrollThumbDragging: %s\n", isScrollThumbDragging ? "true" : "false");
-    printf("  isHorizontalScrollThumbDragging: %s\n", isHorizontalScrollThumbDragging ? "true" : "false");
-    printf("  isScrollDragging: %s\n", isScrollDragging ? "true" : "false");
-    printf("  activeScrollContainerId: %u\n", activeScrollContainerId);
-    
     isScrollThumbDragging = false;
     isHorizontalScrollThumbDragging = false;
     isScrollDragging = false;
     activeScrollContainerId = 0;
     
-    printf("After reset:\n");
-    printf("  isScrollThumbDragging: %s\n", isScrollThumbDragging ? "true" : "false");
-    printf("  isHorizontalScrollThumbDragging: %s\n", isHorizontalScrollThumbDragging ? "true" : "false");
-    printf("  isScrollDragging: %s\n", isScrollDragging ? "true" : "false");
-    printf("  activeScrollContainerId: %u\n", activeScrollContainerId);
-    printf("==============================\n");
 }
 
 void HandleMouseScrollbarInteraction(
@@ -317,15 +268,8 @@ void HandleMouseScrollbarInteraction(
     Clay_ScrollContainerData* scrollData, 
     Clay_ElementId elementId
 ) {
-    printf("\n=== HandleMouseScrollbarInteraction ===\n");
-    printf("Container pointer: %p\n", (void*)scrollData);
-    printf("Element ID: %u\n", elementId.id);
-    printf("Mouse position: (%d, %d)\n", event->x, event->y);
-
     ElementBoundingData boundingData = GetElementBoundingData(elementId);
     if (!boundingData.found) {
-        printf("Failed to get bounding data\n");
-        printf("==============================\n");
         return;
     }
 
@@ -333,14 +277,6 @@ void HandleMouseScrollbarInteraction(
     float scaledMouseX = event->x / globalScalingFactor;
     float scaledMouseY = event->y / globalScalingFactor;
     
-    printf("Container Box:\n");
-    printf("  Position: (%.2f, %.2f)\n", containerBox.x, containerBox.y);
-    printf("  Size: %.2f x %.2f\n", containerBox.width, containerBox.height);
-    printf("Scaled Mouse Position: (%.2f, %.2f)\n", scaledMouseX, scaledMouseY);
-    printf("Scroll Config:\n");
-    printf("  Vertical: %s\n", scrollData->config.vertical ? "Yes" : "No");
-    printf("  Horizontal: %s\n", scrollData->config.horizontal ? "Yes" : "No");
-
     // Vertical Scrollbar Logic
     if (scrollData->config.vertical) {
         // Modify scrollbar area check to be more precise
@@ -382,11 +318,6 @@ void HandleMouseScrollbarInteraction(
             // Clamp scroll position
             scrollData->scrollPosition->y = CLAY__MIN(0, CLAY__MAX(scrollData->scrollPosition->y, -(contentHeight - viewportHeight)));
             
-            printf("Jump Scroll Vertical:\n");
-            printf("  Viewport Height: %.2f\n", viewportHeight);
-            printf("  Content Height: %.2f\n", contentHeight);
-            printf("  New Scroll Position: %.2f\n", scrollData->scrollPosition->y);
-            
             return;
         }
     }
@@ -408,7 +339,6 @@ void HandleMouseScrollbarInteraction(
             // Check if click is on the thumb
             if (scaledMouseX >= thumbPosX && 
                 scaledMouseX <= thumbPosX + thumbWidth) {
-                printf("  Clicked on Horizontal Thumb\n");
                 isHorizontalScrollThumbDragging = true;
                 scrollDragStartX = event->x;
                 initialScrollPosition = *scrollData->scrollPosition;
@@ -431,27 +361,15 @@ void HandleMouseScrollbarInteraction(
             // Clamp scroll position
             scrollData->scrollPosition->x = CLAY__MIN(0, CLAY__MAX(scrollData->scrollPosition->x, -(contentWidth - viewportWidth)));
             
-            printf("Jump Scroll Horizontal:\n");
-            printf("  Viewport Width: %.2f\n", viewportWidth);
-            printf("  Content Width: %.2f\n", contentWidth);
-            printf("  New Scroll Position: %.2f\n", scrollData->scrollPosition->x);
-            
             return;
         }
     }
 
     // Default to container drag if no specific thumb interaction
-    printf("Defaulting to Container Drag\n");
     isScrollDragging = true;
     scrollDragStartY = event->y;
     scrollDragStartX = event->x;
     initialScrollPosition = *scrollData->scrollPosition;
-
-    printf("Final states:\n");
-    printf("  isScrollThumbDragging: %s\n", isScrollThumbDragging ? "true" : "false");
-    printf("  isHorizontalScrollThumbDragging: %s\n", isHorizontalScrollThumbDragging ? "true" : "false");
-    printf("  isScrollDragging: %s\n", isScrollDragging ? "true" : "false");
-    printf("==============================\n");
 }
 
 void HandleSDLEvents(bool* running) {
@@ -492,7 +410,6 @@ void HandleSDLEvents(bool* running) {
                             numContainers = numTodosContainers;
                             break;
                         default:
-                            printf("Invalid page number: %u\n", ACTIVE_PAGE);
                             return;
                     }
 
@@ -567,40 +484,24 @@ void HandleSDLEvents(bool* running) {
                 hadMotionBetweenDownAndUp = false;
                 
                 if (event.button.button == SDL_BUTTON_LEFT) {
-                    printf("\nMouse Down Debug:\n");
-                    printf("Position: (%.2f, %.2f)\n", initialPointerPosition.x, initialPointerPosition.y);
-                    
                     // Clear any existing container first
                     CleanupActiveScrollContainer();
                     
-                    // Add debug prints before and after FindActiveScrollContainer
-                    printf("Starting container search...\n");
                     activeScrollContainer = FindActiveScrollContainer(initialPointerPosition);
-                    printf("Container search complete. Result: %p\n", (void*)activeScrollContainer);
                     
                     if (activeScrollContainer) {
-                        printf("Container found. Checking validity...\n");
-                        printf("Container ID: %u\n", activeScrollContainerId);
-                        
-                        // Add validity checks
                         if (activeScrollContainerId == 0) {
-                            printf("Warning: Invalid container ID\n");
                             CleanupActiveScrollContainer();
                             break;
                         }
                         
-                        // Additional debug before interaction
-                        printf("Starting scrollbar interaction...\n");
                         HandleMouseScrollbarInteraction(
                             &event.button, 
                             activeScrollContainer,
                             (Clay_ElementId){.id = activeScrollContainerId}
                         );
-                        printf("Scrollbar interaction complete\n");
                     }
                     
-                    printf("After interaction:\n");
-                    printf("Container Dragging: %s\n", isScrollDragging ? "Yes" : "No");
                 }
                 break;
             case SDL_MOUSEMOTION:
