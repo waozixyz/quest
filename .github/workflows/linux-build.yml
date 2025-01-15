@@ -84,11 +84,12 @@ jobs:
             libxss-dev \
             libxxf86vm-dev \
             libgl1-mesa-dev
-
+          
       - name: Install xmake
+        shell: bash
         run: |
           wget https://xmake.io/shget.text -O - | bash
-          source ~/.xmake/profile
+          . ~/.xmake/profile
 
       - name: Build with xmake
         id: build
