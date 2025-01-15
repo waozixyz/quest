@@ -1,6 +1,8 @@
 // config.c
 #include "config.h"
-
+#ifndef __EMSCRIPTEN__
+#include "platforms/sdl/events.h"
+#endif
 // Configuration variables
 double windowWidth = 350, windowHeight = 768;
 float globalScalingFactor = 1.0f;
@@ -54,10 +56,22 @@ const Clay_Color COLOR_CURSOR = (Clay_Color){255, 107, 151, 255};    // Using CO
 const Clay_Color COLOR_DANGER = (Clay_Color){255, 99, 71, 266};
 
 const int DEFAULT_PADDING = 32;
-
-// Navigation handler implementation
 void HandleNavInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
-        ACTIVE_PAGE = (uint32_t)userData;
+        uint32_t new_page = (uint32_t)userData;
+        if (new_page != ACTIVE_PAGE) {
+            printf("Page changing from %u to %u\n", ACTIVE_PAGE, new_page);
+            #ifndef __EMSCRIPTEN__
+            CleanupActiveScrollContainer();
+            #endif
+
+            // Reset Clay's internal caches
+            Clay_ResetMeasureTextCache();
+            
+            // Force Clay to update layout state on next frame
+            Clay_SetLayoutDimensions((Clay_Dimensions){windowWidth, windowHeight});
+
+            ACTIVE_PAGE = new_page;
+        }
     }
 }

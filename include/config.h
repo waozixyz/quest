@@ -10,7 +10,7 @@ extern double windowWidth, windowHeight;
 extern float globalScalingFactor;
 extern uint32_t ACTIVE_PAGE;
 extern uint32_t ACTIVE_RENDERER_INDEX;
-
+    
 // Breakpoints
 extern const float BREAKPOINT_LARGE;
 extern const float BREAKPOINT_MEDIUM;

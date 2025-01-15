@@ -1,8 +1,6 @@
 #include "storage_utils.h"
 #include <utils.h>
 
-
-
 #ifndef __EMSCRIPTEN__
 
 int ensure_directory_exists(const char* path) {

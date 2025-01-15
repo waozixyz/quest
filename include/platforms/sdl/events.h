@@ -8,7 +8,7 @@
 
 void InitializeSDL(SDL_Window* window, SDL_Renderer* renderer);
 void HandleSDLEvents(bool* running);
-void CleanupSDL();
-
+void CleanupSDL(void);
+void CleanupActiveScrollContainer(void);
 
 #endif

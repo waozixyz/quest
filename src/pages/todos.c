@@ -627,8 +627,8 @@ void RenderTodosPage() {
                 }
             }
 
-
-        CLAY(CLAY_LAYOUT({ 
+        CLAY(CLAY_ID("TodosScrollContainer"),
+        CLAY_LAYOUT({ 
             .sizing = { 
                 windowWidth > BREAKPOINT_MEDIUM + 40 ? 
                     CLAY_SIZING_FIXED(BREAKPOINT_MEDIUM + 40) : 
