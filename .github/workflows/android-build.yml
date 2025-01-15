@@ -9,6 +9,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        abi: [arm64-v8a, armeabi-v7a, x86_64, x86]
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,16 +36,48 @@ jobs:
       - name: Install CMake
         run: sudo apt-get install -y cmake
 
+      - name: Install xmake
+        run: |
+          wget https://xmake.io/shget.text -O - | bash
+          source ~/.xmake/profile
+
       - name: Set SDK and NDK path
         run: |
           echo "SDK_PATH=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
           echo "NDK_PATH=$ANDROID_NDK_ROOT" >> $GITHUB_ENV
 
-      - name: Build Android
-        run: make build-android
+      - name: Build SDL Dependencies
+        run: |
+          xmake build_sdl_android --ARCH=${{ matrix.abi }}
+
+      - name: Build Android Project
+        run: |
+          xmake f -p android --arch=${{ matrix.abi }} --ndk=$ANDROID_NDK_ROOT
+          xmake
+
+      - name: Build APK
+        run: |
+          cd android && ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v3
         with:
-          name: android-debug-apk
-          path: android/app/build/outputs/apk/debug/*.apk
+          name: android-debug-apk-${{ matrix.abi }}
+          path: android/app/build/outputs/apk/debug/app-${{ matrix.abi }}-debug.apk
+
+      - name: Generate timestamp
+        id: timestamp
+        run: echo "timestamp=$(date +'%Y%m%d-%H%M')" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: nightly-${{ steps.timestamp.outputs.timestamp }}
+          name: Development Build ${{ steps.timestamp.outputs.timestamp }}
+          draft: false
+          prerelease: true
+          files: |
+            android/app/build/outputs/apk/debug/app-${{ matrix.abi }}-debug.apk

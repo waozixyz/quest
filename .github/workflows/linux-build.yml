@@ -25,14 +25,35 @@ jobs:
             libsdl2-ttf-dev \
             libsdl2-gfx-dev
 
-      - name: Create Build Directory
-        run: mkdir -p build/clay
+      - name: Install xmake
+        run: |
+          wget https://xmake.io/shget.text -O - | bash
+          source ~/.xmake/profile
 
-      - name: Build Desktop Version
-        run: make BUILD_TYPE=desktop
+      - name: Build with xmake
+        run: |
+          xmake f -p linux
+          xmake
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
         with:
           name: linux-build
-          path: build/clay/game
+          path: build/clay/main
+      
+      - name: Generate timestamp
+        id: timestamp
+        run: echo "timestamp=$(date +'%Y%m%d-%H%M')" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: nightly-${{ steps.timestamp.outputs.timestamp }}
+          name: Development Build ${{ steps.timestamp.outputs.timestamp }}
+          draft: false
+          prerelease: true
+          files: |
+            build/clay/main
