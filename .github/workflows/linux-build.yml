@@ -1,145 +1,148 @@
 name: Linux Build
 
 on:
- push:
-   branches: [ axis ]
-   tags:
-     - 'v*.*.*'
- pull_request:
-   branches: [ axis ]
+  push:
+    branches: [ axis ]
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches: [ axis ]
 
 permissions:
- contents: write
- 
+  contents: write
+  
 jobs:
- build:
-   strategy:
-     matrix:
-       include:
-         - arch: x86_64
-           docker_image: ubuntu:22.04
-           triple: x86_64-linux-gnu
-         - arch: i686
-           docker_image: i386/ubuntu:22.04
-           triple: i686-linux-gnu
-         - arch: arm64
-           docker_image: arm64v8/ubuntu:22.04
-           triple: aarch64-linux-gnu
-         - arch: armv7
-           docker_image: arm32v7/ubuntu:22.04
-           triple: arm-linux-gnueabihf
-         - arch: armv6
-           docker_image: arm32v6/ubuntu:22.04
-           triple: arm-linux-gnueabihf
-         - arch: riscv64
-           docker_image: riscv64/ubuntu:22.04
-           triple: riscv64-linux-gnu
-     fail-fast: false
-   runs-on: ubuntu-latest
-   container:
-     image: ${{ matrix.docker_image }}
-   
-   steps:
-     - uses: actions/checkout@v4
-       with:
-         submodules: 'recursive'
+  build:
+    strategy:
+      matrix:
+        include:
+          - arch: x86_64
+            docker_image: ubuntu:22.04
+            triple: x86_64-linux-gnu
+          - arch: i686
+            docker_image: i386/ubuntu:22.04
+            triple: i686-linux-gnu
+          - arch: arm64
+            docker_image: arm64v8/ubuntu:22.04
+            triple: aarch64-linux-gnu
+          - arch: armv7
+            docker_image: arm32v7/ubuntu:22.04
+            triple: arm-linux-gnueabihf
+          - arch: armv6
+            docker_image: arm32v6/ubuntu:22.04
+            triple: arm-linux-gnueabihf
+          - arch: riscv64
+            docker_image: riscv64/ubuntu:22.04
+            triple: riscv64-linux-gnu
+      fail-fast: false
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ matrix.docker_image }}
+    
+    steps:
+      - name: Install Git
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y git
 
-     - name: Install base dependencies
-       run: |
-         apt-get update
-         DEBIAN_FRONTEND=noninteractive apt-get install -y \
-           build-essential \
-           clang \
-           clang-tools \
-           lld \
-           libc++-dev \
-           libc++abi-dev \
-           cmake \
-           ninja-build \
-           pkg-config \
-           wget \
-           git \
-           libsdl2-dev \
-           libsdl2-image-dev \
-           libsdl2-ttf-dev \
-           libsdl2-gfx-dev \
-           libpng-dev \
-           libfreetype6-dev \
-           libwebp-dev \
-           libtiff-dev \
-           libjpeg-dev \
-           libharfbuzz-dev \
-           libgraphite2-dev \
-           wayland-protocols \
-           libwayland-dev \
-           libx11-dev \
-           libxext-dev \
-           libxrandr-dev \
-           libxcursor-dev \
-           libxfixes-dev \
-           libxi-dev \
-           libxss-dev \
-           libxxf86vm-dev \
-           libgl1-mesa-dev
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
 
-     - name: Install xmake
-       run: |
-         wget https://xmake.io/shget.text -O - | bash
-         source ~/.xmake/profile
+      - name: Install build dependencies
+        run: |
+          DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            build-essential \
+            clang \
+            clang-tools \
+            lld \
+            libc++-dev \
+            libc++abi-dev \
+            cmake \
+            ninja-build \
+            pkg-config \
+            wget \
+            libsdl2-dev \
+            libsdl2-image-dev \
+            libsdl2-ttf-dev \
+            libsdl2-gfx-dev \
+            libpng-dev \
+            libfreetype6-dev \
+            libwebp-dev \
+            libtiff-dev \
+            libjpeg-dev \
+            libharfbuzz-dev \
+            libgraphite2-dev \
+            wayland-protocols \
+            libwayland-dev \
+            libx11-dev \
+            libxext-dev \
+            libxrandr-dev \
+            libxcursor-dev \
+            libxfixes-dev \
+            libxi-dev \
+            libxss-dev \
+            libxxf86vm-dev \
+            libgl1-mesa-dev
 
-     - name: Build with xmake
-       id: build
-       env:
-         CC: clang
-         CXX: clang++
-         CFLAGS: "--target=${{ matrix.triple }}"
-         CXXFLAGS: "--target=${{ matrix.triple }}"
-         LDFLAGS: "--target=${{ matrix.triple }}"
-       run: |
-         xmake clean
-         xmake f -p linux -a ${{ matrix.arch }} --toolchain=clang -y
-         xmake -y
+      - name: Install xmake
+        run: |
+          wget https://xmake.io/shget.text -O - | bash
+          source ~/.xmake/profile
 
-     - name: Prepare artifacts
-       if: steps.build.outcome == 'success'
-       run: |
-         mkdir -p artifacts
-         cp build/clay/main artifacts/myquest-linux-${{ matrix.arch }}
-         chmod +x artifacts/myquest-linux-${{ matrix.arch }}
+      - name: Build with xmake
+        id: build
+        env:
+          CC: clang
+          CXX: clang++
+          CFLAGS: "--target=${{ matrix.triple }}"
+          CXXFLAGS: "--target=${{ matrix.triple }}"
+          LDFLAGS: "--target=${{ matrix.triple }}"
+        run: |
+          xmake clean
+          xmake f -p linux -a ${{ matrix.arch }} --toolchain=clang -y
+          xmake -y
 
-     - name: Upload Artifacts
-       if: steps.build.outcome == 'success'
-       uses: actions/upload-artifact@v3
-       with:
-         name: linux-${{ matrix.arch }}-build
-         path: artifacts/myquest-linux-${{ matrix.arch }}
-     
-     - name: Generate date
-       id: date
-       if: "!startsWith(github.ref, 'refs/tags/')"
-       run: echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+      - name: Prepare artifacts
+        if: steps.build.outcome == 'success'
+        run: |
+          mkdir -p artifacts
+          cp build/clay/main artifacts/myquest-linux-${{ matrix.arch }}
+          chmod +x artifacts/myquest-linux-${{ matrix.arch }}
 
-     - name: Create Nightly Release
-       if: "!startsWith(github.ref, 'refs/tags/')"
-       uses: softprops/action-gh-release@v1
-       env:
-         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-       with:
-         tag_name: nightly-${{ steps.date.outputs.date }}
-         name: Development Build ${{ steps.date.outputs.date }}
-         draft: false
-         prerelease: true
-         files: artifacts/myquest-linux-${{ matrix.arch }}
+      - name: Upload Artifacts
+        if: steps.build.outcome == 'success'
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-${{ matrix.arch }}-build
+          path: artifacts/myquest-linux-${{ matrix.arch }}
+      
+      - name: Generate date
+        id: date
+        if: "!startsWith(github.ref, 'refs/tags/')"
+        run: echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
 
-     - name: Create Tagged Release
-       if: startsWith(github.ref, 'refs/tags/')
-       uses: softprops/action-gh-release@v1
-       env:
-         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-       with:
-         tag_name: ${{ github.ref_name }}
-         name: Release ${{ github.ref_name }}
-         draft: false
-         prerelease: false
-         generate_release_notes: true
-         files: artifacts/myquest-linux-${{ matrix.arch }}
+      - name: Create Nightly Release
+        if: "!startsWith(github.ref, 'refs/tags/')"
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: nightly-${{ steps.date.outputs.date }}
+          name: Development Build ${{ steps.date.outputs.date }}
+          draft: false
+          prerelease: true
+          files: artifacts/myquest-linux-${{ matrix.arch }}
+
+      - name: Create Tagged Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: artifacts/myquest-linux-${{ matrix.arch }}
