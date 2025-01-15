@@ -38,28 +38,14 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
         with:
           platforms: all
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-        
-      - name: Install sudo (if not already present)
-        run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y sudo
-
-      - name: Install Git
-        run: |
-          sudo apt-get update
-          DEBIAN_FRONTEND=noninteractive sudo apt-get install -y git
-
-
-      - uses: actions/checkout@v4
-        with:
-          submodules: 'recursive'
 
       - name: Pull architecture-specific Docker image
         run: docker pull ${{ matrix.docker_image }}
