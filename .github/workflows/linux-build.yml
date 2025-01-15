@@ -45,11 +45,17 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
+        
+      - name: Install sudo (if not already present)
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y sudo
 
       - name: Install Git
         run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y git
+          sudo apt-get update
+          DEBIAN_FRONTEND=noninteractive sudo apt-get install -y git
+
 
       - uses: actions/checkout@v4
         with:
