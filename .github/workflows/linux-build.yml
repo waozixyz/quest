@@ -29,8 +29,8 @@ jobs:
       - name: Build with xmake
         run: |
           xmake clean
-          xmake f -p linux
-          xmake
+          xmake f -p linux -y
+          xmake -y
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
