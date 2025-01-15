@@ -25,24 +25,34 @@ jobs:
           update: true
           install: >-
             git
-            make
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-clang
-            mingw-w64-x86_64-SDL2
-            mingw-w64-x86_64-SDL2_image
-            mingw-w64-x86_64-SDL2_ttf
-            mingw-w64-x86_64-SDL2_gfx
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-pkgconf
+            mingw-w64-x86_64-libpng
+            mingw-w64-x86_64-freetype
+            mingw-w64-x86_64-libjpeg-turbo
+            mingw-w64-x86_64-libtiff
+            mingw-w64-x86_64-libwebp
 
-      - name: Create Build Directory
-        run: mkdir -p build/clay
+      - name: Install xmake
+        run: |
+          wget https://github.com/xmake-io/xmake/releases/download/v2.8.9/xmake-v2.8.9.win64.zip -O xmake.zip
+          unzip xmake.zip
+          export PATH="$PWD/xmake:$PATH"
 
-      - name: Build Desktop Version
+      - name: Build with xmake
         run: |
           export PATH="/mingw64/bin:$PATH"
-          make BUILD_TYPE=desktop CC=clang
+          xmake clean
+          xmake f -p windows -y
+          xmake -y
 
       - name: Copy DLL Dependencies
         run: |
+          mkdir -p build/clay
+          cp build/windows/x64/release/main.exe build/clay/
           cp /mingw64/bin/SDL2.dll build/clay/
           cp /mingw64/bin/SDL2_image.dll build/clay/
           cp /mingw64/bin/SDL2_ttf.dll build/clay/
@@ -65,3 +75,19 @@ jobs:
         with:
           name: windows-build
           path: build/windows-build.zip
+      
+      - name: Generate timestamp
+        id: timestamp
+        run: echo "timestamp=$(date +'%Y%m%d-%H%M')" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: nightly-${{ steps.timestamp.outputs.timestamp }}
+          name: Development Build ${{ steps.timestamp.outputs.timestamp }}
+          draft: false
+          prerelease: true
+          files: |
+            build/windows-build.zip
