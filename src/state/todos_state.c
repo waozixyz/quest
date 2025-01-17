@@ -1,5 +1,8 @@
 #include "state/todos_state.h"
 
+const char* DAYS[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+
+
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 
@@ -110,8 +113,20 @@ void LoadTodos(TodoCollection* collection) {
         LoadTodosJSON(collection);
     #endif
 
+    // Only set to current day if no day is set (first time initialization)
     if (collection->active_day[0] == '\0') {
-        strcpy(collection->active_day, "Monday");
+        time_t now = time(NULL);
+        struct tm *tm_now = localtime(&now);
+        
+        int day_index;
+        if (tm_now->tm_wday == 0) {
+            day_index = 6;  // Sunday should be last
+        } else {
+            day_index = tm_now->tm_wday - 1;  // Shift everything else back by 1
+        }
+        
+        strcpy(collection->active_day, DAYS[day_index]);
+        SaveTodos(collection);  // Save the initial current day
     }
 }
 
@@ -124,7 +139,6 @@ void SaveTodos(TodoCollection* collection) {
         SaveTodosJSON(collection);
     #endif
 }
-
 void AddTodo(TodoCollection* collection, const char* text) {
     if (!collection || !text || collection->todos_count >= MAX_TODOS) return;
     #ifdef __EMSCRIPTEN__
@@ -132,7 +146,7 @@ void AddTodo(TodoCollection* collection, const char* text) {
         JS_LoadTodos(collection);  // Reload the collection after adding
     #else
         Todo* new_todo = &collection->todos[collection->todos_count];
-        new_todo->id = collection->todos_count;
+        new_todo->id = collection->todos_count + 1;  // Start IDs from 1 instead of 0
         strncpy(new_todo->text, text, MAX_TODO_TEXT - 1);
         new_todo->position = collection->todos_count;
         new_todo->completed = false;
@@ -143,7 +157,6 @@ void AddTodo(TodoCollection* collection, const char* text) {
         SaveTodos(collection);
     #endif
 }
-
 void DeleteTodo(TodoCollection* collection, uint32_t id) {
     if (!collection) return;
     #ifdef __EMSCRIPTEN__

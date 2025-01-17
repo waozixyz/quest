@@ -31,6 +31,8 @@ typedef struct {
     TextInput* todo_edit_input; // Add this
 } TodoCollection;
 
+extern const char* DAYS[];
+
 // State management functions
 void LoadTodos(TodoCollection* collection);
 void SaveTodos(TodoCollection* collection);

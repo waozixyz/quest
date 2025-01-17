@@ -4,7 +4,6 @@
 
 static TodoCollection todo_collection = {0};
 static TextInput* todo_input = NULL;
-static char* DAYS[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
 
 static uint32_t pending_delete_todo_id = 0;
 static char pending_delete_todo_text[MAX_TODO_TEXT] = {0};
@@ -33,7 +32,9 @@ typedef struct {
 } DaySymbol;
 
 static SDL_Texture* day_symbols_textures[7] = {NULL};
-
+static SDL_Texture* check_texture = NULL;
+static SDL_Texture* edit_texture = NULL;
+static SDL_Texture* trash_texture = NULL;
 
 #endif
 
@@ -57,24 +58,45 @@ static void OnTodoInputSubmit(const char* text) {
         ClearTextInput(todo_input);
     }
 }
-
 #ifdef __EMSCRIPTEN__
 void InitializeTodosPage(void) {
     LoadTodos(&todo_collection);
+    
+    // Set to current day when first opening the page
+    time_t now = time(NULL);
+    struct tm *tm_now = localtime(&now);
+    
+    int day_index;
+    if (tm_now->tm_wday == 0) {
+        day_index = 6;  // Sunday should be last
+    } else {
+        day_index = tm_now->tm_wday - 1;  // Shift everything else back by 1
+    }
+    
+    SetActiveDay(&todo_collection, DAYS[day_index]);
+    
     todo_input = CreateTextInput(OnTodoInputChanged, OnTodoInputSubmit);
     todo_collection.todo_edit_input = CreateTextInput(NULL, NULL);
-
 }
 #else
-static SDL_Texture* check_texture = NULL;
-static SDL_Texture* edit_texture = NULL;
-static SDL_Texture* trash_texture = NULL;
-
 void InitializeTodosPage(SDL_Renderer* renderer) {
     LoadTodos(&todo_collection);
+    
+    // Set to current day when first opening the page
+    time_t now = time(NULL);
+    struct tm *tm_now = localtime(&now);
+    
+    int day_index;
+    if (tm_now->tm_wday == 0) {
+        day_index = 6;  // Sunday should be last
+    } else {
+        day_index = tm_now->tm_wday - 1;  // Shift everything else back by 1
+    }
+    
+    SetActiveDay(&todo_collection, DAYS[day_index]);
+    
     todo_input = CreateTextInput(OnTodoInputChanged, OnTodoInputSubmit);
     todo_collection.todo_edit_input = CreateTextInput(NULL, NULL);
-
 
     SDL_Surface* surface;
     
@@ -89,7 +111,6 @@ void InitializeTodosPage(SDL_Renderer* renderer) {
     surface = load_image("icons/trash.png");
     trash_texture = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
-
 
     for (int i = 0; i < 7; i++) {
         if (day_symbols_textures[i]) {
@@ -110,9 +131,7 @@ void InitializeTodosPage(SDL_Renderer* renderer) {
         fprintf(stderr, "Texture %d initialized: %p\n", i, (void*)texture);
     }
 }
-
 #endif
-
 static void HandleModalConfirm(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         DeleteTodo(&todo_collection, pending_delete_todo_id);
@@ -400,6 +419,14 @@ static void HandleTodoDeleteClick(Clay_ElementId elementId, Clay_PointerData poi
     }
 }
 
+static void HandleTodoCompleteClick(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        uint32_t todo_id = (uint32_t)userData;
+        ToggleTodo(&todo_collection, todo_id);
+        SaveTodos(&todo_collection);
+    }
+}
+
 void RenderTodoItem(const Todo* todo, int index) {
     char id_buffer[32];
     snprintf(id_buffer, sizeof(id_buffer), "TodoItem_%d", todo->id);
@@ -541,6 +568,38 @@ void RenderTodoItem(const Todo* todo, int index) {
                     })) {}
                     #endif
                 }
+                // Complete button
+                CLAY(CLAY_IDI("CompleteTodoButton", todo->id),
+                    CLAY_LAYOUT({
+                        .sizing = { CLAY_SIZING_FIXED(32), CLAY_SIZING_FIXED(32) },
+                        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }
+                    }),
+                    CLAY_RECTANGLE({
+                        .color = todo->completed ? COLOR_SUCCESS : 
+                                (Clay_Hovered() ? COLOR_SUCCESS : COLOR_PANEL),
+                        .cornerRadius = CLAY_CORNER_RADIUS(4),
+                        .cursorPointer = true
+                    }),
+                    Clay_OnHover(HandleTodoCompleteClick, todo->id)
+                ) {
+                    #ifdef __EMSCRIPTEN__
+                    CLAY(CLAY_LAYOUT({
+                        .sizing = { CLAY_SIZING_FIXED(24), CLAY_SIZING_FIXED(24) }
+                    }),
+                    CLAY_IMAGE({
+                        .sourceDimensions = { 24, 24 },
+                        .sourceURL = CLAY_STRING("icons/check.png")
+                    })) {}
+                    #else
+                    CLAY(CLAY_LAYOUT({
+                        .sizing = { CLAY_SIZING_FIXED(24), CLAY_SIZING_FIXED(24) }
+                    }),
+                    CLAY_IMAGE({
+                        .sourceDimensions = { 24, 24 },
+                        .imageData = check_texture
+                    })) {}
+                    #endif
+                }
             }
         }
     }
@@ -626,7 +685,6 @@ void RenderTodosPage() {
                     }
                 }
             }
-
         CLAY(CLAY_ID("TodosScrollContainer"),
         CLAY_LAYOUT({ 
             .sizing = { 
@@ -641,11 +699,13 @@ void RenderTodosPage() {
         CLAY_SCROLL({ .vertical = true })) {
             size_t todos_count;
             Todo* todos = GetTodosByDay(&todo_collection, 
-                                      todo_collection.active_day, 
-                                      &todos_count);
+                                    todo_collection.active_day, 
+                                    &todos_count);
 
             for (size_t i = 0; i < todos_count; i++) {
-                RenderTodoItem(&todos[i], (int)i);
+                if (!todos[i].completed) {  // Only render if not completed
+                    RenderTodoItem(&todos[i], (int)i);
+                }
             }
         }
     }

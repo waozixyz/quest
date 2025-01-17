@@ -149,7 +149,7 @@ void RenderTextInput(TextInput* input, uint32_t id) {
             .bottom = { .width = 1, .color = input->is_focused ? COLOR_BORDER_FOCUSED : COLOR_BORDER },
             .cornerRadius = CLAY_CORNER_RADIUS(4)
         }),
-        Clay_OnHover(HandleTextInputClick, (intptr_t)input)
+        Clay_OnHover(HandleTextInputClick, (intptr_t)(void*)input)
     ) {
         if (input->text_length > 0) {
             // Render text before cursor
