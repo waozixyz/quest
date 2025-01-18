@@ -23,3 +23,7 @@
 	path = vendor/SDL2_gfx
 	url = https://github.com/mupfdev/SDL2_gfx
 	ignore = dirty
+[submodule "vendor/freetype"]
+	path = vendor/freetype
+	url = https://github.com/freetype/freetype.git
+    ignore=dirty
