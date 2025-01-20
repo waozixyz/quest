@@ -46,15 +46,15 @@ jobs:
           echo "SDK_PATH=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
           echo "NDK_PATH=$ANDROID_NDK_ROOT" >> $GITHUB_ENV
 
-      - name: Build SDL2 AAR
+      - name: Build SDL2
         run: |
-
           cd vendor/SDL/build-scripts
           chmod +x android-prefab.sh
           ./android-prefab.sh
-          mkdir -p ../../android/app/libs
-          cp ../build/prefab/SDL2/*/aar/SDL2-*.aar ../../android/app/libs/SDL2-2.31.0.aar
-
+          mkdir -p ../../../android/app/libs
+          # Find the generated AAR file and copy it with correct name
+          SDL_AAR=$(find ../build-android-prefab/prefab-* -name "SDL2-*.aar")
+          cp "$SDL_AAR" ../../../android/app/libs/
       - name: Build SDL Dependencies
         run: |
           xmake build_sdl_android --ARCH=${{ matrix.abi }}
