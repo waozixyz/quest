@@ -26,21 +26,27 @@ Plan and visualize your daily routines:
 - Visualize time allocation
 - Optimize your daily workflow
 
-## Run Instructions
+# MyQuest Linux Installation
 
-- **Web Version**:  
-  Use the script `run_web.sh` to start the web version of the application.  
-  ```bash
-  ./run_web.sh
-  ```
+1. Extract the archive:
+```bash
+tar xzf myquest-linux-x86_64.tar.gz
+```
+2. Enter the directory:
+```bash
+cd myquest-linux-x86_64
+```
+3. Run the program:
+```bash
+./myquest
+```
+Note: Make sure you have SDL2 and its dependencies installed on your system.
 
-- **Desktop Version**:
-    Use the script `run_sdl.sh` to start the desktop version of the application.
-    ```bash
-    ./run_sdl.sh
-    ```
-
-## Dependencies
+Required packages:
+- libsdl2-2.0-0
+- libsdl2-image-2.0-0
+- libsdl2-ttf-2.0-0
+- libsdl2-gfx-1.0-0
 
 - **Clay** (zlib)  
   [nicbarker/clay](https://github.com/nicbarker/clay)
