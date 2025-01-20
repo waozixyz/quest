@@ -41,20 +41,23 @@ jobs:
         run: |
           wget https://xmake.io/shget.text -O - | bash
           source ~/.xmake/profile
-
       - name: Build
         run: |
           xmake f -p linux -y
           xmake -y
-          mkdir -p artifacts
-          cp build/clay/main artifacts/myquest-linux-x86_64
-          chmod +x artifacts/myquest-linux-x86_64
-
+          mkdir -p artifacts/myquest-linux-x86_64
+          cp build/clay/main artifacts/myquest-linux-x86_64/myquest
+          cp -r fonts artifacts/myquest-linux-x86_64/
+          cp -r images artifacts/myquest-linux-x86_64/
+          chmod +x artifacts/myquest-linux-x86_64/myquest
+          cd artifacts
+          tar czf myquest-linux-x86_64.tar.gz myquest-linux-x86_64/
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
         with:
           name: linux-x86_64-build
-          path: artifacts/myquest-linux-x86_64
+          path: artifacts/myquest-linux-x86_64.tar.gz
+
       
       - name: Generate date
         id: date
@@ -71,7 +74,7 @@ jobs:
           name: Development Build ${{ steps.date.outputs.date }}
           draft: false
           prerelease: true
-          files: artifacts/myquest-linux-x86_64
+          files: artifacts/myquest-linux-x86_64.tar.gz
 
       - name: Create Tagged Release
         if: startsWith(github.ref, 'refs/tags/')
@@ -84,4 +87,4 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
-          files: artifacts/myquest-linux-x86_64
+          files: artifacts/myquest-linux-x86_64.tar.gz
