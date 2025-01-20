@@ -50,6 +50,13 @@ jobs:
         run: |
           xmake build_sdl_android --ARCH=${{ matrix.abi }}
 
+      - name: Build SDL2 AAR
+        run: |
+          cd vendor/SDL/android-project
+          ./gradlew assembleRelease
+          mkdir -p ../../../android/app/libs
+          cp build/outputs/aar/SDL2-release.aar ../../../android/app/libs/SDL2-2.31.0.aar
+
       - name: Build Android Project
         run: |
           xmake f -p android --arch=${{ matrix.abi }} --ndk=$ANDROID_NDK_ROOT
