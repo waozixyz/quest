@@ -64,53 +64,6 @@ if is_plat("linux", "macosx", "windows") then
     -- For Linux cross-compilation
     if is_plat("linux") then
         set_toolset("cc", "clang")
-        
-        -- Configure based on architecture
-        if is_arch("arm64", "aarch64") then
-            add_defines("__ARM_ARCH")
-            add_cxflags("--target=aarch64-linux-gnu")
-            add_includedirs("/usr/aarch64-linux-gnu/include")
-            add_linkdirs("/usr/aarch64-linux-gnu/lib")
-            -- Disable x86 intrinsics
-            add_defines("__ARM_FEATURE_SVE=0")
-            add_defines("__SSE__=0")
-            add_defines("__SSE2__=0")
-            add_defines("__AVX__=0")
-        elseif is_arch("armv7", "armv7l") then
-            add_defines("__ARM_ARCH")
-            add_cxflags("--target=arm-linux-gnueabihf")
-            add_includedirs("/usr/arm-linux-gnueabihf/include")
-            add_linkdirs("/usr/arm-linux-gnueabihf/lib")
-            -- Disable x86 intrinsics
-            add_defines("__ARM_FEATURE_SVE=0")
-            add_defines("__SSE__=0")
-            add_defines("__SSE2__=0")
-            add_defines("__AVX__=0")
-        elseif is_arch("armv6", "armv6l") then
-            add_defines("__ARM_ARCH")
-            add_cxflags("--target=arm-linux-gnueabihf -march=armv6")
-            add_includedirs("/usr/arm-linux-gnueabihf/include")
-            add_linkdirs("/usr/arm-linux-gnueabihf/lib")
-            -- Disable x86 intrinsics
-            add_defines("__ARM_FEATURE_SVE=0")
-            add_defines("__SSE__=0")
-            add_defines("__SSE2__=0")
-            add_defines("__AVX__=0")
-        elseif is_arch("riscv64") then
-            add_defines("__riscv")
-            add_cxflags("--target=riscv64-linux-gnu")
-            add_includedirs("/usr/riscv64-linux-gnu/include")
-            add_linkdirs("/usr/riscv64-linux-gnu/lib")
-            -- Disable x86 intrinsics
-            add_defines("__ARM_FEATURE_SVE=0")
-            add_defines("__SSE__=0")
-            add_defines("__SSE2__=0")
-            add_defines("__AVX__=0")
-        elseif is_arch("i386") then
-            add_cxflags("-m32")
-            add_includedirs("/usr/include/i386-linux-gnu")
-            add_linkdirs("/usr/lib/i386-linux-gnu")
-        end
     end
     
     add_includedirs("vendor/cJSON") 
