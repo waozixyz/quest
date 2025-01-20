@@ -34,9 +34,9 @@ jobs:
           local-cache: true
 
       - name: Install Build Dependencies
-          run: |
-            sudo apt-get update
-            sudo apt-get install -y cmake ninja-build
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build
 
       - name: Install xmake
         run: |
