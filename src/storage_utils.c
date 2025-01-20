@@ -66,7 +66,7 @@ void determine_storage_directory(StorageConfig* config) {
 
     for (int i = 0; i < 3; i++) {
         if (ensure_directory_exists(potential_paths[i]) == 0) {
-            strlcpy(config->root_dir, full_path, MAX_PATH_LENGTH);
+            strlcpy(config->root_dir, potential_paths[i], MAX_PATH_LENGTH);
             break;
         }
     }
