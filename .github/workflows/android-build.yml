@@ -70,25 +70,25 @@ jobs:
         run: |
           xmake f -p android --arch=${{ matrix.abi }} --ndk=$ANDROID_NDK_ROOT
           xmake
-
       - name: Decode Keystore
         run: |
+          mkdir -p android/app
           echo "${{ secrets.RELEASE_KEYSTORE }}" > release.keystore.base64
-          base64 -d release.keystore.base64 > app/release.keystore
+          base64 -d release.keystore.base64 > android/app/release.keystore
 
       - name: Build Release APK
         run: |
           cd android && ./gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file=release.keystore \
+            -Pandroid.injected.signing.store.file=app/release.keystore \
             -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
             -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
             -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
-
+      
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: android-debug-apk-${{ matrix.abi }}
-          path: android/app/build/outputs/apk/debug/app-${{ matrix.abi }}-debug.apk
+          name: android-release-apk-${{ matrix.abi }}
+          path: android/app/build/outputs/apk/release/app-${{ matrix.abi }}-release.apk
 
       - name: Generate date
         id: date
