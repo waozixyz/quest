@@ -71,9 +71,18 @@ jobs:
           xmake f -p android --arch=${{ matrix.abi }} --ndk=$ANDROID_NDK_ROOT
           xmake
 
-      - name: Build APK
+      - name: Decode Keystore
         run: |
-          cd android && ./gradlew assembleDebug
+          echo "${{ secrets.RELEASE_KEYSTORE }}" > release.keystore.base64
+          base64 -d release.keystore.base64 > app/release.keystore
+
+      - name: Build Release APK
+        run: |
+          cd android && ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=release.keystore \
+            -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
+            -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
+            -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
