@@ -26,7 +26,7 @@ Plan and visualize your daily routines:
 - Visualize time allocation
 - Optimize your daily workflow
 
-# MyQuest Linux Installation
+# Linux Installation
 
 1. Extract the archive:
 ```bash
@@ -46,10 +46,4 @@ Required packages:
 - libsdl2-2.0-0
 - libsdl2-image-2.0-0
 - libsdl2-ttf-2.0-0
-- libsdl2-gfx-1.0-0
 
-- **Clay** (zlib)  
-  [nicbarker/clay](https://github.com/nicbarker/clay)
-
-- **cJSON** (MIT)  
-  [DaveGamble/cJSON](https://github.com/DaveGamble/cJSON)
