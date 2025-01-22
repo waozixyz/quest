@@ -197,7 +197,7 @@ jobs:
           draft: false
           prerelease: true
           files: |
-            android-artifacts/android-release-apk-*/app-*-release.apk
+            android-artifacts/android-release-apk-*/myquest-*-release.apk
             linux-artifacts/linux-x86_64-build/myquest-linux-x86_64.tar.gz
 
       - name: Create Tagged Release
