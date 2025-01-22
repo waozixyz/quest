@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ axis ]
 
+env:
+  EM_VERSION: '3.1.74'  # Specify the Emscripten version
+  EM_CACHE_FOLDER: 'emsdk-cache'  # Folder to cache Emscripten SDK and system libraries
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -16,24 +20,37 @@ jobs:
         with:
           submodules: 'recursive'
 
-      # Step 2: Install Nix
+      # Step 2: Set up Nix
       - name: Install Nix
         uses: cachix/install-nix-action@v24
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
 
-      # Step 3: Set up Emscripten using Nix
-      - name: Set up Emscripten with Nix
-        run: |
-          nix-env -iA nixpkgs.emscripten
+      # Step 3: Set up Emscripten with caching
+      - name: Cache Emscripten SDK and system libraries
+        id: cache-emsdk
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.EM_CACHE_FOLDER }}
+          key: emsdk-${{ env.EM_VERSION }}-${{ runner.os }}-${{ hashFiles('**/xmake.lua') }}
+          restore-keys: |
+            emsdk-${{ env.EM_VERSION }}-${{ runner.os }}-
+            emsdk-${{ env.EM_VERSION }}-
 
-      # Step 4: Install xmake directly
-      - name: Install xmake
-        run: |
-          wget https://xmake.io/shget.text -O - | bash
-          source ~/.xmake/profile
+      - name: Set up Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: ${{ env.EM_VERSION }}
+          actions-cache-folder: ${{ env.EM_CACHE_FOLDER }}
 
+
+      - name: Configure Nix channels and install xmake
+        run: |
+          nix-channel --add https://nixos.org/channels/nixpkgs-unstable nixpkgs
+          nix-channel --update
+          nix-env -iA nixpkgs.xmake
+          
       # Step 5: Build for Web (WASM)
       - name: Build for Web (WASM)
         run: |
