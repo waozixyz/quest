@@ -4,7 +4,7 @@
 
 #include <time.h>
 #include "../clay_extensions.h"
-#include "../../vendor/clay/clay.h"
+#include "clay.h"
 #include "modal.h"
 #include <string.h>
 

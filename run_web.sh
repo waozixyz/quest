@@ -36,5 +36,5 @@ fi
 
 echo "Watching for changes in $ROOT_DIR/src and index.html"
 while inotifywait -r -e modify "$ROOT_DIR/src" "$ROOT_DIR/index.html"; do
-    make clean && make all
+   xmake f -p wasm && xmake
 done

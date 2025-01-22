@@ -3,7 +3,7 @@
 
 #include "../config.h"
 #include "../clay_extensions.h"
-#include "../../vendor/clay/clay.h"
+#include "clay.h"
 #include <string.h>
 
 #ifndef __EMSCRIPTEN__

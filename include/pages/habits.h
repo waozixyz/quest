@@ -2,7 +2,7 @@
 #define HABITS_H
 
 #include "../clay_extensions.h"
-#include "../../vendor/clay/clay.h"
+#include "clay.h"
 #include "../state/habits_state.h"
 #include "../config.h"
 #include "../components/modal.h"

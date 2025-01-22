@@ -1,7 +1,7 @@
 #ifndef COLOR_PICKER_H
 #define COLOR_PICKER_H
 #include "../clay_extensions.h"
-#include "../../vendor/clay/clay.h"
+#include "clay.h"
 #include <stdio.h>
 #include "../config.h"
 #include "modal.h"

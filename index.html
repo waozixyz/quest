@@ -406,6 +406,74 @@ async function init() {
     
     const importObject = {
         env: {
+            // Add this function to convert a tm struct to a Unix timestamp
+            _mktime_js: (tmPtr) => {
+                // Read the tm struct from memory
+                const tm_sec = memoryDataView.getInt32(tmPtr, true);       // Seconds (0-59)
+                const tm_min = memoryDataView.getInt32(tmPtr + 4, true);   // Minutes (0-59)
+                const tm_hour = memoryDataView.getInt32(tmPtr + 8, true);  // Hours (0-23)
+                const tm_mday = memoryDataView.getInt32(tmPtr + 12, true); // Day of the month (1-31)
+                const tm_mon = memoryDataView.getInt32(tmPtr + 16, true);  // Month (0-11, 0 = January)
+                const tm_year = memoryDataView.getInt32(tmPtr + 20, true); // Year (years since 1900)
+                const tm_wday = memoryDataView.getInt32(tmPtr + 24, true); // Day of the week (0-6, 0 = Sunday)
+                const tm_yday = memoryDataView.getInt32(tmPtr + 28, true); // Day of the year (0-365)
+                const tm_isdst = memoryDataView.getInt32(tmPtr + 32, true); // Daylight saving time flag
+
+                // Convert the tm struct to a JavaScript Date object
+                const date = new Date(
+                    tm_year + 1900, // Year (add 1900 to get the full year)
+                    tm_mon,         // Month (0-11)
+                    tm_mday,        // Day of the month (1-31)
+                    tm_hour,        // Hours (0-23)
+                    tm_min,         // Minutes (0-59)
+                    tm_sec          // Seconds (0-59)
+                );
+
+                // Convert the Date object to a Unix timestamp (seconds since the epoch)
+                const timestamp = Math.floor(date.getTime() / 1000);
+
+                return timestamp; // Return the Unix timestamp
+            },
+            // Add this function to handle heap resizing
+            emscripten_resize_heap: (requestedSize) => {
+                console.log(`Resizing heap to ${requestedSize} bytes`);
+                const oldMemory = importObject.env.memory;
+                const oldBuffer = oldMemory.buffer;
+
+                // Calculate the new size (round up to the nearest 64KB page)
+                const PAGE_SIZE = 65536; // 64KB
+                const newSize = Math.ceil(requestedSize / PAGE_SIZE) * PAGE_SIZE;
+
+                // Create a new memory instance with the new size
+                const newMemory = new WebAssembly.Memory({
+                    initial: Math.ceil(newSize / PAGE_SIZE),
+                    maximum: oldMemory.maximum,
+                });
+
+                // Copy the old memory contents to the new memory
+                const newBuffer = newMemory.buffer;
+                new Uint8Array(newBuffer).set(new Uint8Array(oldBuffer));
+
+                // Replace the old memory with the new memory
+                importObject.env.memory = newMemory;
+                memoryDataView = new DataView(newBuffer);
+
+                // Notify Emscripten that the memory has grown
+                if (importObject.env.emscripten_notify_memory_growth) {
+                    importObject.env.emscripten_notify_memory_growth(0); // 0 is the memory index
+                }
+
+                return 1; // Return 1 to indicate success
+            },
+            _tzset_js: () => {
+                console.log("_tzset_js called (no-op)");
+            },
+            _emscripten_memcpy_js: (dest, src, num) => {
+                const destArray = new Uint8Array(importObject.env.memory.buffer, dest, num);
+                const srcArray = new Uint8Array(importObject.env.memory.buffer, src, num);
+                destArray.set(srcArray);
+                return dest;
+            },
             emscripten_date_now: () => Date.now(),
             memory: new WebAssembly.Memory({ initial: 256, maximum: 512 }),
             table: new WebAssembly.Table({ initial: 0, element: 'anyfunc' }),
@@ -745,7 +813,7 @@ async function init() {
                     console.error(error.stack);
                 }
             },
-            addTodoFunction: (collectionPtr, textPtr) => {
+            JS_AddTodo: (collectionPtr, textPtr) => {
                 try {
                     const stored = localStorage.getItem("todosData");
                     let todosData = stored ? JSON.parse(stored) : { todos: [], active_day: "Monday" };
@@ -775,7 +843,7 @@ async function init() {
                 }
             },
 
-            deleteTodoFunction: (collectionPtr, todoId) => {
+            JS_DeleteTodo: (collectionPtr, todoId) => {
                 try {
                     const stored = localStorage.getItem("todosData");
                     if (!stored) return;
@@ -795,7 +863,7 @@ async function init() {
                 }
             },
 
-            toggleTodoFunction: (collectionPtr, todoId) => {
+            JS_ToggleTodo: (collectionPtr, todoId) => {
                 try {
                     const stored = localStorage.getItem("todosData");
                     if (!stored) return;
@@ -811,7 +879,7 @@ async function init() {
                 }
             },
 
-            setActiveDayFunction: (collectionPtr, dayPtr) => {
+            JS_SetActiveDay: (collectionPtr, dayPtr) => {
                 try {
                     const stored = localStorage.getItem("todosData");
                     let todosData = stored ? JSON.parse(stored) : { todos: [], active_day: "Monday" };

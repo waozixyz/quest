@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 #include "../clay_extensions.h"
-#include "../../vendor/clay/clay.h"
+#include "clay.h"
 #include "../config.h"
 #include <stdio.h>
 #include <math.h>

@@ -6,13 +6,12 @@ const char* DAYS[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "S
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 
-
 EM_JS(void, JS_SaveTodos, (const TodoCollection* collection), {});
 EM_JS(void, JS_LoadTodos, (TodoCollection* collection), {});
-EM_JS(void, addTodoFunction, (TodoCollection* collection, const char* text));
-EM_JS(void, deleteTodoFunction, (TodoCollection* collection, uint32_t id));
-EM_JS(void, toggleTodoFunction, (TodoCollection* collection, uint32_t id));
-EM_JS(void, setActiveDayFunction, (TodoCollection* collection, const char* day));
+EM_JS(void, JS_AddTodo, (TodoCollection* collection, const char* text), {});
+EM_JS(void, JS_DeleteTodo, (TodoCollection* collection, uint32_t id), {});
+EM_JS(void, JS_ToggleTodo, (TodoCollection* collection, uint32_t id), {});
+EM_JS(void, JS_SetActiveDay, (TodoCollection* collection, const char* day), {});
 
 #else
 #include "storage_utils.h"
@@ -142,7 +141,7 @@ void SaveTodos(TodoCollection* collection) {
 void AddTodo(TodoCollection* collection, const char* text) {
     if (!collection || !text || collection->todos_count >= MAX_TODOS) return;
     #ifdef __EMSCRIPTEN__
-        addTodoFunction(collection, text);
+        JS_AddTodo(collection, text);
         JS_LoadTodos(collection);  // Reload the collection after adding
     #else
         Todo* new_todo = &collection->todos[collection->todos_count];
@@ -160,7 +159,7 @@ void AddTodo(TodoCollection* collection, const char* text) {
 void DeleteTodo(TodoCollection* collection, uint32_t id) {
     if (!collection) return;
     #ifdef __EMSCRIPTEN__
-        deleteTodoFunction(collection, id);
+        JS_DeleteTodo(collection, id);
         JS_LoadTodos(collection);
     #else
         for (size_t i = 0; i < collection->todos_count; i++) {
@@ -181,7 +180,7 @@ void ToggleTodo(TodoCollection* collection, uint32_t id) {
     if (!collection) return;
 
     #ifdef __EMSCRIPTEN__
-        toggleTodoFunction(collection, id);
+        JS_ToggleTodo(collection, id);
         JS_LoadTodos(collection); 
     #else
         for (size_t i = 0; i < collection->todos_count; i++) {
@@ -198,7 +197,7 @@ void SetActiveDay(TodoCollection* collection, const char* day) {
     if (!collection || !day) return;
     
     #ifdef __EMSCRIPTEN__
-        setActiveDayFunction(collection, day);
+        JS_SetActiveDay(collection, day);
         JS_LoadTodos(collection);  // Reload the collection after changing the day
     #else
     strncpy(collection->active_day, day, 9);

@@ -12,11 +12,12 @@ includes("xmake/android_sdl.lua")
 if is_plat("android") then
     add_defines("CLAY_MOBILE")
     add_includedirs("vendor/cJSON", 
-                   "vendor/SDL/include",
-                   "vendor/SDL_image/include", 
-                   "vendor/SDL_ttf",
-                   "vendor/SDL2_gfx")
-    
+                    "vendor/clay",
+                    "vendor/SDL/include",
+                    "vendor/SDL_image/include", 
+                    "vendor/SDL_ttf",
+                    "vendor/SDL2_gfx")
+        
     add_files("vendor/cJSON/cJSON.c")
     
     on_load(function (target)
@@ -44,22 +45,45 @@ if is_plat("android") then
     end)
 end
 
--- WASM platform configuration
+
 if is_plat("wasm") then
+    set_toolset("cc", "emcc")
+    set_toolset("ld", "emcc")
+
     add_defines("CLAY_WASM")
     add_includedirs("vendor/clay")
     add_headerfiles("vendor/clay/clay.h")
     add_files("src/**.c")
     remove_files("src/platforms/sdl/**.c")
     
-    add_ldflags("-s WASM=1", 
-                "-s USE_PTHREADS=0", 
-                "-s ASSERTIONS=1", 
-                "-s ALLOW_MEMORY_GROWTH=1",
-                "-s EXPORTED_RUNTIME_METHODS=['ccall','cwrap']",
-                "-s EXPORTED_FUNCTIONS=['_main','_printf']",
-                {force = true})
+    set_kind("binary")
+    set_targetdir("build/clay")
+    
+    add_cflags("-Wall", "-Werror", "-Os", "-DCLAY_WASM", "-mbulk-memory", "--target=wasm32")
+    
+    add_ldflags(
+        "-Wl,--strip-all",
+        "-Wl,--export-dynamic",
+        "-Wl,--export=__heap_base",
+        "-Wl,--export=ACTIVE_RENDERER_INDEX",
+        "-s WASM=1",
+        "-s USE_PTHREADS=0",
+        "-s ASSERTIONS=1",
+        "-s ALLOW_MEMORY_GROWTH=1",
+        "-s EXPORTED_RUNTIME_METHODS=['ccall','cwrap']",
+        "-s EXPORTED_FUNCTIONS=['_main','_printf']",
+        "-o build/clay/index.wasm",  -- Output only WASM file
+        {force = true}
+    )
+    
+    after_build(function (target)
+        os.cp("index.html", "build/clay")
+        os.cp("manifest.json", "build/clay")
+        os.cp("fonts", "build/clay")
+        os.cp("images", "build/clay")
+    end)
 end
+
 if is_plat("linux", "macosx", "windows") then
     add_defines("CLAY_DESKTOP")
     
@@ -70,6 +94,7 @@ if is_plat("linux", "macosx", "windows") then
     
     add_includedirs("vendor/cJSON") 
     add_files("vendor/cJSON/cJSON.c")
+    add_includedirs("vendor/clay") 
     
     -- Direct SDL linking instead of using packages
     add_links("SDL2", "SDL2_image", "SDL2_ttf", "SDL2_gfx")
@@ -78,7 +103,6 @@ if is_plat("linux", "macosx", "windows") then
     -- Add SDL includes
     add_includedirs("/usr/include/SDL2")
 end
-
 -- Main target configuration
 target("main")
     if is_plat("android") then
@@ -100,11 +124,23 @@ target("main")
             os.cp("images/*", "android/app/src/main/assets/images")
         end)
     elseif is_plat("wasm") then
+        -- Set the target to a binary (WASM file)
         set_kind("binary")
         set_targetdir("build/clay")
-        add_files("src/**.c")
-        remove_files("src/platforms/**.c")  -- ONLY for WASM build
         
+        -- Add linker flags for WASM
+        add_ldflags(
+            "-s WASM=1", 
+            "-s USE_PTHREADS=0", 
+            "-s ASSERTIONS=1", 
+            "-s ALLOW_MEMORY_GROWTH=1",
+            "-s EXPORTED_RUNTIME_METHODS=['ccall','cwrap']",
+            "-s EXPORTED_FUNCTIONS=['_main','_printf','_measureTextFunction','_queryScrollOffsetFunction']",
+            "-s STANDALONE_WASM",  -- Ensure only a .wasm file is generated
+            {force = true}
+        )
+        
+        -- Copy assets after build
         after_build(function (target)
             os.cp("index.html", "build/clay")
             os.cp("manifest.json", "build/clay")
@@ -119,8 +155,6 @@ target("main")
         add_cflags("-Wno-unused-variable")
         add_cflags("-Wno-missing-braces")
 
-
-
         set_targetdir("build/clay")
         
         after_build(function (target)
@@ -131,3 +165,6 @@ target("main")
     
     add_files("src/**.c")
     set_languages("c99")
+
+
+

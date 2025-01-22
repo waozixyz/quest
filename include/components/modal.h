@@ -2,7 +2,7 @@
 #define MODAL_H
 
 #include "../clay_extensions.h"
-#include "../../vendor/clay/clay.h"
+#include "clay.h"
 #include "../config.h"
 
 typedef struct {

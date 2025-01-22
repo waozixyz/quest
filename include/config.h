@@ -3,8 +3,8 @@
 #define CONFIG_H
 
 #include "clay_extensions.h"
-#include "../vendor/clay/clay.h"
-
+#include "clay.h"
+#include <stdio.h>
 // Window & UI configuration
 extern double windowWidth, windowHeight;
 extern float globalScalingFactor;

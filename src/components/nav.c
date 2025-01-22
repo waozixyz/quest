@@ -8,11 +8,11 @@ typedef struct {
 } NavIcon;
 
 static NavIcon NAV_ICONS[] = {
-    {.url = CLAY_STRING("icons/home.png"), .dimensions = {24, 24}},
-    {.url = CLAY_STRING("icons/habits.png"), .dimensions = {24, 24}},
-    {.url = CLAY_STRING("icons/todos.png"), .dimensions = {24, 24}},
-    {.url = CLAY_STRING("icons/timeline.png"), .dimensions = {24, 24}},
-    {.url = CLAY_STRING("icons/routine.png"), .dimensions = {24, 24}}
+    {.url = CLAY_STRING("images/icons/home.png"), .dimensions = {24, 24}},
+    {.url = CLAY_STRING("images/icons/habits.png"), .dimensions = {24, 24}},
+    {.url = CLAY_STRING("images/icons/todos.png"), .dimensions = {24, 24}},
+    {.url = CLAY_STRING("images/icons/timeline.png"), .dimensions = {24, 24}},
+    {.url = CLAY_STRING("images/icons/routine.png"), .dimensions = {24, 24}}
 };
 
 #ifndef __EMSCRIPTEN__

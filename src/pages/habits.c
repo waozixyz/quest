@@ -44,15 +44,15 @@ static SDL_Texture* trash_texture = NULL;
 void InitializeHabitTabBar(SDL_Renderer* renderer) {
     SDL_Surface* surface;
 
-    surface = load_image("icons/check.png");
+    surface = load_image("images/icons/check.png");
     check_texture = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
 
-    surface = load_image("icons/edit.png");
+    surface = load_image("images/icons/edit.png");
     edit_texture = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
 
-    surface = load_image("icons/trash.png");
+    surface = load_image("images/icons/trash.png");
     trash_texture = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
 }
@@ -385,7 +385,7 @@ static void RenderHabitHeader() {
                         }),
                         CLAY_IMAGE({
                             .sourceDimensions = { 24, 24 },
-                            .sourceURL = CLAY_STRING("icons/trash.png")
+                            .sourceURL = CLAY_STRING("images/icons/trash.png")
                         })) {}
                         #else
                         CLAY(CLAY_LAYOUT({
@@ -416,7 +416,7 @@ static void RenderHabitHeader() {
                         }),
                         CLAY_IMAGE({
                             .sourceDimensions = { 24, 24 },
-                            .sourceURL = CLAY_STRING("icons/check.png")
+                            .sourceURL = CLAY_STRING("images/icons/check.png")
                         })) {}
                         #else
                         CLAY(CLAY_LAYOUT({

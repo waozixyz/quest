@@ -4,7 +4,7 @@
 #define CLAY_IMPLEMENTATION
 
 #include "clay_extensions.h"
-#include "../../vendor/clay/clay.h"
+#include "clay.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>

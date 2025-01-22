@@ -18,6 +18,9 @@
 
 #ifdef __EMSCRIPTEN__
 void InitializePages(void);
+
+extern void measureTextFunction(Clay_String *text, Clay_TextElementConfig *config);
+extern void queryScrollOffsetFunction(Clay_ElementId elementId);
 #else
 void InitializePages(SDL_Renderer* renderer);
 void HandleSDLEvents(bool* running);

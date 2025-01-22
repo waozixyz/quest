@@ -15,22 +15,13 @@ Modal delete_todo_modal = {
     .height = 300
 };
 
-#ifdef __EMSCRIPTEN__
-#define ICON_PATH "/images/icons/"
-
 typedef struct {
     Clay_String url;
     Clay_Dimensions dimensions;
 } DaySymbol;
 
-#else
-#define ICON_PATH "images/icons/"
 
-typedef struct {
-    Clay_String url;
-    Clay_Dimensions dimensions;
-} DaySymbol;
-
+#ifndef __EMSCRIPTEN__
 static SDL_Texture* day_symbols_textures[7] = {NULL};
 static SDL_Texture* check_texture = NULL;
 static SDL_Texture* edit_texture = NULL;
@@ -39,13 +30,13 @@ static SDL_Texture* trash_texture = NULL;
 #endif
 
 static DaySymbol DAY_SYMBOLS[] = {
-    {.url = CLAY_STRING("icons/moon.png"), .dimensions = {55, 55}},
-    {.url = CLAY_STRING("icons/mars.png"), .dimensions = {60, 60}},
-    {.url = CLAY_STRING("icons/mercury.png"), .dimensions = {55, 55}},
-    {.url = CLAY_STRING("icons/jupiter.png"), .dimensions = {55, 55}},
-    {.url = CLAY_STRING("icons/venus.png"), .dimensions = {55, 55}},
-    {.url = CLAY_STRING("icons/saturn.png"), .dimensions = {60, 60}},
-    {.url = CLAY_STRING("icons/sun.png"), .dimensions = {55, 55}}
+    {.url = CLAY_STRING("images/icons/moon.png"), .dimensions = {55, 55}},
+    {.url = CLAY_STRING("images/icons/mars.png"), .dimensions = {60, 60}},
+    {.url = CLAY_STRING("images/icons/mercury.png"), .dimensions = {55, 55}},
+    {.url = CLAY_STRING("images/icons/jupiter.png"), .dimensions = {55, 55}},
+    {.url = CLAY_STRING("images/icons/venus.png"), .dimensions = {55, 55}},
+    {.url = CLAY_STRING("images/icons/saturn.png"), .dimensions = {60, 60}},
+    {.url = CLAY_STRING("images/icons/sun.png"), .dimensions = {55, 55}}
 };
 
 static void OnTodoInputChanged(const char* text) {
@@ -100,15 +91,15 @@ void InitializeTodosPage(SDL_Renderer* renderer) {
 
     SDL_Surface* surface;
     
-    surface = load_image("icons/check.png");
+    surface = load_image("images/icons/check.png");
     check_texture = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
     
-    surface = load_image("icons/edit.png");
+    surface = load_image("images/icons/edit.png");
     edit_texture = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
     
-    surface = load_image("icons/trash.png");
+    surface = load_image("images/icons/trash.png");
     trash_texture = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
 
@@ -492,7 +483,7 @@ void RenderTodoItem(const Todo* todo, int index) {
                     }),
                     CLAY_IMAGE({
                         .sourceDimensions = { 24, 24 },
-                        .sourceURL = CLAY_STRING("icons/check.png")
+                        .sourceURL = CLAY_STRING("images/icons/check.png")
                     })) {}
                     #else
                     CLAY(CLAY_LAYOUT({
@@ -524,7 +515,7 @@ void RenderTodoItem(const Todo* todo, int index) {
                     }),
                     CLAY_IMAGE({
                         .sourceDimensions = { 24, 24 },
-                        .sourceURL = CLAY_STRING("icons/trash.png")
+                        .sourceURL = CLAY_STRING("images/icons/trash.png")
                     })) {}
                     #else
                     CLAY(CLAY_LAYOUT({
@@ -556,7 +547,7 @@ void RenderTodoItem(const Todo* todo, int index) {
                     }),
                     CLAY_IMAGE({
                         .sourceDimensions = { 24, 24 },
-                        .sourceURL = CLAY_STRING("icons/edit.png")
+                        .sourceURL = CLAY_STRING("images/icons/edit.png")
                     })) {}
                     #else
                     CLAY(CLAY_LAYOUT({
@@ -588,7 +579,7 @@ void RenderTodoItem(const Todo* todo, int index) {
                     }),
                     CLAY_IMAGE({
                         .sourceDimensions = { 24, 24 },
-                        .sourceURL = CLAY_STRING("icons/check.png")
+                        .sourceURL = CLAY_STRING("images/icons/check.png")
                     })) {}
                     #else
                     CLAY(CLAY_LAYOUT({
@@ -671,7 +662,7 @@ void RenderTodosPage() {
                         }),
                         CLAY_IMAGE({
                             .sourceDimensions = { 24, 24 },
-                            .sourceURL = CLAY_STRING("icons/check.png")
+                            .sourceURL = CLAY_STRING("images/icons/check.png")
                         })) {}
                         #else
                         CLAY(CLAY_LAYOUT({

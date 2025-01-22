@@ -116,11 +116,7 @@ const char* get_font_path(const char* filename) {
 
 const char* get_image_path(const char* filename) {
     static char path[256];
-#if defined(CLAY_MOBILE)
-    snprintf(path, sizeof(path), "images/%s", filename);
-#else
-    snprintf(path, sizeof(path), "images/%s", filename);
-#endif
+    snprintf(path, sizeof(path), "%s", filename);
     return path;
 }
 bool load_font(uint32_t font_id, const char* filename, int size) {

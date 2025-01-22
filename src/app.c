@@ -2,7 +2,7 @@
 
 
 #include "clay_extensions.h"
-#include "../../vendor/clay/clay.h"
+#include "clay.h"
 bool pages_initialized = false;
 
 #ifdef __EMSCRIPTEN__
@@ -12,6 +12,15 @@ void InitializePages() {
     InitializeTodosPage();
     pages_initialized = true;
 }
+
+void measureTextFunction(Clay_String *text, Clay_TextElementConfig *config) {
+    // Empty implementation - actual measurement happens in JS
+}
+
+void queryScrollOffsetFunction(Clay_ElementId elementId) {
+    // Empty implementation - actual query happens in JS  
+}
+
 #else
 void InitializePages(SDL_Renderer* renderer) {
     if (pages_initialized) return;

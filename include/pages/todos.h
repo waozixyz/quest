@@ -2,7 +2,7 @@
 #define TODOS_H
 
 #include "../clay_extensions.h"
-#include "../../vendor/clay/clay.h"
+#include "clay.h"
 #include "../components/text_input.h"
 #include "../config.h"
 #include "../state/todos_state.h"
