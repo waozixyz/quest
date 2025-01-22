@@ -2,41 +2,39 @@ name: Build and Deploy Web Version
 
 on:
   push:
-    branches: [ axis ]  # Trigger on pushes to the `axis` branch
+    branches: [ axis ]
   pull_request:
-    branches: [ axis ]  # Trigger on PRs to the `axis` branch
+    branches: [ axis ]
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          submodules: 'recursive'  # Ensure submodules are checked out
+          submodules: 'recursive'
 
-      # Step 2: Set up Emscripten (for WASM compilation)
       - name: Set up Emscripten
         uses: mymindstorm/setup-emsdk@v12
         with:
-          version: '3.1.45'  # Latest stable version of Emscripten
-      
+          version: '3.1.45'
+
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build
+          sudo apt-get install -y build-essential clang lld cmake ninja-build pkg-config
+
+      - name: Install xmake
+        run: |
           wget https://xmake.io/shget.text -O - | bash
           source ~/.xmake/profile
-          
-      # Step 4: Build the project for WASM
+
       - name: Build for Web (WASM)
         run: |
           xmake f -p wasm -y
           xmake -y
 
-      # Step 5: Prepare build artifacts for Netlify
       - name: Prepare artifacts
         run: |
           mkdir -p netlify-build
@@ -46,15 +44,14 @@ jobs:
           cp -r fonts netlify-build/
           cp -r images netlify-build/
 
-      # Step 6: Deploy to Netlify
       - name: Deploy to Netlify
         uses: nwtgck/actions-netlify@v2
         with:
-          publish-dir: './netlify-build'  # Directory containing the built files
-          production-deploy: true         # Deploy to production
+          publish-dir: './netlify-build'
+          production-deploy: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          netlify-auth-token: ${{ secrets.NETLIFY_AUTH_TOKEN }}  # Netlify authentication token
-          netlify-site-id: ${{ secrets.NETLIFY_SITE_ID }}        # Netlify site ID
+          netlify-auth-token: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          netlify-site-id: ${{ secrets.NETLIFY_SITE_ID }}
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
