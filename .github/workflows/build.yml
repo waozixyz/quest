@@ -47,11 +47,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build
-
-      - name: Install xmake
-        run: |
-          wget https://xmake.io/shget.text -O - | bash
-          source ~/.xmake/profile
+          
+      - name: Setup xmake
+        uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: latest
 
       - name: Set SDK and NDK path
         run: |
