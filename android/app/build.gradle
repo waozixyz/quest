@@ -8,6 +8,11 @@ android {
     namespace 'xyz.waozi.myquest'
     compileSdk 34
 
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+
     defaultConfig {
         applicationId "xyz.waozi.myquest"
         minSdk 21
