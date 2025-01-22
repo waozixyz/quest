@@ -91,17 +91,9 @@ jobs:
 
       - name: Decode Keystore
         run: |
-          mkdir -p android/app/app
+          cd android/app
           echo "${{ secrets.RELEASE_KEYSTORE }}" > release.keystore.base64
-          base64 -d release.keystore.base64 > android/app/app/release.keystore
-
-      - name: Setup Gradle
-        run: |
-          cd android
-          if [ ! -f "gradlew" ]; then
-            gradle wrapper
-          fi
-          chmod +x gradlew
+          base64 -d release.keystore.base64 > release.keystore
 
       - name: Build Release APK
         env:
