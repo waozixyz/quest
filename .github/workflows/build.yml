@@ -95,14 +95,24 @@ jobs:
           echo "${{ secrets.RELEASE_KEYSTORE }}" > release.keystore.base64
           base64 -d release.keystore.base64 > android/app/app/release.keystore
 
-      - name: Build Release APK
+      - name: Setup Gradle
         run: |
-          cd android && ./gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file=app/app/release.keystore \
-            -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
-            -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
-            -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
-            
+          cd android
+          if [ ! -f "gradlew" ]; then
+            gradle wrapper
+          fi
+          chmod +x gradlew
+
+      - name: Build Release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          cd android
+          ./gradlew clean
+          ./gradlew assembleRelease --warning-mode all
+
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
         with:
