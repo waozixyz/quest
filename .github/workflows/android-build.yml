@@ -72,18 +72,18 @@ jobs:
           xmake
       - name: Decode Keystore
         run: |
-          mkdir -p android/app
+          mkdir -p android/app/app    # Changed to create app/app directory
           echo "${{ secrets.RELEASE_KEYSTORE }}" > release.keystore.base64
-          base64 -d release.keystore.base64 > android/app/release.keystore
+          base64 -d release.keystore.base64 > android/app/app/release.keystore   # Changed path
 
       - name: Build Release APK
         run: |
           cd android && ./gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file=app/release.keystore \
+            -Pandroid.injected.signing.store.file=app/app/release.keystore \    # Changed path
             -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
             -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
             -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
-      
+            
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
         with:
