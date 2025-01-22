@@ -1,4 +1,4 @@
-name: Android Build
+name: Build and Release
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   contents: write
   
 jobs:
-  build:
+  android-build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -70,16 +70,17 @@ jobs:
         run: |
           xmake f -p android --arch=${{ matrix.abi }} --ndk=$ANDROID_NDK_ROOT
           xmake
+
       - name: Decode Keystore
         run: |
-          mkdir -p android/app/app    # Changed to create app/app directory
+          mkdir -p android/app/app
           echo "${{ secrets.RELEASE_KEYSTORE }}" > release.keystore.base64
-          base64 -d release.keystore.base64 > android/app/app/release.keystore   # Changed path
+          base64 -d release.keystore.base64 > android/app/app/release.keystore
 
       - name: Build Release APK
         run: |
           cd android && ./gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file=app/app/release.keystore \    # Changed path
+            -Pandroid.injected.signing.store.file=app/app/release.keystore \
             -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
             -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
             -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
@@ -90,6 +91,71 @@ jobs:
           name: android-release-apk-${{ matrix.abi }}
           path: android/app/build/outputs/apk/release/app-${{ matrix.abi }}-release.apk
 
+  linux-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            build-essential \
+            clang \
+            lld \
+            cmake \
+            ninja-build \
+            pkg-config \
+            wget \
+            git \
+            libsdl2-dev \
+            libsdl2-image-dev \
+            libsdl2-ttf-dev \
+            libsdl2-gfx-dev
+
+      - name: Install xmake
+        run: |
+          wget https://xmake.io/shget.text -O - | bash
+          source ~/.xmake/profile
+
+      - name: Build
+        run: |
+          xmake f -p linux -y
+          xmake -y
+          mkdir -p artifacts/myquest-linux-x86_64
+          cp build/clay/main artifacts/myquest-linux-x86_64/myquest
+          cp -r fonts artifacts/myquest-linux-x86_64/
+          cp -r images artifacts/myquest-linux-x86_64/
+          chmod +x artifacts/myquest-linux-x86_64/myquest
+          cd artifacts
+          tar czf myquest-linux-x86_64.tar.gz myquest-linux-x86_64/
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-x86_64-build
+          path: artifacts/myquest-linux-x86_64.tar.gz
+
+  create-release:
+    needs: [android-build, linux-build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Android Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: android-artifacts
+
+      - name: Download Linux Artifacts  
+        uses: actions/download-artifact@v3
+        with:
+          path: linux-artifacts
+
+      - name: Display structure of downloaded files
+        run: ls -R
+        
       - name: Generate date
         id: date
         if: "!startsWith(github.ref, 'refs/tags/')"
@@ -105,7 +171,9 @@ jobs:
           name: Development Build ${{ steps.date.outputs.date }}
           draft: false
           prerelease: true
-          files: android/app/build/outputs/apk/debug/app-${{ matrix.abi }}-debug.apk
+          files: |
+            android-artifacts/android-release-apk-*/app-*-release.apk
+            linux-artifacts/linux-x86_64-build/myquest-linux-x86_64.tar.gz
 
       - name: Create Tagged Release
         if: startsWith(github.ref, 'refs/tags/')
@@ -118,4 +186,6 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
-          files: android/app/build/outputs/apk/debug/app-${{ matrix.abi }}-debug.apk
+          files: |
+            android-artifacts/android-release-apk-*/app-*-release.apk
+            linux-artifacts/linux-x86_64-build/myquest-linux-x86_64.tar.gz
