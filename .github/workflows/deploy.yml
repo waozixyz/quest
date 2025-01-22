@@ -22,13 +22,14 @@ jobs:
         uses: mymindstorm/setup-emsdk@v12
         with:
           version: '3.1.45'  # Latest stable version of Emscripten
-
-      # Step 3: Install xmake
-      - name: Install xmake
+      
+      - name: Install Dependencies
         run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build
           wget https://xmake.io/shget.text -O - | bash
           source ~/.xmake/profile
-
+          
       # Step 4: Build the project for WASM
       - name: Build for Web (WASM)
         run: |
@@ -57,4 +58,3 @@ jobs:
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-          
