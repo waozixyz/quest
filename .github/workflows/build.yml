@@ -8,6 +8,11 @@ on:
   pull_request:
     branches: [ axis ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
 permissions:
   contents: write
   
@@ -53,14 +58,27 @@ jobs:
           echo "SDK_PATH=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
           echo "NDK_PATH=$ANDROID_NDK_ROOT" >> $GITHUB_ENV
 
+
+      - name: Cache SDL builds
+        uses: actions/cache@v3
+        with:
+          path: |
+            vendor/SDL/build-android-prefab
+            android/app/libs
+          key: ${{ runner.os }}-sdl-${{ matrix.abi }}-${{ hashFiles('vendor/SDL/**') }}
+          restore-keys: |
+            ${{ runner.os }}-sdl-${{ matrix.abi }}-
+
       - name: Build SDL2
         run: |
-          cd vendor/SDL/build-scripts
-          chmod +x android-prefab.sh
-          ./android-prefab.sh
-          mkdir -p ../../../android/app/libs
-          SDL_AAR=$(find ../build-android-prefab/prefab-* -name "SDL2-*.aar")
-          cp "$SDL_AAR" ../../../android/app/libs/
+          if [ ! -f "android/app/libs/SDL2-*.aar" ]; then
+            cd vendor/SDL/build-scripts
+            chmod +x android-prefab.sh
+            ./android-prefab.sh
+            mkdir -p ../../../android/app/libs
+            SDL_AAR=$(find ../build-android-prefab/prefab-* -name "SDL2-*.aar")
+            cp "$SDL_AAR" ../../../android/app/libs/
+          fi
 
       - name: Build SDL Dependencies
         run: |
