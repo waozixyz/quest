@@ -1,6 +1,5 @@
 #include "components/nav.h"
 
-
 // Icon configurations
 typedef struct {
     Clay_String url;
@@ -8,11 +7,11 @@ typedef struct {
 } NavIcon;
 
 static NavIcon NAV_ICONS[] = {
-    {.url = CLAY_STRING("images/icons/home.png"), .dimensions = {24, 24}},
-    {.url = CLAY_STRING("images/icons/habits.png"), .dimensions = {24, 24}},
-    {.url = CLAY_STRING("images/icons/todos.png"), .dimensions = {24, 24}},
-    {.url = CLAY_STRING("images/icons/timeline.png"), .dimensions = {24, 24}},
-    {.url = CLAY_STRING("images/icons/routine.png"), .dimensions = {24, 24}}
+    {.url = CLAY_STRING("images/icons/home.png"), .dimensions = {32, 32}}, // Larger icons
+    {.url = CLAY_STRING("images/icons/habits.png"), .dimensions = {32, 32}},
+    {.url = CLAY_STRING("images/icons/todos.png"), .dimensions = {32, 32}},
+    {.url = CLAY_STRING("images/icons/timeline.png"), .dimensions = {32, 32}},
+    {.url = CLAY_STRING("images/icons/routine.png"), .dimensions = {32, 32}}
 };
 
 #ifndef __EMSCRIPTEN__
@@ -45,71 +44,83 @@ void CleanupNavIcons() {
     }
 }
 #endif
-
 void RenderNavItem(const char* text, uint32_t pageId) {
     bool isActive = ACTIVE_PAGE == pageId;
-    bool showIcons = windowWidth < BREAKPOINT_MEDIUM;
+    bool isSmallScreen = windowWidth < BREAKPOINT_SMALL; // Check if the screen is small
+
+    // Adjust button width based on screen size
+    float buttonWidth = isSmallScreen ? 80.0f : 120.0f; // Wider buttons on larger screens
 
     Clay_TextElementConfig *text_config = CLAY_TEXT_CONFIG({ 
-        .fontSize = 20,
-        .fontId = FONT_ID_BODY_24,
-        .textColor = COLOR_TEXT,
+        .fontSize = 14, // Smaller text for compact design
+        .fontId = FONT_ID_BODY_14,
+        .textColor = isActive ? COLOR_NAV_ITEM_TEXT_ACTIVE : COLOR_NAV_ITEM_TEXT, // Highlight active text
         .disablePointerEvents = true 
     });
     
     CLAY(CLAY_IDI("Nav", pageId), 
         CLAY_LAYOUT({ 
-            .padding = showIcons ? (Clay_Padding){8, 8} : (Clay_Padding){16, 8},
-            .childGap = 8,
-            .childAlignment = {.x = CLAY_ALIGN_X_CENTER }
-    }), 
+            .padding = {8, 8}, // Compact padding
+            .childGap = 4, // Smaller gap between icon and text
+            .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER },
+            .sizing = { CLAY_SIZING_FIXED(buttonWidth), CLAY_SIZING_FIXED(60) } // Dynamic width for each nav item
+        }), 
         CLAY_RECTANGLE({ 
-            .color = isActive ? COLOR_PRIMARY : 
-                     (Clay_Hovered() ? COLOR_PRIMARY_HOVER : COLOR_PANEL),
-            .cornerRadius = CLAY_CORNER_RADIUS(5),
+            .color = isActive ? COLOR_NAV_ITEM_BACKGROUND_ACTIVE : COLOR_NAV_ITEM_BACKGROUND, // Highlight active background
+            .cornerRadius = CLAY_CORNER_RADIUS(8),
             .cursorPointer = true
         }),
         Clay_OnHover(HandleNavInteraction, pageId)
     ) {
-        if (showIcons) {
-            CLAY(CLAY_LAYOUT({ 
-                .sizing = { 
-                    CLAY_SIZING_FIXED(24), 
-                    CLAY_SIZING_FIXED(24)
-                }
-            }),
-            #ifdef __EMSCRIPTEN__
-            CLAY_IMAGE({ 
-                .sourceDimensions = NAV_ICONS[pageId].dimensions,
-                .sourceURL = NAV_ICONS[pageId].url
-            })
-            #else
-            CLAY_IMAGE({ 
-                .sourceDimensions = NAV_ICONS[pageId].dimensions,
-                .imageData = nav_icon_textures[pageId]
-            })
-            #endif
-            ) {}
-        } else {
+        // Always show icons in the bottom nav bar
+        CLAY(CLAY_LAYOUT({ 
+            .sizing = { 
+                CLAY_SIZING_FIXED(32), // Larger icons
+                CLAY_SIZING_FIXED(32)
+            }
+        }),
+        #ifdef __EMSCRIPTEN__
+        CLAY_IMAGE({ 
+            .sourceDimensions = NAV_ICONS[pageId].dimensions,
+            .sourceURL = NAV_ICONS[pageId].url
+        })
+        #else
+        CLAY_IMAGE({ 
+            .sourceDimensions = NAV_ICONS[pageId].dimensions,
+            .imageData = nav_icon_textures[pageId]
+        })
+        #endif
+        ) {}
+
+        // Show text below the icon only if the screen is not small
+        if (!isSmallScreen) {
             Clay_String nav_text = { .chars = text, .length = strlen(text) };
             CLAY_TEXT(nav_text, text_config);
         }
     }
 }
-
 void RenderNavigationMenu() {
-    CLAY(CLAY_ID("TopNavigation"), 
+    CLAY(CLAY_ID("BottomNavigation"), 
         CLAY_LAYOUT({ 
-            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIXED(60) },
-            .childGap = 16,
-            .padding = { 16, 16, 16, 16 },
-            .childAlignment = { .y = CLAY_ALIGN_Y_CENTER, .x = CLAY_ALIGN_X_CENTER }
+            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIXED(80) }, // Taller bar
+            .childGap = 0, // No gap between items
+            .padding = { 8, 8, 8, 8 }, // Compact padding
+            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER },
+            .layoutDirection = CLAY_LEFT_TO_RIGHT // Horizontal layout
         }),
-        CLAY_RECTANGLE({ .color = COLOR_SECONDARY })
+        CLAY_RECTANGLE({ 
+            .color = COLOR_NAV_BACKGROUND,
+            .shadowEnabled = true, // Enable shadow
+            .shadowColor = (Clay_Color){0, 0, 0, 50}, // Semi-transparent black
+            .shadowOffset = {0, 2}, // Shadow offset (x, y)
+            .shadowBlurRadius = 8,  // Blur radius
+            .shadowSpread = 0       // Shadow spread
+        })
     ) {
-        RenderNavItem("Home", 0);
         RenderNavItem("Habits", 1);
         RenderNavItem("Todos", 2);
+        RenderNavItem("Home", 0);
+
         RenderNavItem("Timeline", 3);
         RenderNavItem("Routine", 4);
     }

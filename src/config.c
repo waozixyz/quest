@@ -4,7 +4,7 @@
 #include "platforms/sdl/events.h"
 #endif
 // Configuration variables
-double windowWidth = 350, windowHeight = 768;
+double windowWidth = 400, windowHeight = 768;
 float globalScalingFactor = 1.0f;
 uint32_t ACTIVE_PAGE = 0;
 uint32_t ACTIVE_RENDERER_INDEX = 0;
@@ -54,6 +54,14 @@ const Clay_Color COLOR_TEXT = (Clay_Color) {230, 221, 233, 255};     // #e6dde9
 const Clay_Color COLOR_TEXT_SECONDARY = (Clay_Color) {184, 168, 192, 255}; // #b8a8c0
 const Clay_Color COLOR_CURSOR = (Clay_Color){255, 107, 151, 255};    // Using COLOR_ACCENT for cursor
 const Clay_Color COLOR_DANGER = (Clay_Color){255, 99, 71, 266};
+
+// Navigation Bar Colors
+const Clay_Color COLOR_NAV_BACKGROUND = (Clay_Color) {45, 31, 51, 255};       // #2d1f33 (Same as COLOR_CARD)
+const Clay_Color COLOR_NAV_ITEM_BACKGROUND = (Clay_Color) {45, 31, 51, 0};    // Transparent by default
+const Clay_Color COLOR_NAV_ITEM_BACKGROUND_ACTIVE = (Clay_Color) {74, 38, 57, 255}; // #4a2639 (Same as COLOR_SECONDARY)
+const Clay_Color COLOR_NAV_ITEM_TEXT = (Clay_Color) {230, 221, 233, 255};     // #e6dde9 (Same as COLOR_TEXT)
+const Clay_Color COLOR_NAV_ITEM_TEXT_ACTIVE = (Clay_Color) {255, 107, 151, 255}; // #ff6b97 (Same as COLOR_ACCENT)
+const Clay_Color COLOR_NAV_SHADOW = (Clay_Color) {0, 0, 0, 50};               // Semi-transparent black for shadow
 
 const int DEFAULT_PADDING = 32;
 void HandleNavInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {

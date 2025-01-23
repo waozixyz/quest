@@ -2,9 +2,10 @@
 #define NAV_H
 
 #include "../config.h"
+#include <string.h>
+
 #include "../clay_extensions.h"
 #include "clay.h"
-#include <string.h>
 
 #ifndef __EMSCRIPTEN__
 #include <SDL_image.h>

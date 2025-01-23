@@ -80,7 +80,6 @@ Clay_RenderCommandArray CreateLayout() {
         }), 
         CLAY_RECTANGLE({ .color = COLOR_BACKGROUND })
     ) {
-        RenderNavigationMenu();
         
         CLAY(CLAY_ID("MainContent"),
             CLAY_LAYOUT({ 
@@ -89,6 +88,8 @@ Clay_RenderCommandArray CreateLayout() {
         ) {
             RenderCurrentPage();
         }
+        RenderNavigationMenu();
+
     }
 
     Clay_RenderCommandArray commands = Clay_EndLayout();

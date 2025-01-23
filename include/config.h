@@ -50,6 +50,14 @@ extern const Clay_Color COLOR_CURSOR;
 extern const Clay_Color COLOR_DANGER;
 extern const int DEFAULT_PADDING;
 
+
+extern const Clay_Color COLOR_NAV_BACKGROUND;
+extern const Clay_Color COLOR_NAV_ITEM_BACKGROUND;
+extern const Clay_Color COLOR_NAV_ITEM_BACKGROUND_ACTIVE;
+extern const Clay_Color COLOR_NAV_ITEM_TEXT;
+extern const Clay_Color COLOR_NAV_ITEM_TEXT_ACTIVE;
+extern const Clay_Color COLOR_NAV_SHADOW;
+
 // Navigation handler
 void HandleNavInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData);
 
