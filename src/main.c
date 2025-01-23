@@ -9,7 +9,6 @@
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 
-
 CLAY_WASM_EXPORT("UpdateDrawFrame") Clay_RenderCommandArray UpdateDrawFrame(
     float width, 
     float height, 
@@ -38,7 +37,7 @@ int main() {
 #else
 
 #include <SDL.h>
-#include <SDL_ttf.h>  // Added this include for TTF functions
+#include <SDL_ttf.h>  
 
 #ifdef CLAY_MOBILE
 int SDL_main(int argc, char* argv[]) {

@@ -1,6 +1,5 @@
 #include "app.h"
 
-
 #include "clay_extensions.h"
 #include "clay.h"
 bool pages_initialized = false;
@@ -13,13 +12,8 @@ void InitializePages() {
     pages_initialized = true;
 }
 
-void measureTextFunction(Clay_String *text, Clay_TextElementConfig *config) {
-    // Empty implementation - actual measurement happens in JS
-}
-
-void queryScrollOffsetFunction(Clay_ElementId elementId) {
-    // Empty implementation - actual query happens in JS  
-}
+void measureTextFunction(Clay_String *text, Clay_TextElementConfig *config) {}
+void queryScrollOffsetFunction(Clay_ElementId elementId) {}
 
 #else
 void InitializePages(SDL_Renderer* renderer) {
@@ -32,23 +26,32 @@ void InitializePages(SDL_Renderer* renderer) {
 }
 #endif
 
+typedef enum {
+    PAGE_HOME,
+    PAGE_HABITS,
+    PAGE_TODOS,
+    PAGE_TIMELINE,
+    PAGE_ROUTINE,
+    NUM_PAGES
+} PageID;
+
+
 void HandlePageInput(InputEvent event) {
-    switch(ACTIVE_PAGE) {
-        case 0: /* HandleHomePageInput(event); */ break;
-        case 1: HandleHabitsPageInput(event); break;
-        case 2: HandleTodosPageInput(event); break;
-        case 3: /* HandleTimelinePageInput(event); */ break;
-        case 4: /* HandleRoutinePageInput(event); */ break;
+    switch (ACTIVE_PAGE) {
+        case PAGE_HOME: /* HandleHomePageInput(event); */ break;
+        case PAGE_HABITS: HandleHabitsPageInput(event); break;
+        case PAGE_TODOS: HandleTodosPageInput(event); break;
+        case PAGE_TIMELINE: /* HandleTimelinePageInput(event); */ break;
+        case PAGE_ROUTINE: /* HandleRoutinePageInput(event); */ break;
     }
 }
-
 void RenderCurrentPage() {
     switch(ACTIVE_PAGE) {
-        case 0: RenderHomePage(); break;
-        case 1: RenderHabitsPage(); break;
-        case 2: RenderTodosPage(); break;
-        case 3: RenderTimelinePage(); break;
-        case 4: RenderRoutinePage(); break;
+        case PAGE_HOME: RenderHomePage(); break;
+        case PAGE_HABITS: RenderHabitsPage(); break;
+        case PAGE_TODOS: RenderTodosPage(); break;
+        case PAGE_TIMELINE: RenderTimelinePage(); break;
+        case PAGE_ROUTINE: RenderRoutinePage(); break;
     }
 }
 

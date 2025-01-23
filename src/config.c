@@ -6,7 +6,7 @@
 // Configuration variables
 double windowWidth = 350, windowHeight = 768;
 float globalScalingFactor = 1.0f;
-uint32_t ACTIVE_PAGE = 2;
+uint32_t ACTIVE_PAGE = 0;
 uint32_t ACTIVE_RENDERER_INDEX = 0;
 
 // Breakpoints

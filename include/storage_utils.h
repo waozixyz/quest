@@ -12,10 +12,7 @@
 #include <string.h>
 #include <SDL_log.h>
 
-// Maximum length for file paths
-#define MAX_PATH_LENGTH 256
-
-// Application package name (for Android)
+#define MAX_PATH_LENGTH 1024
 #define APP_PACKAGE "xyz.waozi.myquest"
 
 // Storage configuration structure

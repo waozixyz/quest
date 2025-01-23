@@ -1,9 +1,26 @@
 #include "storage_utils.h"
 #include <utils.h>
+#include <assert.h>
 
 #ifndef __EMSCRIPTEN__
 
+// Constants
+#define DIRECTORY_PERMISSIONS 0755
+
+// Helper function to construct file paths safely
+static int construct_file_path(char* dest, size_t dest_size, const char* root_dir, const char* filename) {
+    int result = snprintf(dest, dest_size, "%s/%s", root_dir, filename);
+    if (result < 0 || result >= dest_size) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
+            "Path too long: %s/%s", root_dir, filename);
+        return -1;
+    }
+    return 0;
+}
+
 int ensure_directory_exists(const char* path) {
+    assert(path != NULL);
+
     struct stat st = {0};
     char tmp[MAX_PATH_LENGTH];
     char *p = NULL;
@@ -24,9 +41,8 @@ int ensure_directory_exists(const char* path) {
             
             // Try to create the parent directory
             if (stat(tmp, &st) == -1) {
-                int mkdir_result = mkdir(tmp, 0755);
+                int mkdir_result = mkdir(tmp, DIRECTORY_PERMISSIONS);
                 if (mkdir_result != 0 && errno != EEXIST) {
-                    // Failed to create directory
                     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
                         "Failed to create directory: %s. Error: %s", 
                         tmp, strerror(errno));
@@ -40,9 +56,8 @@ int ensure_directory_exists(const char* path) {
 
     // Create the final directory
     if (stat(tmp, &st) == -1) {
-        int mkdir_result = mkdir(tmp, 0755);
+        int mkdir_result = mkdir(tmp, DIRECTORY_PERMISSIONS);
         if (mkdir_result != 0 && errno != EEXIST) {
-            // Failed to create directory
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
                 "Failed to create final directory: %s. Error: %s", 
                 tmp, strerror(errno));
@@ -54,6 +69,7 @@ int ensure_directory_exists(const char* path) {
 }
 
 void determine_storage_directory(StorageConfig* config) {
+    assert(config != NULL);
     memset(config, 0, sizeof(StorageConfig));
 
 #if defined(CLAY_MOBILE)
@@ -78,54 +94,40 @@ void determine_storage_directory(StorageConfig* config) {
     }
 
 #else
-    // Desktop platforms with more robust path handling
-    const char* home_dir = NULL;
-    
-    // Try multiple environment variables for home directory
-    home_dir = getenv("HOME");
-    if (!home_dir) home_dir = getenv("USERPROFILE");  // Windows
-    
-    if (home_dir) {
-        // Create nested .myquest directory
-        char full_path[MAX_PATH_LENGTH];
-        snprintf(full_path, sizeof(full_path), "%s/.myquest", home_dir);
-        
-        // Ensure directory exists, creating parent directories if needed
-        if (ensure_directory_exists(full_path) == 0) {
-            strlcpy(config->root_dir, full_path, MAX_PATH_LENGTH);
-        } else {
-            // Fallback to current directory if directory creation fails
-            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, 
-                "Failed to create .myquest directory. Falling back to current directory.");
-            strcpy(config->root_dir, ".");
-        }
+    // Desktop platforms with XDG compliance
+    const char* home_dir = getenv("HOME");
+    const char* xdg_data_home = getenv("XDG_DATA_HOME");
+
+    char full_path[MAX_PATH_LENGTH];
+
+    if (xdg_data_home) {
+        // Use XDG_DATA_HOME if set
+        snprintf(full_path, sizeof(full_path), "%s/myquest", xdg_data_home);
+    } else if (home_dir) {
+        // Fallback to ~/.local/share/myquest if XDG_DATA_HOME is not set
+        snprintf(full_path, sizeof(full_path), "%s/.local/share/myquest", home_dir);
     } else {
-        // Absolute last resort
+        // Absolute last resort: current directory
         SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, 
-            "Could not determine home directory. Using current directory.");
+            "Could not determine home or XDG_DATA_HOME directory. Using current directory.");
+        strcpy(config->root_dir, ".");
+        return;
+    }
+
+    // Ensure the directory exists
+    if (ensure_directory_exists(full_path) == 0) {
+        strlcpy(config->root_dir, full_path, MAX_PATH_LENGTH);
+    } else {
+        // Fallback to current directory if directory creation fails
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, 
+            "Failed to create myquest directory. Falling back to current directory.");
         strcpy(config->root_dir, ".");
     }
 #endif
 
     // Construct specific file paths with error handling
-    int habits_path_result = snprintf(
-        config->habits_path, 
-        MAX_PATH_LENGTH, 
-        "%s/habits.json", 
-        config->root_dir
-    );
-    
-    int todos_path_result = snprintf(
-        config->todos_path, 
-        MAX_PATH_LENGTH, 
-        "%s/todos.json", 
-        config->root_dir
-    );
-
-    // Check for potential buffer overflow
-    if (habits_path_result < 0 || habits_path_result >= MAX_PATH_LENGTH ||
-        todos_path_result < 0 || todos_path_result >= MAX_PATH_LENGTH) {
-        // Handle path too long error
+    if (construct_file_path(config->habits_path, MAX_PATH_LENGTH, config->root_dir, "habits.json") != 0 ||
+        construct_file_path(config->todos_path, MAX_PATH_LENGTH, config->root_dir, "todos.json") != 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
             "Error: Storage path too long. Using default filenames.");
         strcpy(config->habits_path, "habits.json");
@@ -134,6 +136,8 @@ void determine_storage_directory(StorageConfig* config) {
 }
 
 int write_file_contents(const char* path, const char* contents, size_t length) {
+    assert(path != NULL && contents != NULL);
+
     FILE* file = fopen(path, "wb");
     if (!file) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
@@ -154,6 +158,8 @@ int write_file_contents(const char* path, const char* contents, size_t length) {
 }
 
 char* read_file_contents(const char* path, long* file_size) {
+    assert(path != NULL && file_size != NULL);
+
     FILE* file = fopen(path, "rb");
     if (!file) {
         SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, 
