@@ -44,12 +44,16 @@ void CleanupNavIcons() {
     }
 }
 #endif
+
 void RenderNavItem(const char* text, uint32_t pageId) {
     bool isActive = ACTIVE_PAGE == pageId;
-    bool isSmallScreen = windowWidth < BREAKPOINT_SMALL; // Check if the screen is small
+    bool isXSmallScreen = windowWidth < BREAKPOINT_XSMALL; // Check if the screen is very small
+    bool isSmallScreen = windowWidth >= BREAKPOINT_XSMALL && windowWidth < BREAKPOINT_MEDIUM; // Check if the screen is small
+    bool isMediumScreen = windowWidth >= BREAKPOINT_MEDIUM; // Check if the screen is medium or larger
 
-    // Adjust button width based on screen size
-    float buttonWidth = isSmallScreen ? 80.0f : 120.0f; // Wider buttons on larger screens
+    // Adjust button width and padding based on screen size
+    float buttonWidth = isXSmallScreen ? 60.0f : (isSmallScreen ? 80.0f : 120.0f); // Wider buttons on larger screens
+    float padding = isXSmallScreen ? 4.0f : 8.0f; // Smaller padding on very small screens
 
     Clay_TextElementConfig *text_config = CLAY_TEXT_CONFIG({ 
         .fontSize = 14, // Smaller text for compact design
@@ -60,7 +64,7 @@ void RenderNavItem(const char* text, uint32_t pageId) {
     
     CLAY(CLAY_IDI("Nav", pageId), 
         CLAY_LAYOUT({ 
-            .padding = {8, 8}, // Compact padding
+            .padding = {padding, padding}, // Dynamic padding
             .childGap = 4, // Smaller gap between icon and text
             .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER },
             .sizing = { CLAY_SIZING_FIXED(buttonWidth), CLAY_SIZING_FIXED(60) } // Dynamic width for each nav item
@@ -92,19 +96,22 @@ void RenderNavItem(const char* text, uint32_t pageId) {
         #endif
         ) {}
 
-        // Show text below the icon only if the screen is not small
-        if (!isSmallScreen) {
+        // Show text below the icon only if the screen is medium or larger
+        if (isMediumScreen) {
             Clay_String nav_text = { .chars = text, .length = strlen(text) };
             CLAY_TEXT(nav_text, text_config);
         }
     }
 }
+
 void RenderNavigationMenu() {
+    bool isXSmallScreen = windowWidth < BREAKPOINT_XSMALL; // Check if the screen is very small
+
     CLAY(CLAY_ID("BottomNavigation"), 
         CLAY_LAYOUT({ 
-            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIXED(80) }, // Taller bar
+            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIXED(isXSmallScreen ? 60.0f : 80.0f) }, // Shorter bar on very small screens
             .childGap = 0, // No gap between items
-            .padding = { 8, 8, 8, 8 }, // Compact padding
+            .padding = { isXSmallScreen ? 4.0f : 8.0f, isXSmallScreen ? 4.0f : 8.0f }, // Smaller padding on very small screens
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER },
             .layoutDirection = CLAY_LEFT_TO_RIGHT // Horizontal layout
         }),
@@ -120,7 +127,6 @@ void RenderNavigationMenu() {
         RenderNavItem("Habits", 1);
         RenderNavItem("Todos", 2);
         RenderNavItem("Home", 0);
-
         RenderNavItem("Timeline", 3);
         RenderNavItem("Routine", 4);
     }

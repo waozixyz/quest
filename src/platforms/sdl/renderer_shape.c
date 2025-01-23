@@ -147,21 +147,44 @@ void RenderBorder(
         SDL_RenderFillRectF(renderer, &rightRect);
     }
 }
-
 void RenderRoundedRectangle(
     SDL_Renderer* renderer, 
     SDL_FRect rect,
     Clay_CornerRadius cornerRadius,
-    Clay_Color color
+    Clay_Color color,
+    bool shadowEnabled,
+    Clay_Color shadowColor,
+    Clay_Vector2 shadowOffset,
+    float shadowBlurRadius,
+    float shadowSpread
 ) {
-    float radius = cornerRadius.topLeft * renderScaleFactor;
-    
+    // Render the shadow if enabled
+    if (shadowEnabled) {
+        // Calculate the shadow rectangle dimensions
+        SDL_FRect shadowRect = {
+            .x = rect.x + shadowOffset.x - shadowBlurRadius - shadowSpread,
+            .y = rect.y + shadowOffset.y - shadowBlurRadius - shadowSpread,
+            .w = rect.w + (shadowBlurRadius + shadowSpread) * 2,
+            .h = rect.h + (shadowBlurRadius + shadowSpread) * 2
+        };
+
+        // Render the shadow as a rounded rectangle
+        roundedBoxRGBA(renderer,
+            shadowRect.x,
+            shadowRect.y,
+            shadowRect.x + shadowRect.w,
+            shadowRect.y + shadowRect.h,
+            cornerRadius.topLeft * renderScaleFactor, // Use the same corner radius as the rectangle
+            shadowColor.r, shadowColor.g, shadowColor.b, shadowColor.a);
+    }
+
+    // Render the main rectangle
     roundedBoxRGBA(renderer,
         rect.x,
         rect.y,
         rect.x + rect.w,
         rect.y + rect.h,
-        radius,
+        cornerRadius.topLeft * renderScaleFactor,
         color.r, color.g, color.b, color.a);
 }
 

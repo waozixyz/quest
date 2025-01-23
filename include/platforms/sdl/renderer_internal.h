@@ -56,7 +56,12 @@ void RenderRoundedRectangle(
     SDL_Renderer* renderer, 
     SDL_FRect rect,
     Clay_CornerRadius cornerRadius,
-    Clay_Color color
+    Clay_Color color,
+    bool shadowEnabled,
+    Clay_Color shadowColor,
+    Clay_Vector2 shadowOffset,
+    float shadowBlurRadius,
+    float shadowSpread
 );
 
 void RenderScrollbar(

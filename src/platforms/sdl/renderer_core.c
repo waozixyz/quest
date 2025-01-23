@@ -98,14 +98,25 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
                     fprintf(stderr, "Error: Rectangle config is NULL\n");
                     continue;
                 }
-                            
+
                 if (config->cursorPointer && 
                     mouseX >= boundingBox.x && mouseX <= boundingBox.x + boundingBox.width &&
                     mouseY >= boundingBox.y && mouseY <= boundingBox.y + boundingBox.height) {
                     hasPointerElement = true;
                 }
 
-                RenderRoundedRectangle(renderer, scaledBox, config->cornerRadius, config->color);
+                // Pass shadow parameters to RenderRoundedRectangle
+                RenderRoundedRectangle(
+                    renderer, 
+                    scaledBox, 
+                    config->cornerRadius, 
+                    config->color,
+                    config->shadowEnabled, // Shadow enabled
+                    config->shadowColor,   // Shadow color
+                    config->shadowOffset,  // Shadow offset
+                    config->shadowBlurRadius, // Shadow blur radius
+                    config->shadowSpread   // Shadow spread
+                );
                 break;
             }
             case CLAY_RENDER_COMMAND_TYPE_TEXT: {

@@ -30,6 +30,8 @@ static cJSON* HabitToJSON(const Habit* habit) {
     cJSON_AddNumberToObject(color, "a", habit->color.a);
     cJSON_AddItemToObject(habitObj, "color", color);
 
+    cJSON_AddNumberToObject(habitObj, "start_date", (double)habit->start_date);  // Add start_date
+
     cJSON* days = cJSON_CreateArray();
     for (size_t i = 0; i < habit->days_count; i++) {
         cJSON* day = cJSON_CreateObject();
@@ -42,7 +44,6 @@ static cJSON* HabitToJSON(const Habit* habit) {
 
     return habitObj;
 }
-
 static void SaveHabitsJSON(const HabitCollection* collection) {
     if (!collection) return;
 
@@ -51,7 +52,6 @@ static void SaveHabitsJSON(const HabitCollection* collection) {
 
     cJSON* root = cJSON_CreateObject();
     cJSON_AddNumberToObject(root, "active_habit_id", collection->active_habit_id);
-    cJSON_AddNumberToObject(root, "calendar_start_date", (double)collection->calendar_start_date);
     
     cJSON* habits = cJSON_CreateArray();
     for (size_t i = 0; i < collection->habits_count; i++) {
@@ -77,6 +77,14 @@ static void LoadHabitFromJSON(Habit* habit, cJSON* habitObj) {
     habit->color.b = cJSON_GetObjectItem(color, "b")->valuedouble;
     habit->color.a = cJSON_GetObjectItem(color, "a")->valuedouble;
 
+    // Load start_date if it exists, otherwise set to current time
+    cJSON* start_date = cJSON_GetObjectItem(habitObj, "start_date");
+    if (start_date) {
+        habit->start_date = (time_t)start_date->valuedouble;
+    } else {
+        habit->start_date = time(NULL);
+    }
+
     cJSON* days = cJSON_GetObjectItem(habitObj, "calendar_days");
     habit->days_count = 0;
     cJSON* day;
@@ -89,17 +97,14 @@ static void LoadHabitFromJSON(Habit* habit, cJSON* habitObj) {
         habitDay->completed = cJSON_IsTrue(cJSON_GetObjectItem(day, "completed"));
     }
 }
-
 static void CreateDefaultHabitsJSON(HabitCollection* defaultCollection) {
     Habit* default_habit = &defaultCollection->habits[0];
     strncpy(default_habit->name, "Meditation", MAX_HABIT_NAME - 1);
     default_habit->id = 0;
     default_habit->color = COLOR_PRIMARY;
     default_habit->days_count = 0;
-    defaultCollection->habits_count = 1;
-    defaultCollection->active_habit_id = 0;
 
-    // Set calendar start date to the most recent past Monday
+    // Set the start date to the most recent past Monday
     time_t now = time(NULL);
     struct tm *local_time = localtime(&now);
     struct tm start_date = *local_time;
@@ -108,11 +113,13 @@ static void CreateDefaultHabitsJSON(HabitCollection* defaultCollection) {
     start_date.tm_sec = 0;
     int days_to_monday = start_date.tm_wday == 0 ? 6 : start_date.tm_wday - 1;
     start_date.tm_mday -= days_to_monday;
-    defaultCollection->calendar_start_date = mktime(&start_date);
+    default_habit->start_date = mktime(&start_date);
+
+    defaultCollection->habits_count = 1;
+    defaultCollection->active_habit_id = 0;
 
     SaveHabitsJSON(defaultCollection);
 }
-
 static void LoadHabitsJSON(HabitCollection* collection) {
     StorageConfig storage_config;
     determine_storage_directory(&storage_config);
@@ -147,25 +154,9 @@ static void LoadHabitsJSON(HabitCollection* collection) {
         LoadHabitFromJSON(&collection->habits[collection->habits_count++], habit);
     }
 
-    // Check if calendar_start_date exists in the JSON
-    cJSON* start_date = cJSON_GetObjectItem(root, "calendar_start_date");
-    if (start_date) {
-        collection->calendar_start_date = (time_t)start_date->valuedouble;
-    } else {
-        // If not present, set it to the most recent past Monday
-        time_t now = time(NULL);
-        struct tm *local_time = localtime(&now);
-        struct tm start_tm = *local_time;
-        start_tm.tm_hour = 0;
-        start_tm.tm_min = 0;
-        start_tm.tm_sec = 0;
-        int days_to_monday = start_tm.tm_wday == 0 ? 6 : start_tm.tm_wday - 1;
-        start_tm.tm_mday -= days_to_monday;
-        collection->calendar_start_date = mktime(&start_tm);
-    }
-
     cJSON_Delete(root);
 }
+
 #endif
 void DeleteHabit(HabitCollection* collection, uint32_t habit_id) {
     if (!collection) return;
@@ -210,7 +201,6 @@ void DeleteHabit(HabitCollection* collection, uint32_t habit_id) {
         SaveHabits(collection);
     #endif
 }
-
 void AddNewHabit(HabitCollection* collection) {
     if (!collection || collection->habits_count >= MAX_HABITS) return;
         
@@ -223,6 +213,9 @@ void AddNewHabit(HabitCollection* collection) {
         new_habit->id = collection->habits_count;  // ID matches position
         new_habit->color = COLOR_PRIMARY;
         new_habit->days_count = 0;
+
+        // Set the start date to the current time
+        new_habit->start_date = time(NULL);
         
         collection->habits_count++;
         collection->active_habit_id = new_habit->id;
@@ -272,8 +265,6 @@ void LoadHabits(HabitCollection* collection) {
         collection->active_habit_id = 0;
     }
 }
-
-
 bool ToggleHabitDay(HabitCollection* collection, uint32_t day_index) {
     if (!collection) return false;
     
@@ -310,8 +301,12 @@ bool ToggleHabitDay(HabitCollection* collection, uint32_t day_index) {
 
 void UpdateCalendarStartDate(HabitCollection* collection, time_t new_start_date) {
     if (!collection) return;
-    collection->calendar_start_date = new_start_date;
-    SaveHabits(collection);
+    
+    Habit* habit = GetActiveHabit(collection);
+    if (habit) {
+        habit->start_date = new_start_date;
+        SaveHabits(collection);
+    }
 }
 
 void UpdateHabitColor(HabitCollection* collection, Clay_Color color) {

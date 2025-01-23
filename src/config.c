@@ -13,6 +13,7 @@ uint32_t ACTIVE_RENDERER_INDEX = 0;
 const float BREAKPOINT_LARGE = 1024.0f;
 const float BREAKPOINT_MEDIUM = 640.0f;
 const float BREAKPOINT_SMALL = 480.0f;
+const float BREAKPOINT_XSMALL = 420.0f;
 
 // Font IDs
 const uint32_t FONT_ID_BODY_16 = 0;

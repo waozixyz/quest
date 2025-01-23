@@ -521,21 +521,32 @@ void CleanupHabitTabBar(void) {
 }
 
 void HandleDateChange(time_t new_date) {
-    habits.calendar_start_date = new_date;
-    SaveHabits(&habits);
+    Habit* active_habit = GetActiveHabit(&habits);
+    if (active_habit) {
+        active_habit->start_date = new_date;
+        SaveHabits(&habits);
+    }
 }
-
 #ifdef __EMSCRIPTEN__
 void InitializeHabitsPage() {
     LoadHabits(&habits);
     habits.habit_name_input = CreateTextInput(NULL, HandleHabitNameSubmit);
-    InitializeDatePicker(habits.calendar_start_date, HandleDateChange, &date_picker_modal);
+
+    Habit* active_habit = GetActiveHabit(&habits);
+    if (active_habit) {
+        InitializeDatePicker(active_habit->start_date, HandleDateChange, &date_picker_modal);
+    }
 }
 #else
 void InitializeHabitsPage(SDL_Renderer* renderer) {
     LoadHabits(&habits);
     habits.habit_name_input = CreateTextInput(NULL, HandleHabitNameSubmit);
-    InitializeDatePicker(habits.calendar_start_date, HandleDateChange, &date_picker_modal);
+
+    Habit* active_habit = GetActiveHabit(&habits);
+    if (active_habit) {
+        InitializeDatePicker(active_habit->start_date, HandleDateChange, &date_picker_modal);
+    }
+
     InitializeHabitTabBar(renderer);
 }
 #endif
@@ -595,7 +606,8 @@ void RenderHabitsPage() {
     today_midnight.tm_sec = 0;
     time_t today_timestamp = mktime(&today_midnight);
 
-    struct tm *start_tm = localtime(&habits.calendar_start_date);
+    // Use the active habit's start_date
+    struct tm *start_tm = localtime(&active_habit->start_date);
     struct tm start_date = *start_tm;
 
     const int WEEKS_TO_DISPLAY = 10;
@@ -632,7 +644,7 @@ void RenderHabitsPage() {
             })
         ) {
             RenderColorPicker(active_habit->color, HandleColorChange, &color_picker_modal);
-            RenderDatePicker(habits.calendar_start_date, HandleDateChange, &date_picker_modal);
+            RenderDatePicker(active_habit->start_date, HandleDateChange, &date_picker_modal);  // Use active habit's start_date
             RenderDeleteHabitModal();
         }
 

@@ -30,6 +30,7 @@ typedef struct {
     Clay_Color color;
     HabitDay calendar_days[MAX_CALENDAR_DAYS];
     size_t days_count;
+    time_t start_date;
 } Habit;
 
 // Collection of all habits
@@ -39,7 +40,6 @@ typedef struct {
     uint32_t active_habit_id;
     bool is_editing_new_habit;
     TextInput* habit_name_input;
-    time_t calendar_start_date;  
 } HabitCollection;
 
 

@@ -15,6 +15,7 @@ extern uint32_t ACTIVE_RENDERER_INDEX;
 extern const float BREAKPOINT_LARGE;
 extern const float BREAKPOINT_MEDIUM;
 extern const float BREAKPOINT_SMALL;
+extern const float BREAKPOINT_XSMALL;
 
 // Font IDs
 extern const uint32_t FONT_ID_BODY_16;
