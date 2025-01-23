@@ -146,6 +146,7 @@ target("main")
             os.cp("manifest.json", "build/clay")
             os.cp("fonts", "build/clay")
             os.cp("images", "build/clay")
+            os.cp("scripts", "build/clay")
         end)
     else
         set_kind("binary")

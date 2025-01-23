@@ -66,6 +66,7 @@ jobs:
           cp manifest.json netlify-build/
           cp -r fonts netlify-build/
           cp -r images netlify-build/
+          cp -r scripts netlify-build/
 
       # Step 7: Deploy to Netlify
       - name: Deploy to Netlify
