@@ -3,7 +3,6 @@
 #include "config.h"
 #include "utils.h"
 
-#include "avatar_renderer.h"
 
 
 float CalculateHabitCompletion(const Habit* habit) {
@@ -130,44 +129,6 @@ void RenderHomePage() {
                 .cornerRadius = CLAY_CORNER_RADIUS(8)
             })
         ) {
-            // Custom avatar renderer
-            CLAY(CLAY_ID("AvatarRenderer"),
-                CLAY_LAYOUT({
-                    .sizing = { CLAY_SIZING_FIXED(200), CLAY_SIZING_FIXED(200) }
-                }),
-                CLAY_CUSTOM_ELEMENT({
-                    .drawCallback = RenderProfileAvatar,
-                    .userData = 0
-                })
-            ) {}
-
-            // Username
-            CLAY(CLAY_LAYOUT({
-                .sizing = { CLAY_SIZING_FIT(), CLAY_SIZING_FIT() },
-                .padding = { 8, 8, 8, 8 }
-            })) {
-                CLAY_TEXT(CLAY_STRING("Anonymous"), 
-                    CLAY_TEXT_CONFIG({
-                        .fontSize = 24,
-                        .fontId = FONT_ID_BODY_24,
-                        .textColor = COLOR_TEXT
-                    })
-                );
-            }
-
-            // Level 
-            CLAY(CLAY_LAYOUT({
-                .sizing = { CLAY_SIZING_FIT(), CLAY_SIZING_FIT() }
-            })) {
-                CLAY_TEXT(CLAY_STRING("Level 1"), 
-                    CLAY_TEXT_CONFIG({
-                        .fontSize = 18,
-                        .fontId = FONT_ID_BODY_18,
-                        .textColor = COLOR_TEXT_SECONDARY
-                    })
-                );
-            }
-
             // Stats container
             CLAY(CLAY_ID("StatsContainer"),
                 CLAY_LAYOUT({
