@@ -603,7 +603,6 @@ void RenderHabitsPage() {
     today_midnight.tm_min = 0;
     today_midnight.tm_sec = 0;
     time_t today_timestamp = mktime(&today_midnight);
-printf("Today's midnight timestamp: %ld\n", today_timestamp);
 
 
     // Use the active habit's start_date
