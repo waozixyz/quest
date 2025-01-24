@@ -7,6 +7,7 @@ bool pages_initialized = false;
 #ifdef __EMSCRIPTEN__
 void InitializePages() {
     if (pages_initialized) return;
+    InitializeHomePage(); 
     InitializeHabitsPage();
     InitializeTodosPage();
     pages_initialized = true;
@@ -19,6 +20,7 @@ void queryScrollOffsetFunction(Clay_ElementId elementId) {}
 void InitializePages(SDL_Renderer* renderer) {
     if (pages_initialized) return;
     SDL_Log("Initializing pages...\n");
+    InitializeHomePage();  
     InitializeHabitsPage(renderer);
     InitializeTodosPage(renderer);
     pages_initialized = true;
@@ -38,7 +40,7 @@ typedef enum {
 
 void HandlePageInput(InputEvent event) {
     switch (ACTIVE_PAGE) {
-        case PAGE_HOME: /* HandleHomePageInput(event); */ break;
+        case PAGE_HOME: HandleHomePageInput(event); break;
         case PAGE_HABITS: HandleHabitsPageInput(event); break;
         case PAGE_TODOS: HandleTodosPageInput(event); break;
         case PAGE_TIMELINE: /* HandleTimelinePageInput(event); */ break;
@@ -59,6 +61,8 @@ void CleanupPages() {
     #ifndef __EMSCRIPTEN__
     SDL_Log("Cleaning up pages...\n");
     #endif
+
+    CleanupHomePage();
     CleanupHabitsPage();
     CleanupTodosPage();
     pages_initialized = false;
@@ -101,7 +105,7 @@ void RunGameLoop(SDL_Window* window, SDL_Renderer* renderer) {
     SDL_Log("RunGameLoop started\n");
 
     InitializeSDL(window, renderer);
-
+    SetSDLRenderer(renderer); 
     uint32_t minSize = Clay_MinMemorySize();
     uint32_t mobileMultiplier = 2;
     uint32_t recommendedSize = minSize + (minSize * mobileMultiplier);

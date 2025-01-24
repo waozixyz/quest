@@ -13,7 +13,7 @@
 #include <SDL_log.h>
 
 #define MAX_PATH_LENGTH 1024
-#define APP_PACKAGE "xyz.waozi.myquest"
+#define APP_PACKAGE "io.naox.quest"
 
 // Storage configuration structure
 typedef struct {

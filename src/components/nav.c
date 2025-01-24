@@ -55,9 +55,16 @@ void RenderNavItem(const char* text, uint32_t pageId) {
     float buttonWidth = isXSmallScreen ? 60.0f : (isSmallScreen ? 80.0f : 120.0f); // Wider buttons on larger screens
     float padding = isXSmallScreen ? 4.0f : 8.0f; // Smaller padding on very small screens
 
+    // Adjust text size and font ID based on screen size
+    int fontSize = isMediumScreen ? 18 : 14; // Larger text on medium screens
+    uint32_t fontId = isMediumScreen ? FONT_ID_BODY_18 : FONT_ID_BODY_14; // Corresponding font ID
+
+    // Adjust spacing between icon and text based on screen size
+    float childGap = isMediumScreen ? 8.0f : 4.0f; // More spacing between icon and text on medium screens
+
     Clay_TextElementConfig *text_config = CLAY_TEXT_CONFIG({ 
-        .fontSize = 14, // Smaller text for compact design
-        .fontId = FONT_ID_BODY_14,
+        .fontSize = fontSize, // Dynamic text size
+        .fontId = fontId, // Dynamic font ID
         .textColor = isActive ? COLOR_NAV_ITEM_TEXT_ACTIVE : COLOR_NAV_ITEM_TEXT, // Highlight active text
         .disablePointerEvents = true 
     });
@@ -65,7 +72,7 @@ void RenderNavItem(const char* text, uint32_t pageId) {
     CLAY(CLAY_IDI("Nav", pageId), 
         CLAY_LAYOUT({ 
             .padding = {padding, padding}, // Dynamic padding
-            .childGap = 4, // Smaller gap between icon and text
+            .childGap = childGap, // Dynamic gap between icon and text
             .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER },
             .sizing = { CLAY_SIZING_FIXED(buttonWidth), CLAY_SIZING_FIXED(60) } // Dynamic width for each nav item
         }), 

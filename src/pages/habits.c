@@ -597,14 +597,14 @@ void RenderHabitsPage() {
     time_t now;
     time(&now);
 
-    struct tm today_midnight = {0};
-    time_t now_time;
-    time(&now_time);
-    today_midnight = *localtime(&now_time);
+
+    struct tm today_midnight = *localtime(&now);
     today_midnight.tm_hour = 0;
     today_midnight.tm_min = 0;
     today_midnight.tm_sec = 0;
     time_t today_timestamp = mktime(&today_midnight);
+printf("Today's midnight timestamp: %ld\n", today_timestamp);
+
 
     // Use the active habit's start_date
     struct tm *start_tm = localtime(&active_habit->start_date);
@@ -717,6 +717,11 @@ void RenderHabitsPage() {
                 int total_weeks = (total_days + 6) / 7;
 
                 struct tm current = start_date;
+
+                current.tm_hour = 0;
+                current.tm_min = 0;
+                current.tm_sec = 0;
+
                 int unique_index = 0;
 
                 for (int row = 0; row < total_weeks; row++) {

@@ -1,5 +1,5 @@
 -- Project config
-set_project("MyQuest")
+set_project("Quest")
 set_version("1.0")
 set_languages("c99")
 add_rules("mode.debug", "mode.release")

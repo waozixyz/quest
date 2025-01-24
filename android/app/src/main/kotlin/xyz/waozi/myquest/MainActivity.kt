@@ -1,4 +1,4 @@
-package xyz.waozi.myquest
+package io.naox.quest
 
 import android.content.res.AssetManager
 import android.os.Bundle

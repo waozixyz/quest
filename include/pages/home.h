@@ -1,9 +1,17 @@
+// home.h
 #ifndef HOME_PAGE_H
 #define HOME_PAGE_H
 
-#include "../config.h"  
-#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include "state/habits_state.h"
 
-void RenderHomePage();
+
+extern HabitCollection habits; 
+
+void InitializeHomePage(void);
+void CleanupHomePage(void);
+void RenderHomePage(void);
+void HandleHomePageInput(InputEvent event);
 
 #endif

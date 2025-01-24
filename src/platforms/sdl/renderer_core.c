@@ -247,6 +247,16 @@ void Clay_SDL2_Render(SDL_Renderer *renderer, Clay_RenderCommandArray renderComm
                 break;
             }
 
+
+            case CLAY_RENDER_COMMAND_TYPE_CUSTOM: {
+                Clay_CustomElementConfig *config = renderCommand->config.customElementConfig;
+                if (!config || !config->drawCallback) {
+                    fprintf(stderr, "Error: Custom element config or callback is NULL\n");
+                    continue;
+                }
+                config->drawCallback(renderCommand, config->userData);
+                break;
+            }
             default: {
                 fprintf(stderr, "Error: unhandled render command: %d\n", renderCommand->commandType);
                 exit(1);

@@ -62,7 +62,7 @@ int SDL_main(int argc, char* argv[]) {
     windowHeight = displayMode.h / globalScalingFactor;
     
     SDL_Window* window = SDL_CreateWindow(
-        "myQuest", 
+        "Quest", 
         SDL_WINDOWPOS_UNDEFINED, 
         SDL_WINDOWPOS_UNDEFINED, 
         displayMode.w,
@@ -94,7 +94,7 @@ int main() {
     }
 
     SDL_Window* window = SDL_CreateWindow(
-        "myQuest",
+        "Quest",
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
         windowWidth,

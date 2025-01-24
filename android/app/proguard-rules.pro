@@ -1,3 +1,3 @@
 # android/app/proguard-rules.pro
--keep class xyz.waozi.myquest.** { *; }
+-keep class io.naox.quest.** { *; }
 -keep class org.libsdl.** { *; }

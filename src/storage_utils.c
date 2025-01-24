@@ -102,10 +102,10 @@ void determine_storage_directory(StorageConfig* config) {
 
     if (xdg_data_home) {
         // Use XDG_DATA_HOME if set
-        snprintf(full_path, sizeof(full_path), "%s/myquest", xdg_data_home);
+        snprintf(full_path, sizeof(full_path), "%s/quest", xdg_data_home);
     } else if (home_dir) {
-        // Fallback to ~/.local/share/myquest if XDG_DATA_HOME is not set
-        snprintf(full_path, sizeof(full_path), "%s/.local/share/myquest", home_dir);
+        // Fallback to ~/.local/share/quest if XDG_DATA_HOME is not set
+        snprintf(full_path, sizeof(full_path), "%s/.local/share/quest", home_dir);
     } else {
         // Absolute last resort: current directory
         SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, 
@@ -120,7 +120,7 @@ void determine_storage_directory(StorageConfig* config) {
     } else {
         // Fallback to current directory if directory creation fails
         SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, 
-            "Failed to create myquest directory. Falling back to current directory.");
+            "Failed to create quest directory. Falling back to current directory.");
         strcpy(config->root_dir, ".");
     }
 #endif

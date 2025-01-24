@@ -4,7 +4,7 @@
 #include "utils.h"
 
 JNIEXPORT void JNICALL 
-Java_xyz_waozi_myquest_MainActivity_nativeSetAssetManager(
+Java_io_naox_quest_MainActivity_nativeSetAssetManager(
     JNIEnv* env, jclass clazz, jobject asset_manager) {
     
     SDL_Log("Native: nativeSetAssetManager called");

@@ -1,6 +1,6 @@
 {
-    "name": "myQuest",
-    "short_name": "myQuest",
+    "name": "Quest",
+    "short_name": "Quest",
     "description": "A personal life management app focused on habit tracking, task organization, and life visualization tools.",
     "start_url": "/",
     "display": "standalone",

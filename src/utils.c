@@ -63,6 +63,17 @@ void FreeAligned(void *ptr) {
 #include <unicode/uchar.h>
 #include <unicode/ustring.h>
 
+
+static SDL_Renderer* g_sdl_renderer = NULL;
+
+SDL_Renderer* GetSDLRenderer(void) {
+    return g_sdl_renderer;
+}
+
+void SetSDLRenderer(SDL_Renderer* renderer) {
+    g_sdl_renderer = renderer;
+}
+
 #if defined(CLAY_MOBILE)
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>

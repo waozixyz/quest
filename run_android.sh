@@ -51,7 +51,7 @@ adb install -r "$APK"
 cd ../../../../
 
 echo "Starting app..."
-adb shell am start -n xyz.waozi.myquest/.MainActivity
+adb shell am start -n io.naox.quest/.MainActivity
 
 echo "Showing logs..."
 adb logcat -c

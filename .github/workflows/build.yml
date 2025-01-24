@@ -108,13 +108,13 @@ jobs:
       - name: Rename APK
         run: |
           cd android/app/build/outputs/apk/release/
-          mv app-${{ matrix.abi }}-release.apk myquest-${{ matrix.abi }}-release.apk
+          mv app-${{ matrix.abi }}-release.apk quest-${{ matrix.abi }}-release.apk
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
         with:
           name: android-release-apk-${{ matrix.abi }}
-          path: android/app/build/outputs/apk/release/myquest-${{ matrix.abi }}-release.apk
+          path: android/app/build/outputs/apk/release/quest-${{ matrix.abi }}-release.apk
 
   linux-build:
     runs-on: ubuntu-latest
@@ -150,19 +150,19 @@ jobs:
         run: |
           xmake f -p linux -y
           xmake -y
-          mkdir -p artifacts/myquest-linux-x86_64
-          cp build/clay/main artifacts/myquest-linux-x86_64/myquest
-          cp -r fonts artifacts/myquest-linux-x86_64/
-          cp -r images artifacts/myquest-linux-x86_64/
-          chmod +x artifacts/myquest-linux-x86_64/myquest
+          mkdir -p artifacts/quest-linux-x86_64
+          cp build/clay/main artifacts/quest-linux-x86_64/quest
+          cp -r fonts artifacts/quest-linux-x86_64/
+          cp -r images artifacts/quest-linux-x86_64/
+          chmod +x artifacts/quest-linux-x86_64/quest
           cd artifacts
-          tar czf myquest-linux-x86_64.tar.gz myquest-linux-x86_64/
+          tar czf quest-linux-x86_64.tar.gz quest-linux-x86_64/
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
         with:
           name: linux-x86_64-build
-          path: artifacts/myquest-linux-x86_64.tar.gz
+          path: artifacts/quest-linux-x86_64.tar.gz
 
   create-release:
     needs: [android-build, linux-build]
@@ -197,8 +197,8 @@ jobs:
           draft: false
           prerelease: true
           files: |
-            android-artifacts/android-release-apk-*/myquest-*-release.apk
-            linux-artifacts/linux-x86_64-build/myquest-linux-x86_64.tar.gz
+            android-artifacts/android-release-apk-*/quest-*-release.apk
+            linux-artifacts/linux-x86_64-build/quest-linux-x86_64.tar.gz
 
       - name: Create Tagged Release
         if: startsWith(github.ref, 'refs/tags/')
@@ -212,5 +212,5 @@ jobs:
           prerelease: false
           generate_release_notes: true
           files: |
-            android-artifacts/android-release-apk-*/myquest-*-release.apk
-            linux-artifacts/linux-x86_64-build/myquest-linux-x86_64.tar.gz
+            android-artifacts/android-release-apk-*/quest-*-release.apk
+            linux-artifacts/linux-x86_64-build/quest-linux-x86_64.tar.gz

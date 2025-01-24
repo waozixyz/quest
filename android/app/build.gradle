@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace 'xyz.waozi.myquest'
+    namespace 'io.naox.quest'
     compileSdk 34
 
     dependenciesInfo {
@@ -14,7 +14,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "xyz.waozi.myquest"
+        applicationId "io.naox.quest"
         minSdk 21
         targetSdk 34
         versionCode 1

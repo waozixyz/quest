@@ -1,4 +1,4 @@
-# myQuest
+# Quest
 A personal life management app focused on habit tracking, task organization, and life visualization tools.
 
 ## Features
@@ -30,15 +30,15 @@ Plan and visualize your daily routines:
 
 1. Extract the archive:
 ```bash
-tar xzf myquest-linux-x86_64.tar.gz
+tar xzf quest-linux-x86_64.tar.gz
 ```
 2. Enter the directory:
 ```bash
-cd myquest-linux-x86_64
+cd quest-linux-x86_64
 ```
 3. Run the program:
 ```bash
-./myquest
+./quest
 ```
 Note: Make sure you have SDL2 and its dependencies installed on your system.
 
