@@ -14,7 +14,7 @@ void RenderCard(const char* title, int card_id, bool* is_minimized, void (*rende
     CLAY(CLAY_IDI("Card", card_id),
         CLAY_LAYOUT({
             .sizing = { 
-                windowWidth < BREAKPOINT_SMALL ? CLAY_SIZING_GROW() : CLAY_SIZING_FIXED(800), // Increased from 400 to 800
+                CLAY_SIZING_GROW(),
                 CLAY_SIZING_FIT() 
             },
             .childGap = 16, // Increased from 8 to 16
