@@ -207,15 +207,20 @@ export function renderLoopHTML(memoryDataView, scratchSpaceAddress, renderComman
             case CLAY_RENDER_COMMAND_TYPE_SCISSOR_START: {
                 scissorStack.push({ nextAllocation: { x: renderCommand.boundingBox.x.value, y: renderCommand.boundingBox.y.value }, element, nextElementIndex: 0 });
                 let config = readStructAtAddress(renderCommand.config.value, scrollConfigDefinition);
-
-                if (config.horizontal.value) {
-                    element.style.overflowX = 'scroll';
-                    element.style.pointerEvents = 'auto';
-                }
-                if (config.vertical.value) {
-                    element.style.overflowY = 'scroll';
-                    element.style.pointerEvents = 'auto';
-                }
+            
+                // Need to wait for next frame to check scroll dimensions
+                requestAnimationFrame(() => {
+                    // Compare scroll dimensions vs client dimensions
+                    const needsHorizontalScroll = config.horizontal.value && element.scrollWidth > element.clientWidth;
+                    const needsVerticalScroll = config.vertical.value && element.scrollHeight > element.clientHeight;
+            
+                    // Set overflow properties based on whether scrolling is needed
+                    element.style.overflowX = needsHorizontalScroll ? 'scroll' : 'hidden';
+                    element.style.overflowY = needsVerticalScroll ? 'scroll' : 'hidden';
+                    
+                    // Only enable pointer events if scrolling is needed
+                    element.style.pointerEvents = (needsHorizontalScroll || needsVerticalScroll) ? 'auto' : 'none';
+                });
                 break;
             }
             case CLAY_RENDER_COMMAND_TYPE_SCISSOR_END: {
