@@ -4,14 +4,14 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "state/habits_state.h"
 
+#include "components/card.h"
+#include "components/progress_bar.h"
 
-extern HabitCollection habits; 
-
-void InitializeHomePage(void);
-void CleanupHomePage(void);
-void RenderHomePage(void);
+void InitializeHomePage();
+void CleanupHomePage();
 void HandleHomePageInput(InputEvent event);
+void RenderHomePage();
+float CalculateHabitCompletion(const Habit* habit);
 
 #endif
