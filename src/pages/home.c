@@ -151,8 +151,6 @@ void RenderCard(const char* title, int card_id, bool* is_minimized, void (*rende
     static const Clay_String MINIMIZE_PLUS = { .length = 1, .chars = "+" };
     static const Clay_String MINIMIZE_MINUS = { .length = 1, .chars = "-" };
 
-    float screen_width = (float)windowWidth;
-
     CLAY(CLAY_IDI("Card", card_id),
         CLAY_LAYOUT({
             .sizing = { 
