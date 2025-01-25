@@ -100,70 +100,173 @@ void HandleHomePageInput(InputEvent event) {
     // Handle any home page specific input
 }
 
-void RenderHomePage() {    
-    float screenWidth = (float)windowWidth;
 
-    CLAY(CLAY_ID("HomeScrollContainer"), 
-        CLAY_LAYOUT({ 
-            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
-            .padding = { 32, 32, 32, 32 },
-            .childGap = 32,
+static void HandleMinimizeClick(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        bool* is_minimized = (bool*)userData;
+        *is_minimized = !*is_minimized;
+    }
+}
+
+
+
+static void RenderSettings() {
+    CLAY_TEXT(CLAY_STRING("Settings content coming soon..."),
+        CLAY_TEXT_CONFIG({
+            .fontSize = 14,
+            .fontId = FONT_ID_BODY_14,
+            .textColor = COLOR_TEXT
+        })
+    );
+}
+static void RenderHabitProgress() {
+    // Stats container
+    CLAY(CLAY_ID("StatsContainer"),
+        CLAY_LAYOUT({
+            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT() },
+            .childGap = 12,
+            .layoutDirection = CLAY_TOP_TO_BOTTOM
+        })
+    ) {
+        // Render habit completion stats
+        for (size_t i = 0; i < habits.habits_count; i++) {
+            float completion = CalculateHabitCompletion(&habits.habits[i]);
+            RenderHabitProgressBar(&habits.habits[i], completion);
+        }
+
+        // Show message if no habits exist
+        if (habits.habits_count == 0) {
+            CLAY_TEXT(CLAY_STRING("No habits created yet"), 
+                CLAY_TEXT_CONFIG({
+                    .fontSize = 14,
+                    .fontId = FONT_ID_BODY_14,
+                    .textColor = COLOR_TEXT_SECONDARY
+                })
+            );
+        }
+    }
+}
+
+void RenderCard(const char* title, int card_id, bool* is_minimized, void (*render_content)()) {
+    static const Clay_String MINIMIZE_PLUS = { .length = 1, .chars = "+" };
+    static const Clay_String MINIMIZE_MINUS = { .length = 1, .chars = "-" };
+
+    float screen_width = (float)windowWidth;
+
+    CLAY(CLAY_IDI("Card", card_id),
+        CLAY_LAYOUT({
+            .sizing = { 
+                windowWidth < BREAKPOINT_SMALL ? CLAY_SIZING_GROW() : CLAY_SIZING_FIXED(400),
+                CLAY_SIZING_FIT() 
+            },
+            .childGap = 8,
             .layoutDirection = CLAY_TOP_TO_BOTTOM
         }),
-        CLAY_SCROLL({ .vertical = true })
+        CLAY_RECTANGLE({
+            .color = COLOR_PANEL,
+            .cornerRadius = CLAY_CORNER_RADIUS(8)
+        })
     ) {
-        // Profile container
-        CLAY(CLAY_ID("ProfileContainer"),
-            CLAY_LAYOUT({
-                .sizing = { 
-                    screenWidth < BREAKPOINT_SMALL ? CLAY_SIZING_GROW() : CLAY_SIZING_FIXED(400),
-                    CLAY_SIZING_FIXED(400) 
-                },
-                .padding = { 24, 24, 24, 24 },
-                .childGap = 16,
-                .layoutDirection = CLAY_TOP_TO_BOTTOM,
-                .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
-            }),
-            CLAY_RECTANGLE({
-                .color = COLOR_PANEL,
-                .cornerRadius = CLAY_CORNER_RADIUS(8)
-            })
-        ) {
-            // Stats container
-            CLAY(CLAY_ID("StatsContainer"),
-                CLAY_LAYOUT({
-                    .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT() },
-                    .padding = { 16, 16, 16, 16 },
-                    .childGap = 12,
-                    .layoutDirection = CLAY_TOP_TO_BOTTOM
-                })
-            ) {
-                // Header for stats section
-                CLAY_TEXT(CLAY_STRING("Habit Progress"), 
+        // Card Header
+        CLAY(CLAY_LAYOUT({
+            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIXED(40) },
+            .padding = { 8, 8, 8, 8 },
+            .childGap = 8,
+            .layoutDirection = CLAY_LEFT_TO_RIGHT,
+            .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
+        }),
+        CLAY_RECTANGLE({
+            .color = COLOR_SECONDARY,
+            .cornerRadius = CLAY_CORNER_RADIUS(4)
+        })) {
+            // Title
+            CLAY(CLAY_LAYOUT({
+                .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT() }
+            })) {
+                Clay_String title_str = {
+                    .length = strlen(title),
+                    .chars = title
+                };
+                CLAY_TEXT(title_str, 
                     CLAY_TEXT_CONFIG({
                         .fontSize = 16,
                         .fontId = FONT_ID_BODY_16,
                         .textColor = COLOR_TEXT
                     })
                 );
-
-                // Render habit completion stats
-                for (size_t i = 0; i < habits.habits_count; i++) {
-                    float completion = CalculateHabitCompletion(&habits.habits[i]);
-                    RenderHabitProgressBar(&habits.habits[i], completion);
-                }
-
-                // Show message if no habits exist
-                if (habits.habits_count == 0) {
-                    CLAY_TEXT(CLAY_STRING("No habits created yet"), 
+            }
+            
+            // Minimize button
+            CLAY(CLAY_IDI("MinimizeButton", card_id),
+                CLAY_LAYOUT({
+                    .sizing = { CLAY_SIZING_FIXED(24), CLAY_SIZING_FIXED(24) },
+                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }
+                }),
+                CLAY_RECTANGLE({
+                    .color = Clay_Hovered() ? COLOR_PRIMARY_HOVER : COLOR_PANEL,
+                    .cornerRadius = CLAY_CORNER_RADIUS(4),
+                    .cursorPointer = true
+                }),
+                Clay_OnHover(HandleMinimizeClick, (intptr_t)is_minimized)
+            ) {
+                CLAY(CLAY_LAYOUT({
+                    .sizing = { CLAY_SIZING_FIT(), CLAY_SIZING_FIT() },
+                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }
+                })) {
+                    CLAY_TEXT(
+                        *is_minimized ? MINIMIZE_PLUS : MINIMIZE_MINUS,
                         CLAY_TEXT_CONFIG({
-                            .fontSize = 14,
-                            .fontId = FONT_ID_BODY_14,
-                            .textColor = COLOR_TEXT_SECONDARY
+                            .fontSize = 16,
+                            .fontId = FONT_ID_BODY_16,
+                            .textColor = COLOR_TEXT
                         })
                     );
                 }
             }
         }
+
+        // Card Content
+        if (!*is_minimized) {
+            CLAY(CLAY_LAYOUT({
+                .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT() },
+                .padding = { 16, 16, 16, 16 }
+            })) {
+                render_content();
+            }
+        }
     }
 }
+
+static void RenderQuestDescription() {
+    CLAY_TEXT(CLAY_STRING("Quest is a personal life management app focused on habit tracking, task organization, and life visualization tools. Build better habits, organize your tasks, and visualize your life journey all in one place."),
+        CLAY_TEXT_CONFIG({
+            .fontSize = 14,
+            .fontId = FONT_ID_BODY_14,
+            .textColor = COLOR_TEXT
+        })
+    );
+}
+
+
+
+void RenderHomePage() {
+    static bool quest_minimized = false;
+    static bool progress_minimized = false;
+    static bool settings_minimized = true;
+
+    CLAY(CLAY_ID("HomeScrollContainer"), 
+        CLAY_LAYOUT({ 
+            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
+            .padding = { 32, 32, 32, 32 },
+            .childGap = 16,
+            .layoutDirection = CLAY_TOP_TO_BOTTOM,
+            .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
+        }),
+        CLAY_SCROLL({ .vertical = true })
+    ) {
+        RenderCard("Quest", 1, &quest_minimized, RenderQuestDescription);
+        RenderCard("Habit Progress", 2, &progress_minimized, RenderHabitProgress);
+        RenderCard("Settings", 3, &settings_minimized, RenderSettings);
+    }
+}
+
