@@ -50,24 +50,5 @@ void RenderHabitProgressBar(const Habit* habit, float completion) {
         }
 
         RenderProgressBar(completion, habit->color);
-
-        // Percentage text
-        CLAY(CLAY_LAYOUT({
-            .sizing = { CLAY_SIZING_FIXED(50), CLAY_SIZING_FIT() }
-        })) {
-            char percent_str[8];
-            snprintf(percent_str, sizeof(percent_str), "%.0f%%", completion * 100);
-            Clay_String percent_text = {
-                .length = strlen(percent_str),
-                .chars = percent_str
-            };
-            CLAY_TEXT(percent_text,
-                CLAY_TEXT_CONFIG({
-                    .fontSize = 14,
-                    .fontId = FONT_ID_BODY_14,
-                    .textColor = COLOR_TEXT_SECONDARY
-                })
-            );
-        }
     }
 }

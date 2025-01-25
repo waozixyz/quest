@@ -17,7 +17,7 @@
 
 // Represents a single day's completion status for a habit
 typedef struct {
-    uint32_t date;      // Unix timestamp
+    time_t date;      // Unix timestamp
     uint32_t day_index; // Index in the calendar grid
     bool completed;
     uint8_t padding[3]; // For alignment
@@ -53,7 +53,7 @@ void AddNewHabit(HabitCollection* collection);
 Habit* GetHabitById(HabitCollection* collection, uint32_t id);
 void UpdateCalendarStartDate(HabitCollection* collection, time_t new_start_date);
 void DeleteHabit(HabitCollection* collection, uint32_t habit_id);
-
+bool IsHabitCompletedForDate(const Habit* habit, time_t date);
 
 // Platform-specific initialization
 #ifndef __EMSCRIPTEN__

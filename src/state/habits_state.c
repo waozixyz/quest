@@ -265,6 +265,28 @@ void LoadHabits(HabitCollection* collection) {
         collection->active_habit_id = 0;
     }
 }
+bool IsHabitCompletedForDate(const Habit* habit, time_t date) {
+    // Normalize input date to midnight
+    struct tm tmp = *localtime(&date);
+    tmp.tm_hour = 0;
+    tmp.tm_min = 0;
+    tmp.tm_sec = 0;
+    time_t normalized_date = mktime(&tmp);
+    
+    for (size_t i = 0; i < habit->days_count; i++) {
+        // Normalize stored date to midnight
+        struct tm stored = *localtime(&habit->calendar_days[i].date);
+        stored.tm_hour = 0;
+        stored.tm_min = 0;
+        stored.tm_sec = 0;
+        time_t stored_date = mktime(&stored);
+        
+        if (stored_date == normalized_date && habit->calendar_days[i].completed) {
+            return true;
+        }
+    }
+    return false;
+}
 bool ToggleHabitDay(HabitCollection* collection, uint32_t day_index) {
     if (!collection) return false;
     

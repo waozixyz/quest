@@ -56,25 +56,111 @@ float CalculateHabitCompletion(const Habit* habit) {
     }
     return (float)completed / 66.0f;
 }
+static void RenderTodayHabitItem(const Habit* habit) {
+    CLAY(CLAY_IDI("TodayHabitItem", habit->id),
+        CLAY_LAYOUT({
+            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT() },
+            .padding = { 8, 8, 8, 8 },
+            .childGap = 8,
+            .layoutDirection = CLAY_LEFT_TO_RIGHT,
+            .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
+        }),
+        CLAY_RECTANGLE({
+            .color = COLOR_SECONDARY,
+            .cornerRadius = CLAY_CORNER_RADIUS(4)
+        })
+    ) {
+        Clay_String habit_name = {
+            .length = strlen(habit->name),
+            .chars = habit->name
+        };
+        CLAY_TEXT(habit_name, 
+            CLAY_TEXT_CONFIG({
+                .fontSize = 14,
+                .fontId = FONT_ID_BODY_14,
+                .textColor = COLOR_TEXT
+            })
+        );
+    }
+}
+
+
+static void RenderTodayHabits() {
+    CLAY(CLAY_ID("TodayHabitsContainer"),
+        CLAY_LAYOUT({
+            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT() },
+            .childGap = 12,
+            .layoutDirection = CLAY_TOP_TO_BOTTOM
+        })
+    ) {
+        bool has_incomplete_habits = false;
+        time_t now = time(NULL);
+        
+        for (size_t i = 0; i < habits.habits_count; i++) {
+            if (!IsHabitCompletedForDate(&habits.habits[i], now)) {
+                has_incomplete_habits = true;
+                RenderTodayHabitItem(&habits.habits[i]);
+            }
+        }
+
+        if (!has_incomplete_habits) {
+            CLAY_TEXT(CLAY_STRING("All habits completed for today!"), 
+                CLAY_TEXT_CONFIG({
+                    .fontSize = 14,
+                    .fontId = FONT_ID_BODY_14,
+                    .textColor = COLOR_TEXT_SECONDARY
+                })
+            );
+        }
+    }
+}
 
 void RenderHomePage() {
     static bool quest_minimized = false;
-    static bool progress_minimized = false;
+    static bool today_habits_minimized = false;
+    static bool progress_minimized = true;
     static bool settings_minimized = true;
-
-    CLAY(CLAY_ID("HomeScrollContainer"), 
+    
+    // Outer container for full width/height centering
+    CLAY(CLAY_ID("HomeOuterContainer"),
         CLAY_LAYOUT({ 
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
-            .padding = { 32, 32, 32, 32 },
-            .childGap = 16,
             .layoutDirection = CLAY_TOP_TO_BOTTOM,
-            .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
-        }),
-        CLAY_SCROLL({ .vertical = true })
+            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }
+        })
     ) {
-        RenderCard("Quest", 1, &quest_minimized, RenderQuestDescription);
-        RenderCard("Habit Progress", 2, &progress_minimized, RenderHabitProgress);
-        RenderCard("Settings", 3, &settings_minimized, RenderSettings);
+        // Inner scroll container with fixed width for content
+        CLAY(CLAY_ID("HomeScrollContainer"), 
+            CLAY_LAYOUT({ 
+                .sizing = {
+                    windowWidth < BREAKPOINT_MEDIUM ? 
+                        CLAY_SIZING_GROW() : 
+                        CLAY_SIZING_FIXED(BREAKPOINT_MEDIUM),
+                    CLAY_SIZING_GROW()
+                },
+                .padding = { 32, 32, 32, 32 },
+                .childGap = 16,
+                .layoutDirection = CLAY_TOP_TO_BOTTOM,
+                .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
+            }),
+            CLAY_SCROLL({ .vertical = true })
+        ) {
+            // Add horizontal padding to create margins
+            CLAY(CLAY_ID("ContentContainer"),
+                CLAY_LAYOUT({
+                    .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
+                    .padding = { 16, 0, 16, 0 },  // Left and right padding
+                    .childGap = 16,
+                    .layoutDirection = CLAY_TOP_TO_BOTTOM,
+                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
+                })
+            ) {
+                RenderCard("Quest", 1, &quest_minimized, RenderQuestDescription);
+                RenderCard("Today's Habits", 2, &today_habits_minimized, RenderTodayHabits);  
+                RenderCard("Habit Progress", 3, &progress_minimized, RenderHabitProgress);
+                RenderCard("Settings", 4, &settings_minimized, RenderSettings);
+            }
+        }
     }
 }
 
