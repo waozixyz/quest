@@ -4,8 +4,7 @@
 #include "../config.h"
 #include <string.h>
 
-#include "../clay_extensions.h"
-#include "clay.h"
+#include "rocks_clay.h"
 
 #ifndef __EMSCRIPTEN__
 #include <SDL_image.h>

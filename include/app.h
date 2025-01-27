@@ -9,8 +9,6 @@
 #include "pages/timeline.h"
 #include "pages/routine.h"
 #ifndef __EMSCRIPTEN__
-#include "platforms/sdl/events.h"
-#include "platforms/sdl/renderer.h"
 #include "utils.h"
 
 #include <SDL.h>

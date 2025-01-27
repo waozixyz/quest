@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "../config.h"
-#include "clay.h"
+#include "rocks_clay.h"
 #include "../components/text_input.h"
 
 #define MAX_CALENDAR_DAYS 1000

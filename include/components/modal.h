@@ -1,8 +1,7 @@
 #ifndef MODAL_H
 #define MODAL_H
 
-#include "../clay_extensions.h"
-#include "clay.h"
+#include "rocks_clay.h"
 #include "../config.h"
 
 typedef struct {

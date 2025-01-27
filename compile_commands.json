@@ -1,0 +1,136 @@
+[
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/vendor/cJSON/cJSON.c.o", "vendor/cJSON/cJSON.c"],
+  "file": "vendor/cJSON/cJSON.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/components/calendar_box.c.o", "src/components/calendar_box.c"],
+  "file": "src/components/calendar_box.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/components/color_picker.c.o", "src/components/color_picker.c"],
+  "file": "src/components/color_picker.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/components/text_input.c.o", "src/components/text_input.c"],
+  "file": "src/components/text_input.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/components/date_picker.c.o", "src/components/date_picker.c"],
+  "file": "src/components/date_picker.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/components/modal.c.o", "src/components/modal.c"],
+  "file": "src/components/modal.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/components/nav.c.o", "src/components/nav.c"],
+  "file": "src/components/nav.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/components/progress_bar.c.o", "src/components/progress_bar.c"],
+  "file": "src/components/progress_bar.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/components/card.c.o", "src/components/card.c"],
+  "file": "src/components/card.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/pages/home.c.o", "src/pages/home.c"],
+  "file": "src/pages/home.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/pages/timeline.c.o", "src/pages/timeline.c"],
+  "file": "src/pages/timeline.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/pages/routine.c.o", "src/pages/routine.c"],
+  "file": "src/pages/routine.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/pages/habits.c.o", "src/pages/habits.c"],
+  "file": "src/pages/habits.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/pages/todos.c.o", "src/pages/todos.c"],
+  "file": "src/pages/todos.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/state/habits_state.c.o", "src/state/habits_state.c"],
+  "file": "src/state/habits_state.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/state/todos_state.c.o", "src/state/todos_state.c"],
+  "file": "src/state/todos_state.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/storage_utils.c.o", "src/storage_utils.c"],
+  "file": "src/storage_utils.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/platforms/sdl/renderer_core.c.o", "src/platforms/sdl/renderer_core.c"],
+  "file": "src/platforms/sdl/renderer_core.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/platforms/sdl/renderer_cursor.c.o", "src/platforms/sdl/renderer_cursor.c"],
+  "file": "src/platforms/sdl/renderer_cursor.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/platforms/sdl/renderer_text.c.o", "src/platforms/sdl/renderer_text.c"],
+  "file": "src/platforms/sdl/renderer_text.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/platforms/sdl/renderer_shape.c.o", "src/platforms/sdl/renderer_shape.c"],
+  "file": "src/platforms/sdl/renderer_shape.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/platforms/sdl/events.c.o", "src/platforms/sdl/events.c"],
+  "file": "src/platforms/sdl/events.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/android_jni.c.o", "src/android_jni.c"],
+  "file": "src/android_jni.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/app.c.o", "src/app.c"],
+  "file": "src/app.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/main.c.o", "src/main.c"],
+  "file": "src/main.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/utils.c.o", "src/utils.c"],
+  "file": "src/utils.c"
+},
+{
+  "directory": "/home/wao/lyra/proj/quest",
+  "arguments": ["clang", "-c", "-Qunused-arguments", "-m64", "-fvisibility=hidden", "-O3", "-std=c99", "-Iinclude", "-Ivendor/cJSON", "-Irocks/clay", "-I/usr/include/SDL2", "-DCLAY_DESKTOP", "-Wall", "-Werror", "-O2", "-Wno-unused-variable", "-Wno-missing-braces", "-DNDEBUG", "-o", "build/.objs/main/linux/x86_64/release/src/config.c.o", "src/config.c"],
+  "file": "src/config.c"
+}]

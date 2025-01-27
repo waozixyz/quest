@@ -6,6 +6,7 @@ todos.json
 .xmake/
 build/
 out/
+.cache/
 
 # Android specific
 android/.gradle/

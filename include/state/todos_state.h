@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <time.h>
 #include <stdlib.h>
-#include "clay.h"
+#include "rocks_clay.h"
 #include <string.h>
 #include <stdio.h>
 #include "../components/text_input.h"

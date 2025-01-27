@@ -10,54 +10,8 @@ size_t strlcpy(char *dst, const char *src, size_t dstsize) {
     return srclen;
 }
 
-
-void* AllocateAligned(size_t alignment, size_t size) {
-    // Validate alignment (must be a power of 2)
-    if (alignment == 0 || (alignment & (alignment - 1)) != 0) {
-        return NULL;
-    }
-
-    // Ensure minimum alignment of sizeof(void*)
-    if (alignment < sizeof(void*)) {
-        alignment = sizeof(void*);
-    }
-
-    // Calculate total memory needed
-    size_t total_size = size + alignment - 1 + sizeof(void*);
-    
-    // Allocate raw memory
-    void *raw_memory = malloc(total_size);
-    if (raw_memory == NULL) {
-        return NULL;
-    }
-
-    // Calculate aligned pointer
-    uintptr_t raw_addr = (uintptr_t)raw_memory;
-    uintptr_t aligned_addr = (raw_addr + alignment - 1 + sizeof(void*)) & ~(alignment - 1);
-    void *aligned_ptr = (void*)aligned_addr;
-
-    // Store original pointer right before aligned pointer
-    void **location = (void**)(aligned_ptr - sizeof(void*));
-    *location = raw_memory;
-
-    return aligned_ptr;
-}
-
-void FreeAligned(void *ptr) {
-    if (ptr == NULL) {
-        return;
-    }
-
-    // Retrieve original pointer
-    void *raw_memory = *((void**)ptr - 1);
-    
-    // Free original allocation
-    free(raw_memory);
-}
-
 #ifndef __EMSCRIPTEN__
 
-#include "platforms/sdl/renderer.h"
 #include <SDL_image.h>
 #include <errno.h>
 #include <unicode/uchar.h>

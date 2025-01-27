@@ -1,32 +1,29 @@
-// config.h
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include "clay_extensions.h"
-#include "clay.h"
+#include "rocks_clay.h"
 #include <stdio.h>
+
 // Window & UI configuration
 extern double windowWidth, windowHeight;
 extern float globalScalingFactor;
 extern uint32_t ACTIVE_PAGE;
 extern uint32_t ACTIVE_RENDERER_INDEX;
-    
+
 // Breakpoints
 extern const float BREAKPOINT_LARGE;
 extern const float BREAKPOINT_MEDIUM;
 extern const float BREAKPOINT_SMALL;
 extern const float BREAKPOINT_XSMALL;
-
 // Font IDs
-extern const uint32_t FONT_ID_BODY_16;
-extern const uint32_t FONT_ID_TITLE_56;
-extern const uint32_t FONT_ID_BODY_24;
-extern const uint32_t FONT_ID_BODY_36;
-extern const uint32_t FONT_ID_TITLE_36;
-extern const uint32_t FONT_ID_MONOSPACE_24;
-extern const uint32_t FONT_ID_BODY_14;
-extern const uint32_t FONT_ID_BODY_18;
-
+#define FONT_ID_BODY_16 0
+#define FONT_ID_TITLE_56 1
+#define FONT_ID_BODY_24 2
+#define FONT_ID_BODY_36 3
+#define FONT_ID_TITLE_36 4
+#define FONT_ID_MONOSPACE_24 5
+#define FONT_ID_BODY_14 6
+#define FONT_ID_BODY_18 7
 // Colors
 extern const Clay_Color COLOR_BACKGROUND;
 extern const Clay_Color COLOR_BACKGROUND_HOVER;
@@ -51,7 +48,6 @@ extern const Clay_Color COLOR_CURSOR;
 extern const Clay_Color COLOR_DANGER;
 extern const int DEFAULT_PADDING;
 
-
 extern const Clay_Color COLOR_NAV_BACKGROUND;
 extern const Clay_Color COLOR_NAV_ITEM_BACKGROUND;
 extern const Clay_Color COLOR_NAV_ITEM_BACKGROUND_ACTIVE;
@@ -61,8 +57,6 @@ extern const Clay_Color COLOR_NAV_SHADOW;
 
 // Navigation handler
 void HandleNavInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData);
-
-
 
 typedef struct {
     float delta_time;

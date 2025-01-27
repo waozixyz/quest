@@ -1,8 +1,5 @@
 // config.c
 #include "config.h"
-#ifndef __EMSCRIPTEN__
-#include "platforms/sdl/events.h"
-#endif
 // Configuration variables
 double windowWidth = 400, windowHeight = 768;
 float globalScalingFactor = 1.0f;
@@ -14,16 +11,6 @@ const float BREAKPOINT_LARGE = 1024.0f;
 const float BREAKPOINT_MEDIUM = 640.0f;
 const float BREAKPOINT_SMALL = 480.0f;
 const float BREAKPOINT_XSMALL = 420.0f;
-
-// Font IDs
-const uint32_t FONT_ID_BODY_16 = 0;
-const uint32_t FONT_ID_TITLE_56 = 1;
-const uint32_t FONT_ID_BODY_24 = 2;
-const uint32_t FONT_ID_BODY_36 = 3;
-const uint32_t FONT_ID_TITLE_36 = 4;
-const uint32_t FONT_ID_MONOSPACE_24 = 5;
-const uint32_t FONT_ID_BODY_14 = 6;
-const uint32_t FONT_ID_BODY_18 = 7;
 
 // Theme Colors
 const Clay_Color COLOR_BACKGROUND = (Clay_Color) {26, 15, 31, 255};  // #1a0f1f
@@ -70,9 +57,6 @@ void HandleNavInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo
         uint32_t new_page = (uint32_t)userData;
         if (new_page != ACTIVE_PAGE) {
             printf("Page changing from %u to %u\n", ACTIVE_PAGE, new_page);
-            #ifndef __EMSCRIPTEN__
-            CleanupActiveScrollContainer();
-            #endif
 
             // Reset Clay's internal caches
             Clay_ResetMeasureTextCache();

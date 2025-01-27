@@ -1,8 +1,7 @@
 #ifndef TODOS_H
 #define TODOS_H
 
-#include "../clay_extensions.h"
-#include "clay.h"
+#include "rocks_clay.h"
 #include "../components/text_input.h"
 #include "../config.h"
 #include "../state/todos_state.h"

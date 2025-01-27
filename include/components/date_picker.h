@@ -3,8 +3,7 @@
 #define DATE_PICKER_H
 
 #include <time.h>
-#include "../clay_extensions.h"
-#include "clay.h"
+#include "rocks_clay.h"
 #include "modal.h"
 #include <string.h>
 

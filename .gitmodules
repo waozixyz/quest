@@ -1,6 +1,3 @@
-[submodule "vendor/clay"]
-	path = vendor/clay
-	url = https://github.com/nicbarker/clay.git
 [submodule "vendor/cJSON"]
 	path = vendor/cJSON
 	url = https://github.com/DaveGamble/cJSON.git
@@ -27,3 +24,6 @@
 	path = vendor/freetype
 	url = https://github.com/freetype/freetype.git
     ignore=dirty
+[submodule "rocks"]
+	path = rocks
+	url = git@github.com:naoxio/rocks.git
