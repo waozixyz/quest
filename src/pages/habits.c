@@ -349,8 +349,8 @@ static void RenderHabitTab(const Habit* habit) {
         }));
     }
 }
-void RenderHabitHeader(Rocks* rocks) {
-    RocksTheme base_theme = rocks_get_theme(rocks);
+void RenderHabitHeader() {
+    RocksTheme base_theme = rocks_get_theme(g_rocks);
     QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
 
     Habit* active_habit = GetActiveHabit(&habits);

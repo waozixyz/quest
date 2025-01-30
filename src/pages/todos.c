@@ -530,115 +530,107 @@ void RenderTodoItem(const Todo* todo, int index) {
     }
 }
 
-
 void RenderTodosPage() {
-   RocksTheme base_theme = rocks_get_theme(g_rocks);
-   QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
+    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
 
-   CLAY(CLAY_ID("TodosContainer"), 
-       CLAY_LAYOUT({ 
-           .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
-           .padding = { 32, 32, 32, 32 },
-           .childGap = 24,
-           .layoutDirection = CLAY_TOP_TO_BOTTOM,
-           .childAlignment = { .x = CLAY_ALIGN_X_CENTER } 
-       })
-   ) {
-       CLAY(CLAY_LAYOUT({ 
-           .sizing = { 
-               windowWidth > BREAKPOINT_MEDIUM + 40 ? 
-                   CLAY_SIZING_FIXED(BREAKPOINT_MEDIUM + 40) : 
-                   CLAY_SIZING_GROW(),
-               CLAY_SIZING_FIT(0)
-           },
-           .childGap = 8,
-           .layoutDirection = CLAY_LEFT_TO_RIGHT,
-           .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
-       })) {
-           for (int i = 0; i < 7; i++) {
-               RenderTodoTab(DAYS[i], &DAY_SYMBOLS[i], 
-                   strcmp(DAYS[i], todo_collection.active_day) == 0, i);
-           }
-       }
+    CLAY(CLAY_ID("TodosContainer"), 
+        CLAY_LAYOUT({ 
+            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
+            .padding = { 32, 32, 32, 32 },
+            .childGap = 24,
+            .layoutDirection = CLAY_TOP_TO_BOTTOM,
+            .childAlignment = { .x = CLAY_ALIGN_X_CENTER } 
+        })
+    ) {
+        // Render the day tabs
+        CLAY(CLAY_LAYOUT({ 
+            .sizing = { 
+                windowWidth > BREAKPOINT_MEDIUM + 40 ? 
+                    CLAY_SIZING_FIXED(BREAKPOINT_MEDIUM + 40) : 
+                    CLAY_SIZING_GROW(),
+                CLAY_SIZING_FIT(0)
+            },
+            .childGap = 8,
+            .layoutDirection = CLAY_LEFT_TO_RIGHT,
+            .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
+        })) {
+            for (int i = 0; i < 7; i++) {
+                RenderTodoTab(DAYS[i], &DAY_SYMBOLS[i], 
+                    strcmp(DAYS[i], todo_collection.active_day) == 0, i);
+            }
+        }
 
-       if (todo_input) {
-           CLAY(CLAY_LAYOUT({
-               .sizing = {
-                   windowWidth > BREAKPOINT_MEDIUM + 40 ? 
-                       CLAY_SIZING_FIXED(BREAKPOINT_MEDIUM + 40) : 
-                       CLAY_SIZING_GROW(),
-                   CLAY_SIZING_FIT(0)
-               },
-               .layoutDirection = CLAY_LEFT_TO_RIGHT,
-               .childGap = 8
-           })) {
-               CLAY(CLAY_LAYOUT({
-                   .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) }
-               })) {
-                   RenderTextInput(todo_input, 1);
-               }
+        // Render the input field and submit button
+        if (todo_input) {
+            CLAY(CLAY_LAYOUT({
+                .sizing = {
+                    windowWidth > BREAKPOINT_MEDIUM + 40 ? 
+                        CLAY_SIZING_FIXED(BREAKPOINT_MEDIUM + 40) : 
+                        CLAY_SIZING_GROW(),
+                    CLAY_SIZING_FIT(0)
+                },
+                .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                .childGap = 8
+            })) {
+                CLAY(CLAY_LAYOUT({
+                    .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) }
+                })) {
+                    RenderTextInput(todo_input, 1);
+                }
 
-               CLAY(CLAY_ID("SubmitTodoButton"),
-                   CLAY_LAYOUT({
-                       .sizing = { CLAY_SIZING_FIXED(32), CLAY_SIZING_FIXED(32) },
-                       .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }
-                   }),
-                   CLAY_RECTANGLE({
-                       .color = Clay_Hovered() ? base_theme.primary : base_theme.secondary,
-                       .cornerRadius = CLAY_CORNER_RADIUS(4),
-                       .cursorPointer = true
-                   }),
-                   Clay_OnHover(HandleSubmitButtonClick, 0)
-               ) {
-                   #ifdef __EMSCRIPTEN__
-                   CLAY(CLAY_LAYOUT({
-                       .sizing = { CLAY_SIZING_FIXED(24), CLAY_SIZING_FIXED(24) }
-                   }),
-                   CLAY_IMAGE({
-                       .sourceDimensions = { 24, 24 },
-                       .sourceURL = CLAY_STRING("images/icons/check.png")
-                   })) {}
-                   #else
-                   CLAY(CLAY_LAYOUT({
-                       .sizing = { CLAY_SIZING_FIXED(24), CLAY_SIZING_FIXED(24) }
-                   }),
-                   CLAY_IMAGE({
-                       .sourceDimensions = { 24, 24 },
-                       .imageData = check_texture
-                   })) {}
-                   #endif
-               }
-           }
-       }
+                CLAY(CLAY_ID("SubmitTodoButton"),
+                    CLAY_LAYOUT({
+                        .sizing = { CLAY_SIZING_FIXED(32), CLAY_SIZING_FIXED(32) },
+                        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }
+                    }),
+                    CLAY_RECTANGLE({
+                        .color = Clay_Hovered() ? base_theme.primary : base_theme.secondary,
+                        .cornerRadius = CLAY_CORNER_RADIUS(4),
+                        .cursorPointer = true
+                    }),
+                    Clay_OnHover(HandleSubmitButtonClick, 0)
+                ) {
+                    CLAY(CLAY_LAYOUT({
+                        .sizing = { CLAY_SIZING_FIXED(24), CLAY_SIZING_FIXED(24) }
+                    }),
+                    CLAY_IMAGE({
+                        .sourceDimensions = TODO_ICONS[0].dimensions,
+                        .imageData = todo_icon_images[0]  // Use the "check" icon
+                    })) {}
+                }
+            }
+        }
 
-       CLAY(CLAY_ID("TodosScrollContainer"),
-       CLAY_LAYOUT({ 
-           .sizing = { 
-               windowWidth > BREAKPOINT_MEDIUM + 40 ? 
-                   CLAY_SIZING_FIXED(BREAKPOINT_MEDIUM + 40) : 
-                   CLAY_SIZING_GROW(),
-               CLAY_SIZING_GROW() 
-           },
-           .childGap = 8,
-           .layoutDirection = CLAY_TOP_TO_BOTTOM
-       }),
-       CLAY_SCROLL({ .vertical = true })) {
-           size_t todos_count;
-           Todo* todos = GetTodosByDay(&todo_collection, 
-                                   todo_collection.active_day, 
-                                   &todos_count);
+        // Render the list of todos
+        CLAY(CLAY_ID("TodosScrollContainer"),
+            CLAY_LAYOUT({ 
+                .sizing = { 
+                    windowWidth > BREAKPOINT_MEDIUM + 40 ? 
+                        CLAY_SIZING_FIXED(BREAKPOINT_MEDIUM + 40) : 
+                        CLAY_SIZING_GROW(),
+                    CLAY_SIZING_GROW() 
+                },
+                .childGap = 8,
+                .layoutDirection = CLAY_TOP_TO_BOTTOM
+            }),
+            CLAY_SCROLL({ .vertical = true })
+        ) {
+            size_t todos_count;
+            Todo* todos = GetTodosByDay(&todo_collection, 
+                                    todo_collection.active_day, 
+                                    &todos_count);
 
-           for (size_t i = 0; i < todos_count; i++) {
-               if (!todos[i].completed) {
-                   RenderTodoItem(&todos[i], (int)i);
-               }
-           }
-       }
-   }
-   
-   RenderDeleteTodoModal();
+            for (size_t i = 0; i < todos_count; i++) {
+                if (!todos[i].completed) {
+                    RenderTodoItem(&todos[i], (int)i);
+                }
+            }
+        }
+    }
+    
+    RenderDeleteTodoModal();
 }
-
 
 void CleanupTodoIcons(Rocks* rocks) {
     for (int i = 0; i < 3; i++) {
