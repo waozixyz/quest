@@ -1,6 +1,9 @@
 #include "components/color_picker.h"  
 
-// Static variables
+#include "rocks.h"
+#include "quest_theme.h"
+
+// Static variables1
 static void (*g_color_change_callback)(Clay_Color) = NULL;
 static Modal* g_modal = NULL;
 
@@ -19,12 +22,14 @@ static void HandleCurrentColorClick(Clay_ElementId elementId, Clay_PointerData p
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         Modal* modal = (Modal*)userData;
         OpenModal(modal);
-
     }
 }
 
 // Helper function to render a single color option
 static void RenderColorOption(size_t index) {
+    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
+
     CLAY(CLAY_IDI("ModalColorOption", index),
         CLAY_LAYOUT({
             .sizing = { CLAY_SIZING_FIXED(40), CLAY_SIZING_FIXED(40) }
@@ -52,7 +57,11 @@ static void RenderColorRow(size_t start_index, size_t end_index) {
         }
     }
 }
+
 static void RenderColorPaletteModal(void) {
+    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
+
     CLAY(CLAY_ID("ModalColorPalette"),
         CLAY_LAYOUT({
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT() },
@@ -64,7 +73,7 @@ static void RenderColorPaletteModal(void) {
             CLAY_TEXT_CONFIG({
                 .fontSize = 18,
                 .fontId = FONT_ID_BODY_24,
-                .textColor = COLOR_TEXT
+                .textColor = base_theme.text
             })
         );
 
@@ -88,6 +97,9 @@ static void RenderColorPaletteModal(void) {
 }
 
 void RenderColorPicker(Clay_Color current_color, void (*on_color_change)(Clay_Color), Modal* modal) {
+    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
+
     g_color_change_callback = on_color_change;
     g_modal = modal;
 

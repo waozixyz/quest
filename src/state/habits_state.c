@@ -1,5 +1,8 @@
 #include "state/habits_state.h"
 
+#include "rocks.h"
+#include "quest_theme.h"
+
 #ifndef __EMSCRIPTEN__
 static Uint32 lastCalendarToggleTime = 0;
 const Uint32 CALENDAR_TOGGLE_DEBOUNCE_MS = 250;
@@ -98,10 +101,12 @@ static void LoadHabitFromJSON(Habit* habit, cJSON* habitObj) {
     }
 }
 static void CreateDefaultHabitsJSON(HabitCollection* defaultCollection) {
+    RocksTheme base_theme = rocks_get_theme(g_rocks);
+
     Habit* default_habit = &defaultCollection->habits[0];
     strncpy(default_habit->name, "Meditation", MAX_HABIT_NAME - 1);
     default_habit->id = 0;
-    default_habit->color = COLOR_PRIMARY;
+    default_habit->color = base_theme.primary;
     default_habit->days_count = 0;
 
     // Set the start date to the most recent past Monday
@@ -208,10 +213,13 @@ void AddNewHabit(HabitCollection* collection) {
         addNewHabitFunction(collection);
         JS_LoadHabits(collection); // Reload the collection after adding
     #else
+
+        RocksTheme base_theme = rocks_get_theme(g_rocks);
+
         Habit* new_habit = &collection->habits[collection->habits_count];
         snprintf(new_habit->name, MAX_HABIT_NAME, "Habit %zu", collection->habits_count + 1);
         new_habit->id = collection->habits_count;  // ID matches position
-        new_habit->color = COLOR_PRIMARY;
+        new_habit->color = base_theme.primary;
         new_habit->days_count = 0;
 
         // Set the start date to the current time
@@ -236,6 +244,8 @@ void SaveHabits(HabitCollection* collection) {
 }
 
 void LoadHabits(HabitCollection* collection) {
+    RocksTheme base_theme = rocks_get_theme(g_rocks);
+
     if (!collection) return;
 
     // Save the text input pointer and edit state before loading
@@ -259,7 +269,7 @@ void LoadHabits(HabitCollection* collection) {
         Habit* default_habit = &collection->habits[0];
         strncpy(default_habit->name, "Meditation", MAX_HABIT_NAME - 1);
         default_habit->id = 0;
-        default_habit->color = COLOR_PRIMARY;
+        default_habit->color = base_theme.primary;
         default_habit->days_count = 0;
         collection->habits_count = 1;
         collection->active_habit_id = 0;

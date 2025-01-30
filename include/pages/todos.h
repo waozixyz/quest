@@ -1,6 +1,6 @@
 #ifndef TODOS_H
 #define TODOS_H
-
+#include "rocks.h"
 #include "rocks_clay.h"
 #include "../components/text_input.h"
 #include "../config.h"
@@ -9,21 +9,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef CLAY_WASM
-#define CLAY_EXTEND_CONFIG_IMAGE Clay_String sourceURL;
-#else
-#include <SDL_image.h>
-#include <SDL.h>
-#endif
-
-#ifdef CLAY_WASM
-void InitializeTodosPage(void);
-#else
-void InitializeTodosPage(SDL_Renderer* renderer);
-#endif
-
+void InitializeTodosPage(Rocks* rocks);
 void RenderTodosPage(void);
-void CleanupTodosPage(void);
+void CleanupTodosPage(Rocks* rocks);
 void HandleTodosPageInput(InputEvent event);
 
 #endif

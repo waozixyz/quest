@@ -1,109 +1,93 @@
 #include "components/nav.h"
+#include "rocks.h"
+#include "quest_theme.h"
 
-// Icon configurations
 typedef struct {
-    Clay_String url;
+    const char* url;
     Clay_Dimensions dimensions;
 } NavIcon;
 
 static NavIcon NAV_ICONS[] = {
-    {.url = CLAY_STRING("images/icons/home.png"), .dimensions = {32, 32}}, // Larger icons
-    {.url = CLAY_STRING("images/icons/habits.png"), .dimensions = {32, 32}},
-    {.url = CLAY_STRING("images/icons/todos.png"), .dimensions = {32, 32}},
-    {.url = CLAY_STRING("images/icons/timeline.png"), .dimensions = {32, 32}},
-    {.url = CLAY_STRING("images/icons/routine.png"), .dimensions = {32, 32}}
+    {.url = "images/icons/home.png", .dimensions = {32, 32}},
+    {.url = "images/icons/habits.png", .dimensions = {32, 32}},
+    {.url = "images/icons/todos.png", .dimensions = {32, 32}},
+    {.url = "images/icons/timeline.png", .dimensions = {32, 32}},
+    {.url = "images/icons/routine.png", .dimensions = {32, 32}}
 };
 
-#ifndef __EMSCRIPTEN__
-static SDL_Texture* nav_icon_textures[5] = {NULL};
+static void* nav_icon_images[5] = {NULL};
 
-void InitializeNavIcons(SDL_Renderer* renderer) {
+void InitializeNavIcons(Rocks* rocks) {
     for (int i = 0; i < 5; i++) {
-        if (nav_icon_textures[i]) {
-            SDL_DestroyTexture(nav_icon_textures[i]);
-            nav_icon_textures[i] = NULL;
+        if (nav_icon_images[i]) {
+            rocks_unload_image(rocks, nav_icon_images[i]);
+            nav_icon_images[i] = NULL;
         }
 
-        SDL_Surface* surface = load_image(NAV_ICONS[i].url.chars);
-        if (!surface) {
-            fprintf(stderr, "Failed to load nav icon %s\n", NAV_ICONS[i].url.chars);
+        nav_icon_images[i] = rocks_load_image(rocks, NAV_ICONS[i].url);
+        if (!nav_icon_images[i]) {
+            fprintf(stderr, "Failed to load nav icon %s\n", NAV_ICONS[i].url);
             continue;
         }
-
-        nav_icon_textures[i] = SDL_CreateTextureFromSurface(renderer, surface);
-        SDL_FreeSurface(surface);
     }
 }
 
-void CleanupNavIcons() {
+void CleanupNavIcons(Rocks* rocks) {
     for (int i = 0; i < 5; i++) {
-        if (nav_icon_textures[i]) {
-            SDL_DestroyTexture(nav_icon_textures[i]);
-            nav_icon_textures[i] = NULL;
+        if (nav_icon_images[i]) {
+            rocks_unload_image(rocks, nav_icon_images[i]);
+            nav_icon_images[i] = NULL;
         }
     }
 }
-#endif
 
-void RenderNavItem(const char* text, uint32_t pageId) {
+void RenderNavItem(Rocks* rocks, const char* text, uint32_t pageId) {
+    RocksTheme base_theme = rocks_get_theme(rocks);
+    QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
+
     bool isActive = ACTIVE_PAGE == pageId;
-    bool isXSmallScreen = windowWidth < BREAKPOINT_XSMALL; // Check if the screen is very small
-    bool isSmallScreen = windowWidth >= BREAKPOINT_XSMALL && windowWidth < BREAKPOINT_MEDIUM; // Check if the screen is small
-    bool isMediumScreen = windowWidth >= BREAKPOINT_MEDIUM; // Check if the screen is medium or larger
+    bool isXSmallScreen = windowWidth < BREAKPOINT_XSMALL;
+    bool isSmallScreen = windowWidth >= BREAKPOINT_XSMALL && windowWidth < BREAKPOINT_MEDIUM;
+    bool isMediumScreen = windowWidth >= BREAKPOINT_MEDIUM;
 
-    // Adjust button width and padding based on screen size
-    float buttonWidth = isXSmallScreen ? 60.0f : (isSmallScreen ? 80.0f : 120.0f); // Wider buttons on larger screens
-    float padding = isXSmallScreen ? 4.0f : 8.0f; // Smaller padding on very small screens
-
-    // Adjust text size and font ID based on screen size
-    int fontSize = isMediumScreen ? 18 : 14; // Larger text on medium screens
-    uint32_t fontId = isMediumScreen ? FONT_ID_BODY_18 : FONT_ID_BODY_14; // Corresponding font ID
-
-    // Adjust spacing between icon and text based on screen size
-    float childGap = isMediumScreen ? 8.0f : 4.0f; // More spacing between icon and text on medium screens
+    float buttonWidth = isXSmallScreen ? 60.0f : (isSmallScreen ? 80.0f : 120.0f);
+    float padding = isXSmallScreen ? 4.0f : 8.0f;
+    int fontSize = isMediumScreen ? 18 : 14;
+    uint32_t fontId = isMediumScreen ? FONT_ID_BODY_18 : FONT_ID_BODY_14;
+    float childGap = isMediumScreen ? 8.0f : 4.0f;
 
     Clay_TextElementConfig *text_config = CLAY_TEXT_CONFIG({ 
-        .fontSize = fontSize, // Dynamic text size
-        .fontId = fontId, // Dynamic font ID
-        .textColor = isActive ? COLOR_NAV_ITEM_TEXT_ACTIVE : COLOR_NAV_ITEM_TEXT, // Highlight active text
+        .fontSize = fontSize,
+        .fontId = fontId,
+        .textColor = isActive ? theme->nav_text_active : theme->nav_text,
         .disablePointerEvents = true 
     });
     
     CLAY(CLAY_IDI("Nav", pageId), 
         CLAY_LAYOUT({ 
-            .padding = {padding, padding}, // Dynamic padding
-            .childGap = childGap, // Dynamic gap between icon and text
+            .padding = {padding, padding},
+            .childGap = childGap,
             .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER },
-            .sizing = { CLAY_SIZING_FIXED(buttonWidth), CLAY_SIZING_FIXED(60) } // Dynamic width for each nav item
+            .sizing = { CLAY_SIZING_FIXED(buttonWidth), CLAY_SIZING_FIXED(60) }
         }), 
         CLAY_RECTANGLE({ 
-            .color = isActive ? COLOR_NAV_ITEM_BACKGROUND_ACTIVE : COLOR_NAV_ITEM_BACKGROUND, // Highlight active background
+            .color = isActive ? theme->nav_item_active : theme->nav_item_background,
             .cornerRadius = CLAY_CORNER_RADIUS(8),
             .cursorPointer = true
         }),
         Clay_OnHover(HandleNavInteraction, pageId)
     ) {
-        // Always show icons in the bottom nav bar
         CLAY(CLAY_LAYOUT({ 
             .sizing = { 
-                CLAY_SIZING_FIXED(32), // Larger icons
+                CLAY_SIZING_FIXED(32),
                 CLAY_SIZING_FIXED(32)
             }
         }),
-        #ifdef __EMSCRIPTEN__
         CLAY_IMAGE({ 
             .sourceDimensions = NAV_ICONS[pageId].dimensions,
-            .sourceURL = NAV_ICONS[pageId].url
-        })
-        #else
-        CLAY_IMAGE({ 
-            .sourceDimensions = NAV_ICONS[pageId].dimensions,
-            .imageData = nav_icon_textures[pageId]
-        })
-        #endif
-        ) {}
+            .imageData = nav_icon_images[pageId]
+        })) {}
 
-        // Show text below the icon only if the screen is medium or larger
         if (isMediumScreen) {
             Clay_String nav_text = { .chars = text, .length = strlen(text) };
             CLAY_TEXT(nav_text, text_config);
@@ -111,30 +95,33 @@ void RenderNavItem(const char* text, uint32_t pageId) {
     }
 }
 
-void RenderNavigationMenu() {
-    bool isXSmallScreen = windowWidth < BREAKPOINT_XSMALL; // Check if the screen is very small
+void RenderNavigationMenu(Rocks* rocks) {
+    RocksTheme base_theme = rocks_get_theme(rocks);
+    QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
+    
+    bool isXSmallScreen = windowWidth < BREAKPOINT_XSMALL;
 
     CLAY(CLAY_ID("BottomNavigation"), 
         CLAY_LAYOUT({ 
-            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIXED(isXSmallScreen ? 60.0f : 80.0f) }, // Shorter bar on very small screens
-            .childGap = 0, // No gap between items
-            .padding = { isXSmallScreen ? 4.0f : 8.0f, isXSmallScreen ? 4.0f : 8.0f }, // Smaller padding on very small screens
+            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIXED(isXSmallScreen ? 60.0f : 80.0f) },
+            .childGap = 0,
+            .padding = { isXSmallScreen ? 4.0f : 8.0f, isXSmallScreen ? 4.0f : 8.0f },
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER },
-            .layoutDirection = CLAY_LEFT_TO_RIGHT // Horizontal layout
+            .layoutDirection = CLAY_LEFT_TO_RIGHT
         }),
         CLAY_RECTANGLE({ 
-            .color = COLOR_NAV_BACKGROUND,
-            .shadowEnabled = true, // Enable shadow
-            .shadowColor = (Clay_Color){0, 0, 0, 50}, // Semi-transparent black
-            .shadowOffset = {0, 2}, // Shadow offset (x, y)
-            .shadowBlurRadius = 8,  // Blur radius
-            .shadowSpread = 0       // Shadow spread
+            .color = theme->nav_background,
+            .shadowEnabled = true,
+            .shadowColor = theme->nav_shadow,
+            .shadowOffset = {0, 2},
+            .shadowBlurRadius = 8,
+            .shadowSpread = 0
         })
     ) {
-        RenderNavItem("Habits", 1);
-        RenderNavItem("Todos", 2);
-        RenderNavItem("Home", 0);
-        RenderNavItem("Timeline", 3);
-        RenderNavItem("Routine", 4);
+        RenderNavItem(rocks, "Habits", 1);
+        RenderNavItem(rocks, "Todos", 2);
+        RenderNavItem(rocks, "Home", 0);
+        RenderNavItem(rocks, "Timeline", 3);
+        RenderNavItem(rocks, "Routine", 4);
     }
 }

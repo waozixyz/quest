@@ -1,26 +1,34 @@
 #include "pages/home.h"
+#include "rocks.h"
+#include "quest_theme.h"
 
 static void RenderQuestDescription() {
+    RocksTheme base_theme = rocks_get_theme(g_rocks);
+
     CLAY_TEXT(CLAY_STRING("Quest is a personal life management app focused on habit tracking, task organization, and life visualization tools. Build better habits, organize your tasks, and visualize your life journey all in one place."),
         CLAY_TEXT_CONFIG({
             .fontSize = 14,
             .fontId = FONT_ID_BODY_14,
-            .textColor = COLOR_TEXT
+            .textColor = base_theme.text
         })
     );
 }
 
 static void RenderSettings() {
+    RocksTheme base_theme = rocks_get_theme(g_rocks);
+
     CLAY_TEXT(CLAY_STRING("Settings content coming soon..."),
         CLAY_TEXT_CONFIG({
             .fontSize = 14,
             .fontId = FONT_ID_BODY_14,
-            .textColor = COLOR_TEXT
+            .textColor = base_theme.text
         })
     );
 }
 
 static void RenderHabitProgress() {
+    RocksTheme base_theme = rocks_get_theme(g_rocks);
+
     CLAY(CLAY_ID("StatsContainer"),
         CLAY_LAYOUT({
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT() },
@@ -38,7 +46,7 @@ static void RenderHabitProgress() {
                 CLAY_TEXT_CONFIG({
                     .fontSize = 14,
                     .fontId = FONT_ID_BODY_14,
-                    .textColor = COLOR_TEXT_SECONDARY
+                    .textColor = base_theme.secondary
                 })
             );
         }
@@ -57,6 +65,8 @@ float CalculateHabitCompletion(const Habit* habit) {
     return (float)completed / 66.0f;
 }
 static void RenderTodayHabitItem(const Habit* habit) {
+    RocksTheme base_theme = rocks_get_theme(g_rocks);
+
     CLAY(CLAY_IDI("TodayHabitItem", habit->id),
         CLAY_LAYOUT({
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT() },
@@ -66,7 +76,7 @@ static void RenderTodayHabitItem(const Habit* habit) {
             .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
         }),
         CLAY_RECTANGLE({
-            .color = COLOR_SECONDARY,
+            .color = base_theme.secondary,
             .cornerRadius = CLAY_CORNER_RADIUS(4)
         })
     ) {
@@ -78,7 +88,7 @@ static void RenderTodayHabitItem(const Habit* habit) {
             CLAY_TEXT_CONFIG({
                 .fontSize = 14,
                 .fontId = FONT_ID_BODY_14,
-                .textColor = COLOR_TEXT
+                .textColor = base_theme.text
             })
         );
     }
@@ -86,6 +96,8 @@ static void RenderTodayHabitItem(const Habit* habit) {
 
 
 static void RenderTodayHabits() {
+    RocksTheme base_theme = rocks_get_theme(g_rocks);
+
     CLAY(CLAY_ID("TodayHabitsContainer"),
         CLAY_LAYOUT({
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT() },
@@ -108,7 +120,7 @@ static void RenderTodayHabits() {
                 CLAY_TEXT_CONFIG({
                     .fontSize = 14,
                     .fontId = FONT_ID_BODY_14,
-                    .textColor = COLOR_TEXT_SECONDARY
+                    .textColor = base_theme.secondary
                 })
             );
         }

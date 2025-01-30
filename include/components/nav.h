@@ -4,20 +4,11 @@
 #include "../config.h"
 #include <string.h>
 
+#include "rocks.h"
 #include "rocks_clay.h"
 
-#ifndef __EMSCRIPTEN__
-#include <SDL_image.h>
-#include <SDL.h>
-#include "../utils.h"
-
-#endif
-
-#ifndef __EMSCRIPTEN__
-void InitializeNavIcons(SDL_Renderer* renderer);
-void CleanupNavIcons(void);
-#endif
-
-void RenderNavigationMenu(void);
+void InitializeNavIcons(Rocks* rocks);
+void CleanupNavIcons(Rocks* rocks);
+void RenderNavigationMenu(Rocks* rocks);
 
 #endif

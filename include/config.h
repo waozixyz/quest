@@ -24,36 +24,6 @@ extern const float BREAKPOINT_XSMALL;
 #define FONT_ID_MONOSPACE_24 5
 #define FONT_ID_BODY_14 6
 #define FONT_ID_BODY_18 7
-// Colors
-extern const Clay_Color COLOR_BACKGROUND;
-extern const Clay_Color COLOR_BACKGROUND_HOVER;
-extern const Clay_Color COLOR_BACKGROUND_FOCUSED;
-extern const Clay_Color COLOR_PRIMARY;
-extern const Clay_Color COLOR_PRIMARY_HOVER;
-extern const Clay_Color COLOR_SECONDARY;
-extern const Clay_Color COLOR_ACCENT;
-extern const Clay_Color COLOR_CARD;
-extern const Clay_Color COLOR_CARD_HOVER;
-extern const Clay_Color COLOR_PANEL;
-extern const Clay_Color COLOR_SUCCESS;
-extern const Clay_Color COLOR_WARNING;
-extern const Clay_Color COLOR_ERROR;
-extern const Clay_Color COLOR_ERROR_HOVER;
-extern const Clay_Color COLOR_INFO;
-extern const Clay_Color COLOR_BORDER;
-extern const Clay_Color COLOR_BORDER_FOCUSED;
-extern const Clay_Color COLOR_TEXT;
-extern const Clay_Color COLOR_TEXT_SECONDARY;
-extern const Clay_Color COLOR_CURSOR;
-extern const Clay_Color COLOR_DANGER;
-extern const int DEFAULT_PADDING;
-
-extern const Clay_Color COLOR_NAV_BACKGROUND;
-extern const Clay_Color COLOR_NAV_ITEM_BACKGROUND;
-extern const Clay_Color COLOR_NAV_ITEM_BACKGROUND_ACTIVE;
-extern const Clay_Color COLOR_NAV_ITEM_TEXT;
-extern const Clay_Color COLOR_NAV_ITEM_TEXT_ACTIVE;
-extern const Clay_Color COLOR_NAV_SHADOW;
 
 // Navigation handler
 void HandleNavInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData);

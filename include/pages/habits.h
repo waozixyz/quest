@@ -1,6 +1,6 @@
 #ifndef HABITS_H
 #define HABITS_H
-
+#include "rocks.h"
 #include "rocks_clay.h"
 #include "../state/habits_state.h"
 #include "../config.h"
@@ -19,18 +19,10 @@ void HandleNewTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerI
 void HandleTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData);
 void HandleHabitNameSubmit(const char* text);
 
-// Platform-specific initialization
-#ifndef __EMSCRIPTEN__
-#include "SDL.h"
-void InitializeHabitTabBar(SDL_Renderer* renderer);
-void InitializeHabitsPage(SDL_Renderer* renderer);
-#else
-void InitializeHabitsPage(void);
-#endif
+void InitializeHabitsPage(Rocks* rocks);
 
 // Cleanup functions
-void CleanupHabitTabBar(void);
-void CleanupHabitsPage(void);
+void CleanupHabitsPage(Rocks* rocks);
 
 // Event handling
 void HandleHabitsPageInput(InputEvent event);

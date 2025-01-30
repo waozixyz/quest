@@ -2,11 +2,13 @@
 #include <string.h>
 #include "components/date_picker.h"
 
-// Static variables
+#include "rocks.h"
+#include "quest_theme.h"
+
+
 static void (*g_date_change_callback)(time_t) = NULL;
 static Modal* g_modal = NULL;
 static struct tm g_editing_date = {0};
-
     
 static const char* month_names[] = {
     "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
@@ -17,7 +19,6 @@ void InitializeDatePicker(time_t initial_date, void (*on_date_change)(time_t), M
     g_date_change_callback = on_date_change;
     g_modal = modal;
     
-    // Initialize the editing date with the initial date
     struct tm* temp = localtime(&initial_date);
     if (temp) {
         g_editing_date = *temp;
@@ -65,12 +66,16 @@ static void HandleSaveDate(Clay_ElementId elementId, Clay_PointerData pointerInf
         g_modal->is_open = false;
     }
 }
+
 static void RenderDatePickerModal(void) {
+    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
+
     static char year_str[16];
     static char month_str[32];
     static char day_str[16];
     
-    // Manually convert year to string
+    // Year string conversion
     {
         int year = 1900 + g_editing_date.tm_year;
         int index = 0;
@@ -78,22 +83,19 @@ static void RenderDatePickerModal(void) {
         int digits[4] = {0};
         int digit_count = 0;
         
-        // Extract digits
         while (temp_year > 0) {
             digits[digit_count++] = temp_year % 10;
             temp_year /= 10;
         }
         
-        // Reconstruct in reverse
         for (int i = digit_count - 1; i >= 0; i--) {
             year_str[index++] = digits[i] + '0';
         }
         year_str[index] = '\0';
     }
     
-    // Manually handle month name
+    // Month string
     {
-        
         int month_index = g_editing_date.tm_mon;
         if (month_index < 0) month_index = 0;
         if (month_index > 11) month_index = 11;
@@ -107,7 +109,7 @@ static void RenderDatePickerModal(void) {
         month_str[i] = '\0';
     }
     
-    // Manually convert day to string
+    // Day string conversion
     {
         int day = g_editing_date.tm_mday;
         int index = 0;
@@ -115,13 +117,11 @@ static void RenderDatePickerModal(void) {
         int digits[2] = {0};
         int digit_count = 0;
         
-        // Extract digits
         while (temp_day > 0) {
             digits[digit_count++] = temp_day % 10;
             temp_day /= 10;
         }
         
-        // Reconstruct in reverse
         for (int i = digit_count - 1; i >= 0; i--) {
             day_str[index++] = digits[i] + '0';
         }
@@ -140,7 +140,7 @@ static void RenderDatePickerModal(void) {
         CLAY_TEXT(CLAY_STRING("Select Date"), 
             CLAY_TEXT_CONFIG({
                 .fontSize = 24,
-                .textColor = COLOR_TEXT
+                .textColor = base_theme.text
             })
         );
 
@@ -149,23 +149,23 @@ static void RenderDatePickerModal(void) {
             .childGap = 10,
             .layoutDirection = CLAY_LEFT_TO_RIGHT
         })) {
-            CLAY_TEXT(CLAY_STRING("Year:"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = COLOR_TEXT }));
+            CLAY_TEXT(CLAY_STRING("Year:"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
             
             CLAY(CLAY_LAYOUT({ .padding = { 10, 10, 5, 5 }}),
-                CLAY_RECTANGLE({ .color = COLOR_SECONDARY }),
+                CLAY_RECTANGLE({ .color = base_theme.secondary }),
                 Clay_OnHover(HandleYearChange, -1)
             ) {
-                CLAY_TEXT(CLAY_STRING("-"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = COLOR_TEXT }));
+                CLAY_TEXT(CLAY_STRING("-"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
             }
 
             Clay_String year_obj = { .chars = year_str, .length = strlen(year_str) };
-            CLAY_TEXT(year_obj, CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = COLOR_TEXT }));
+            CLAY_TEXT(year_obj, CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
 
             CLAY(CLAY_LAYOUT({ .padding = { 10, 10, 5, 5 }}),
-                CLAY_RECTANGLE({ .color = COLOR_SECONDARY }),
+                CLAY_RECTANGLE({ .color = base_theme.secondary }),
                 Clay_OnHover(HandleYearChange, 1)
             ) {
-                CLAY_TEXT(CLAY_STRING("+"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = COLOR_TEXT }));
+                CLAY_TEXT(CLAY_STRING("+"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
             }
         }
 
@@ -174,23 +174,23 @@ static void RenderDatePickerModal(void) {
             .childGap = 10,
             .layoutDirection = CLAY_LEFT_TO_RIGHT
         })) {
-            CLAY_TEXT(CLAY_STRING("Month:"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = COLOR_TEXT }));
+            CLAY_TEXT(CLAY_STRING("Month:"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
             
             CLAY(CLAY_LAYOUT({ .padding = { 10, 10, 5, 5 }}),
-                CLAY_RECTANGLE({ .color = COLOR_SECONDARY }),
+                CLAY_RECTANGLE({ .color = base_theme.secondary }),
                 Clay_OnHover(HandleMonthChange, -1)
             ) {
-                CLAY_TEXT(CLAY_STRING("-"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = COLOR_TEXT }));
+                CLAY_TEXT(CLAY_STRING("-"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
             }
 
             Clay_String month_obj = { .chars = month_str, .length = strlen(month_str) };
-            CLAY_TEXT(month_obj, CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = COLOR_TEXT }));
+            CLAY_TEXT(month_obj, CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
 
             CLAY(CLAY_LAYOUT({ .padding = { 10, 10, 5, 5 }}),
-                CLAY_RECTANGLE({ .color = COLOR_SECONDARY }),
+                CLAY_RECTANGLE({ .color = base_theme.secondary }),
                 Clay_OnHover(HandleMonthChange, 1)
             ) {
-                CLAY_TEXT(CLAY_STRING("+"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = COLOR_TEXT }));
+                CLAY_TEXT(CLAY_STRING("+"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
             }
         }
 
@@ -199,23 +199,23 @@ static void RenderDatePickerModal(void) {
             .childGap = 10,
             .layoutDirection = CLAY_LEFT_TO_RIGHT
         })) {
-            CLAY_TEXT(CLAY_STRING("Day:"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = COLOR_TEXT }));
+            CLAY_TEXT(CLAY_STRING("Day:"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
             
             CLAY(CLAY_LAYOUT({ .padding = { 10, 10, 5, 5 }}),
-                CLAY_RECTANGLE({ .color = COLOR_SECONDARY }),
+                CLAY_RECTANGLE({ .color = base_theme.secondary }),
                 Clay_OnHover(HandleDayChange, -1)
             ) {
-                CLAY_TEXT(CLAY_STRING("-"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = COLOR_TEXT }));
+                CLAY_TEXT(CLAY_STRING("-"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
             }
 
             Clay_String day_obj = { .chars = day_str, .length = strlen(day_str) };
-            CLAY_TEXT(day_obj, CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = COLOR_TEXT }));
+            CLAY_TEXT(day_obj, CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
 
             CLAY(CLAY_LAYOUT({ .padding = { 10, 10, 5, 5 }}),
-                CLAY_RECTANGLE({ .color = COLOR_SECONDARY }),
+                CLAY_RECTANGLE({ .color = base_theme.secondary }),
                 Clay_OnHover(HandleDayChange, 1)
             ) {
-                CLAY_TEXT(CLAY_STRING("+"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = COLOR_TEXT }));
+                CLAY_TEXT(CLAY_STRING("+"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
             }
         }
 
@@ -223,28 +223,28 @@ static void RenderDatePickerModal(void) {
         CLAY(CLAY_LAYOUT({ .padding = { 0, 0, 10, 10 }})) {
             CLAY(CLAY_LAYOUT({ .padding = { 20, 20, 10, 10 }}),
                 CLAY_RECTANGLE({
-                    .color = COLOR_SUCCESS,
+                    .color = base_theme.primary,
                     .cursorPointer = true,
                     .cornerRadius = CLAY_CORNER_RADIUS(8)
                 }),
                 Clay_OnHover(HandleSaveDate, 0)
             ) {
-                CLAY_TEXT(CLAY_STRING("Save"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = COLOR_TEXT }));
+                CLAY_TEXT(CLAY_STRING("Save"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
             }
         }
     }
 }
 
 void RenderDatePicker(time_t current_date, void (*on_date_change)(time_t), Modal* modal) {
-    static char date_str[32] = {0};  // Make static to persist between calls
+    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
+
+    static char date_str[32] = {0};
     struct tm* current_tm = localtime(&current_date);
 
-
-    // Clear previous content
     memset(date_str, 0, sizeof(date_str));
 
     if (current_tm) {
-        // Attempt to use a single, static string construction
         snprintf(date_str, sizeof(date_str), "%d %s %d", 
             current_tm->tm_mday, 
             (current_tm->tm_mon < 12) ? month_names[current_tm->tm_mon] : "Invalid",
@@ -262,14 +262,14 @@ void RenderDatePicker(time_t current_date, void (*on_date_change)(time_t), Modal
         CLAY(CLAY_ID("DateDisplay"),
             CLAY_LAYOUT({ .padding = { 10, 10, 5, 5 }}),
             CLAY_RECTANGLE({
-                .color = COLOR_SECONDARY,
+                .color = base_theme.secondary,
                 .cursorPointer = true,
                 .cornerRadius = CLAY_CORNER_RADIUS(8)
             }),
             Clay_OnHover(HandleDateClick, (intptr_t)modal)
         ) {
             Clay_String date_obj = { .chars = date_str, .length = strlen(date_str) };
-            CLAY_TEXT(date_obj, CLAY_TEXT_CONFIG({ .fontSize = 16, .textColor = COLOR_TEXT }));
+            CLAY_TEXT(date_obj, CLAY_TEXT_CONFIG({ .fontSize = 16, .textColor = base_theme.text }));
         }
     }
 

@@ -5,9 +5,9 @@ set_languages("c99")
 add_rules("mode.debug", "mode.release")
 
 -- Include paths
-add_includedirs("include", "rocks/include", "rocks/include/renderer", "rocks/clay")
-add_headerfiles("rocks/include/*.h", "rocks/include/renderer/*.h")
-add_files("rocks/src/*.c", "rocks/src/renderer/*.c")
+add_includedirs("include", "../rocks/include", "../rocks/include/renderer", "../rocks/clay")
+add_headerfiles("../rocks/include/*.h", "../rocks/include/renderer/*.h")
+add_files("../rocks/src/*.c", "../rocks/src/renderer/*.c")
 
 -- Android platform configuration
 if is_plat("android") then

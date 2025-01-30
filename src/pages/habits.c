@@ -8,6 +8,10 @@
 
 #include "utils.h"
 
+#include "rocks.h"
+#include "quest_theme.h"
+
+
 HabitCollection habits = {0};
 Modal color_picker_modal = {
     .is_open = false,
@@ -35,28 +39,42 @@ static Uint32 lastNewTabTime = 0;
 const Uint32 NEW_TAB_DEBOUNCE_MS = 250;
 #endif
 
+typedef struct {
+    const char* url;
+    Clay_Dimensions dimensions;
+} HabitIcon;
 
-#ifndef __EMSCRIPTEN__
-static SDL_Texture* check_texture = NULL;
-static SDL_Texture* edit_texture = NULL;
-static SDL_Texture* trash_texture = NULL;
+static HabitIcon HABIT_ICONS[] = {
+    {.url = "images/icons/check.png", .dimensions = {24, 24}},
+    {.url = "images/icons/edit.png", .dimensions = {24, 24}},
+    {.url = "images/icons/trash.png", .dimensions = {24, 24}}
+};
 
-void InitializeHabitTabBar(SDL_Renderer* renderer) {
-    SDL_Surface* surface;
+static void* habit_icon_images[3] = {NULL};
 
-    surface = load_image("images/icons/check.png");
-    check_texture = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_FreeSurface(surface);
+void InitializeHabitIcons(Rocks* rocks) {
+    for (int i = 0; i < 3; i++) {
+        if (habit_icon_images[i]) {
+            rocks_unload_image(rocks, habit_icon_images[i]);
+            habit_icon_images[i] = NULL;
+        }
 
-    surface = load_image("images/icons/edit.png");
-    edit_texture = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_FreeSurface(surface);
-
-    surface = load_image("images/icons/trash.png");
-    trash_texture = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_FreeSurface(surface);
+        habit_icon_images[i] = rocks_load_image(rocks, HABIT_ICONS[i].url);
+        if (!habit_icon_images[i]) {
+            fprintf(stderr, "Failed to load habit icon %s\n", HABIT_ICONS[i].url);
+            continue;
+        }
+    }
 }
-#endif
+
+void CleanupHabitIcons(Rocks* rocks) {
+    for (int i = 0; i < 3; i++) {
+        if (habit_icon_images[i]) {
+            rocks_unload_image(rocks, habit_icon_images[i]);
+            habit_icon_images[i] = NULL;
+        }
+    }
+}
 
 static uint32_t pending_delete_habit_id = 0;
 static char pending_delete_habit_name[MAX_HABIT_NAME] = {0};
@@ -148,6 +166,9 @@ static void HandleModalCancel(Clay_ElementId elementId, Clay_PointerData pointer
 }
 
 void RenderDeleteModalContent() {
+    RocksTheme base_theme = rocks_get_theme(g_rocks);
+   QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
+
     CLAY(CLAY_ID("DeleteModalContent"),
         CLAY_LAYOUT({
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
@@ -159,7 +180,7 @@ void RenderDeleteModalContent() {
             CLAY_TEXT_CONFIG({
                 .fontSize = 24,
                 .fontId = FONT_ID_BODY_24,
-                .textColor = COLOR_TEXT
+                .textColor = base_theme.text
             })
         );
 
@@ -167,7 +188,7 @@ void RenderDeleteModalContent() {
             CLAY_TEXT_CONFIG({
                 .fontSize = 16,
                 .fontId = FONT_ID_BODY_16,
-                .textColor = COLOR_TEXT
+                .textColor = base_theme.text
             })
         );
 
@@ -176,7 +197,7 @@ void RenderDeleteModalContent() {
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
         }),
         CLAY_RECTANGLE({
-            .color = COLOR_PANEL,
+            .color = base_theme.background,
             .cornerRadius = CLAY_CORNER_RADIUS(4)
         })) {
             Clay_String habit_name = {
@@ -187,7 +208,7 @@ void RenderDeleteModalContent() {
                 CLAY_TEXT_CONFIG({
                     .fontSize = 18,
                     .fontId = FONT_ID_BODY_16,
-                    .textColor = COLOR_TEXT
+                    .textColor = base_theme.text
                 })
             );
         }
@@ -203,7 +224,7 @@ void RenderDeleteModalContent() {
                     .sizing = { CLAY_SIZING_FIT(0), CLAY_SIZING_FIT(0) }
                 }),
                 CLAY_RECTANGLE({
-                    .color = COLOR_PANEL,
+                    .color = base_theme.background,
                     .cornerRadius = CLAY_CORNER_RADIUS(4),
                     .cursorPointer = true
                 }),
@@ -213,7 +234,7 @@ void RenderDeleteModalContent() {
                     CLAY_TEXT_CONFIG({
                         .fontSize = 16,
                         .fontId = FONT_ID_BODY_16,
-                        .textColor = COLOR_TEXT
+                        .textColor = base_theme.text
                     })
                 );
             }
@@ -224,7 +245,7 @@ void RenderDeleteModalContent() {
                     .sizing = { CLAY_SIZING_FIT(0), CLAY_SIZING_FIT(0) }
                 }),
                 CLAY_RECTANGLE({
-                    .color = COLOR_DANGER,
+                    .color = theme->danger,
                     .cornerRadius = CLAY_CORNER_RADIUS(4),
                     .cursorPointer = true
                 }),
@@ -234,7 +255,7 @@ void RenderDeleteModalContent() {
                     CLAY_TEXT_CONFIG({
                         .fontSize = 16,
                         .fontId = FONT_ID_BODY_16,
-                        .textColor = COLOR_TEXT
+                        .textColor = base_theme.text
                     })
                 );
             }
@@ -295,6 +316,8 @@ void HandleNewTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerI
 }
 
 static void RenderHabitTab(const Habit* habit) {
+    RocksTheme base_theme = rocks_get_theme(g_rocks);
+
     bool isActive = habits.active_habit_id == habit->id;
     
     CLAY(CLAY_IDI("HabitTab", habit->id),
@@ -307,8 +330,8 @@ static void RenderHabitTab(const Habit* habit) {
             }
         }),
         CLAY_RECTANGLE({
-            .color = isActive ? COLOR_PRIMARY :
-                     (Clay_Hovered() ? COLOR_PRIMARY_HOVER : COLOR_PANEL),
+            .color = isActive ? base_theme.primary :
+                     (Clay_Hovered() ? base_theme.primary_hover : base_theme.background),
             .cornerRadius = CLAY_CORNER_RADIUS(5),
             .cursorPointer = true
         }),
@@ -321,12 +344,15 @@ static void RenderHabitTab(const Habit* habit) {
         CLAY_TEXT(habit_str, CLAY_TEXT_CONFIG({
             .fontSize = 14,
             .fontId = FONT_ID_BODY_14,
-            .textColor = COLOR_TEXT,
+            .textColor = base_theme.text,
             .wrapMode = CLAY_TEXT_WRAP_NONE
         }));
     }
 }
-static void RenderHabitHeader() {
+void RenderHabitHeader(Rocks* rocks) {
+    RocksTheme base_theme = rocks_get_theme(rocks);
+    QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
+
     Habit* active_habit = GetActiveHabit(&habits);
     if (!active_habit) return;
 
@@ -344,7 +370,7 @@ static void RenderHabitHeader() {
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) }
         }),
         CLAY_RECTANGLE({
-            .color = COLOR_BACKGROUND
+            .color = base_theme.background
         })
     ) {
         if (isEditing) {
@@ -373,29 +399,19 @@ static void RenderHabitHeader() {
                             .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }  // Add center alignment
                         }),
                         CLAY_RECTANGLE({
-                            .color = Clay_Hovered() ? COLOR_DANGER : COLOR_PANEL,
+                            .color = Clay_Hovered() ? theme->danger : base_theme.background,
                             .cornerRadius = CLAY_CORNER_RADIUS(4),
                             .cursorPointer = true
                         }),
                         Clay_OnHover(HandleDeleteButtonClick, active_habit->id)
                     ) {
-                        #ifdef __EMSCRIPTEN__
                         CLAY(CLAY_LAYOUT({
                             .sizing = { CLAY_SIZING_FIXED(24), CLAY_SIZING_FIXED(24) }
                         }),
                         CLAY_IMAGE({
-                            .sourceDimensions = { 24, 24 },
-                            .sourceURL = CLAY_STRING("images/icons/trash.png")
+                            .sourceDimensions = HABIT_ICONS[2].dimensions,
+                            .imageData = habit_icon_images[2]
                         })) {}
-                        #else
-                        CLAY(CLAY_LAYOUT({
-                            .sizing = { CLAY_SIZING_FIXED(24), CLAY_SIZING_FIXED(24) }
-                        }),
-                        CLAY_IMAGE({
-                            .sourceDimensions = { 24, 24 },
-                            .imageData = trash_texture
-                        })) {}
-                        #endif
                     }
                     // Confirm button
                     CLAY(CLAY_ID("ConfirmButton"),
@@ -404,29 +420,19 @@ static void RenderHabitHeader() {
                             .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }  // Add center alignment
                         }),
                         CLAY_RECTANGLE({
-                            .color = Clay_Hovered() ? COLOR_SUCCESS : COLOR_SECONDARY,
+                            .color = Clay_Hovered() ? theme->success : base_theme.secondary,
                             .cornerRadius = CLAY_CORNER_RADIUS(4),
                             .cursorPointer = true
                         }),
                         Clay_OnHover(HandleConfirmButtonClick, 0)
                     ) {
-                        #ifdef __EMSCRIPTEN__
                         CLAY(CLAY_LAYOUT({
                             .sizing = { CLAY_SIZING_FIXED(24), CLAY_SIZING_FIXED(24) }
                         }),
                         CLAY_IMAGE({
-                            .sourceDimensions = { 24, 24 },
-                            .sourceURL = CLAY_STRING("images/icons/check.png")
+                            .sourceDimensions = HABIT_ICONS[0].dimensions,
+                            .imageData = habit_icon_images[0]
                         })) {}
-                        #else
-                        CLAY(CLAY_LAYOUT({
-                            .sizing = { CLAY_SIZING_FIXED(24), CLAY_SIZING_FIXED(24) }
-                        }),
-                        CLAY_IMAGE({
-                            .sourceDimensions = { 24, 24 },
-                            .imageData = check_texture
-                        })) {}
-                        #endif
                     }
                 }
             }
@@ -444,7 +450,7 @@ static void RenderHabitHeader() {
                 CLAY_TEXT(active_name, CLAY_TEXT_CONFIG({
                     .fontSize = 24,
                     .fontId = FONT_ID_BODY_24,
-                    .textColor = COLOR_TEXT
+                    .textColor = base_theme.text
                 }));
             }
         }
@@ -452,13 +458,18 @@ static void RenderHabitHeader() {
 }
 
 void RenderHabitTabBar() {
+
+    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
+
+
     CLAY(CLAY_ID("HabitTabsContainer"),
         CLAY_LAYOUT({
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIXED(62) },
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
         }),
         CLAY_RECTANGLE({ 
-            .color = COLOR_SECONDARY
+            .color = base_theme.secondary
          })
     ) {
         CLAY(CLAY_ID("HabitTabs"),
@@ -478,7 +489,7 @@ void RenderHabitTabBar() {
             CLAY(CLAY_ID("NewHabitTab"),
                 CLAY_LAYOUT({ .padding = { 16, 16 } }),
                 CLAY_RECTANGLE({
-                    .color = Clay_Hovered() ? COLOR_PRIMARY_HOVER : COLOR_PANEL,
+                    .color = Clay_Hovered() ? base_theme.primary_hover : base_theme.background,
                     .cornerRadius = CLAY_CORNER_RADIUS(5),
                     .cursorPointer = true
                 }),
@@ -487,7 +498,7 @@ void RenderHabitTabBar() {
                 CLAY_TEXT(CLAY_STRING("+"), CLAY_TEXT_CONFIG({
                     .fontSize = 24,
                     .fontId = FONT_ID_BODY_24,
-                    .textColor = COLOR_TEXT
+                    .textColor = base_theme.text
                 }));
             }
         }
@@ -503,22 +514,6 @@ void HandleTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo
     }
 }
 
-void CleanupHabitTabBar(void) {
-    #ifndef __EMSCRIPTEN__
-    if (check_texture) {
-        SDL_DestroyTexture(check_texture);
-        check_texture = NULL;
-    }
-    if (edit_texture) {
-        SDL_DestroyTexture(edit_texture);
-        edit_texture = NULL;
-    }
-    if (trash_texture) {
-        SDL_DestroyTexture(trash_texture);
-        trash_texture = NULL;
-    }
-    #endif
-}
 
 void HandleDateChange(time_t new_date) {
     Habit* active_habit = GetActiveHabit(&habits);
@@ -527,18 +522,8 @@ void HandleDateChange(time_t new_date) {
         SaveHabits(&habits);
     }
 }
-#ifdef __EMSCRIPTEN__
-void InitializeHabitsPage() {
-    LoadHabits(&habits);
-    habits.habit_name_input = CreateTextInput(NULL, HandleHabitNameSubmit);
 
-    Habit* active_habit = GetActiveHabit(&habits);
-    if (active_habit) {
-        InitializeDatePicker(active_habit->start_date, HandleDateChange, &date_picker_modal);
-    }
-}
-#else
-void InitializeHabitsPage(SDL_Renderer* renderer) {
+void InitializeHabitsPage(Rocks* rocks) {
     LoadHabits(&habits);
     habits.habit_name_input = CreateTextInput(NULL, HandleHabitNameSubmit);
 
@@ -547,9 +532,8 @@ void InitializeHabitsPage(SDL_Renderer* renderer) {
         InitializeDatePicker(active_habit->start_date, HandleDateChange, &date_picker_modal);
     }
 
-    InitializeHabitTabBar(renderer);
+    InitializeHabitIcons(rocks);
 }
-#endif
 
 void ToggleHabitStateForDay(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
@@ -580,16 +564,17 @@ void HandleHabitsPageInput(InputEvent event) {
         UpdateTextInput(habits.habit_name_input, event.key, event.delta_time);
     }
 }
-void CleanupHabitsPage() {
+void CleanupHabitsPage(Rocks* rocks) {
     if (habits.habit_name_input) {
         DestroyTextInput(habits.habit_name_input);
         habits.habit_name_input = NULL;
     }
-    #ifndef __EMSCRIPTEN__
-    CleanupHabitTabBar();
-    #endif
+    CleanupHabitIcons(rocks);
 }
 void RenderHabitsPage() {
+    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
+
     LoadHabits(&habits);
     Habit* active_habit = GetActiveHabit(&habits);
     if (!active_habit) return;
@@ -665,7 +650,7 @@ void RenderHabitsPage() {
             Clay_TextElementConfig *day_label_config = CLAY_TEXT_CONFIG({
                 .fontSize = labelFontSize,
                 .fontId = FONT_ID_BODY_24,
-                .textColor = COLOR_TEXT
+                .textColor = base_theme.text
             });
 
             for (int i = 0; i < 7; i++) {

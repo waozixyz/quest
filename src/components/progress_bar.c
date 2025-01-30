@@ -1,11 +1,16 @@
 #include "components/progress_bar.h"
 
+#include "rocks.h"
+#include "quest_theme.h"
+
 void RenderProgressBar(float completion, Clay_Color color) {
+    RocksTheme base_theme = rocks_get_theme(g_rocks);
+
     CLAY(CLAY_LAYOUT({
         .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIXED(20) }
     }),
     CLAY_RECTANGLE({
-        .color = COLOR_SECONDARY,
+        .color = base_theme.secondary,
         .cornerRadius = CLAY_CORNER_RADIUS(4)
     })) {
         if (completion > 0.0f) {
@@ -24,6 +29,8 @@ void RenderProgressBar(float completion, Clay_Color color) {
 }
 
 void RenderHabitProgressBar(const Habit* habit, float completion) {
+    RocksTheme base_theme = rocks_get_theme(g_rocks);
+
     CLAY(CLAY_IDI("HabitProgress", habit->id),
         CLAY_LAYOUT({
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIXED(30) },
@@ -44,7 +51,7 @@ void RenderHabitProgressBar(const Habit* habit, float completion) {
                 CLAY_TEXT_CONFIG({
                     .fontSize = 14,
                     .fontId = FONT_ID_BODY_14,
-                    .textColor = COLOR_TEXT
+                    .textColor = base_theme.text
                 })
             );
         }

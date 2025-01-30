@@ -5,6 +5,7 @@
 #include "app.h"
 #include "pages/pages.h"
 #include <stdio.h>
+#include "quest_theme.h"
 
 
 // Font loading configuration
@@ -57,29 +58,20 @@ static bool load_fonts(void) {
 }
 
 // Initialize pages
-static void initialize_pages(void) {
+static void initialize_pages(Rocks* rocks) {
     printf("DEBUG: Starting page initialization...\n");
-#ifdef ROCKS_USE_SDL2
-    SDL_Renderer* renderer = rocks_get_renderer();
-    if (!renderer) {
-        printf("ERROR: Failed to get SDL renderer\n");
-        return;
-    }
-    InitializeHabitsPage(renderer);
-    InitializeTodosPage(renderer);
-#else
-    InitializeHabitsPage();
-    InitializeTodosPage();
-#endif
+    InitializeHabitsPage(rocks);
+    InitializeTodosPage(rocks);
     printf("DEBUG: Pages initialized successfully\n");
 }
 
 // Cleanup pages
-static void cleanup_pages(void) {
+static void cleanup_pages(Rocks* rocks) {
     printf("DEBUG: Starting cleanup...\n");
+    CleanupNavIcons(rocks); 
     CleanupHomePage();
-    CleanupHabitsPage();
-    CleanupTodosPage();
+    CleanupHabitsPage(rocks);
+    CleanupTodosPage(rocks);
     printf("DEBUG: Cleanup completed\n");
 }
 
@@ -94,7 +86,7 @@ static Clay_RenderCommandArray update(Rocks* rocks, float dt) {
             .layoutDirection = CLAY_TOP_TO_BOTTOM,
             .childGap = 20
         }),
-        CLAY_RECTANGLE({ .color = theme.panel })
+        CLAY_RECTANGLE({ .color = theme.background })
     ) {
         // Render the current page
         switch (ACTIVE_PAGE) {
@@ -106,7 +98,7 @@ static Clay_RenderCommandArray update(Rocks* rocks, float dt) {
         }
 
         // Render navigation menu
-        RenderNavigationMenu();
+        RenderNavigationMenu(rocks);
     }
 
     return Clay_EndLayout();
@@ -126,24 +118,16 @@ int main(void) {
 
     printf("DEBUG: SDL config initialized\n");
 
+    // Create the Quest theme
+    QuestTheme theme = quest_theme_create();
+
     RocksConfig config = {
         .window_width = 800,
         .window_height = 600,
         .window_title = "Quest",
         .renderer_config = &sdl_config,
-        .theme = {
-            .primary = (Clay_Color){66, 135, 245, 255},
-            .primary_hover = (Clay_Color){87, 150, 255, 255},
-            .secondary = (Clay_Color){45, 45, 45, 255},
-            .panel = (Clay_Color){30, 30, 30, 255},
-            .text = (Clay_Color){255, 255, 255, 255},
-            .text_secondary = (Clay_Color){180, 180, 180, 255},
-            .scrollbar_track = (Clay_Color){40, 40, 40, 200},
-            .scrollbar_thumb = (Clay_Color){80, 80, 80, 255},
-            .scrollbar_thumb_hover = (Clay_Color){100, 100, 100, 255}
-        }
+        .theme = theme.base  // Pass the base theme to Rocks
     };
-
     printf("DEBUG: Rocks config initialized\n");
 
     // Initialize Rocks
@@ -164,9 +148,14 @@ int main(void) {
     }
     printf("DEBUG: Fonts loaded successfully\n");
 
+    // Initialize nav icons
+    printf("DEBUG: Starting nav icons initialization...\n");
+    InitializeNavIcons(rocks);
+    printf("DEBUG: Nav icons initialized successfully\n");
+
     // Initialize pages
     printf("DEBUG: Starting page initialization...\n");
-    initialize_pages();
+    initialize_pages(rocks);
     printf("DEBUG: Pages initialized successfully\n");
 
     // Run the main loop
@@ -176,7 +165,7 @@ int main(void) {
 
     // Cleanup
     printf("DEBUG: Starting cleanup...\n");
-    cleanup_pages();
+    cleanup_pages(rocks);
     rocks_cleanup(rocks);
     printf("DEBUG: Cleanup completed\n");
 

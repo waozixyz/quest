@@ -1,5 +1,8 @@
 #include "components/modal.h"
 
+#include "rocks.h"
+#include "quest_theme.h"
+
 static void HandleBackdropClick(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         Modal* modal = (Modal*)userData;
@@ -19,6 +22,8 @@ void OpenModal(Modal* modal) {
 }
 
 void RenderModal(Modal* modal, void (*render_content)(void)) {
+    RocksTheme base_theme = rocks_get_theme(g_rocks);
+
     if (!modal->is_open) return;
 
     // Backdrop
@@ -56,7 +61,7 @@ void RenderModal(Modal* modal, void (*render_content)(void)) {
             .padding = { 20, 20, 20, 20 }
         }),
         CLAY_RECTANGLE({ 
-            .color = COLOR_BACKGROUND_HOVER,
+            .color = base_theme.background_hover,
             .cornerRadius = CLAY_CORNER_RADIUS(8)
         })
     ) {
