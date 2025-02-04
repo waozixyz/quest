@@ -55,9 +55,4 @@ void UpdateCalendarStartDate(HabitCollection* collection, time_t new_start_date)
 void DeleteHabit(HabitCollection* collection, uint32_t habit_id);
 bool IsHabitCompletedForDate(const Habit* habit, time_t date);
 
-// Platform-specific initialization
-#ifndef __EMSCRIPTEN__
-#include "SDL.h"
-#endif
-
 #endif

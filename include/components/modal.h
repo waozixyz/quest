@@ -14,10 +14,4 @@ void RenderModal(Modal* modal, void (*render_content)(void));
 void CloseModal(Modal* modal);
 void OpenModal(Modal* modal);
 
-
-
-#ifndef __EMSCRIPTEN__
-#include "SDL.h"
-#endif
-
 #endif // MODAL_H

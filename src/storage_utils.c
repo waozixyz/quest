@@ -11,8 +11,7 @@
 static int construct_file_path(char* dest, size_t dest_size, const char* root_dir, const char* filename) {
     int result = snprintf(dest, dest_size, "%s/%s", root_dir, filename);
     if (result < 0 || result >= dest_size) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
-            "Path too long: %s/%s", root_dir, filename);
+        printf("Error: Path too long: %s/%s\n", root_dir, filename);
         return -1;
     }
     return 0;
@@ -43,8 +42,7 @@ int ensure_directory_exists(const char* path) {
             if (stat(tmp, &st) == -1) {
                 int mkdir_result = mkdir(tmp, DIRECTORY_PERMISSIONS);
                 if (mkdir_result != 0 && errno != EEXIST) {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
-                        "Failed to create directory: %s. Error: %s", 
+                    printf("Error: Failed to create directory: %s. Error: %s\n", 
                         tmp, strerror(errno));
                     return -1;
                 }
@@ -58,8 +56,7 @@ int ensure_directory_exists(const char* path) {
     if (stat(tmp, &st) == -1) {
         int mkdir_result = mkdir(tmp, DIRECTORY_PERMISSIONS);
         if (mkdir_result != 0 && errno != EEXIST) {
-            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
-                "Failed to create final directory: %s. Error: %s", 
+            printf("Error: Failed to create final directory: %s. Error: %s\n", 
                 tmp, strerror(errno));
             return -1;
         }
@@ -108,8 +105,7 @@ void determine_storage_directory(StorageConfig* config) {
         snprintf(full_path, sizeof(full_path), "%s/.local/share/quest", home_dir);
     } else {
         // Absolute last resort: current directory
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, 
-            "Could not determine home or XDG_DATA_HOME directory. Using current directory.");
+        printf("Warning: Could not determine home or XDG_DATA_HOME directory. Using current directory.\n");
         strcpy(config->root_dir, ".");
         return;
     }
@@ -119,8 +115,7 @@ void determine_storage_directory(StorageConfig* config) {
         strlcpy(config->root_dir, full_path, MAX_PATH_LENGTH);
     } else {
         // Fallback to current directory if directory creation fails
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, 
-            "Failed to create quest directory. Falling back to current directory.");
+        printf("Warning: Failed to create quest directory. Falling back to current directory.\n");
         strcpy(config->root_dir, ".");
     }
 #endif
@@ -128,8 +123,7 @@ void determine_storage_directory(StorageConfig* config) {
     // Construct specific file paths with error handling
     if (construct_file_path(config->habits_path, MAX_PATH_LENGTH, config->root_dir, "habits.json") != 0 ||
         construct_file_path(config->todos_path, MAX_PATH_LENGTH, config->root_dir, "todos.json") != 0) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
-            "Error: Storage path too long. Using default filenames.");
+        printf("Error: Storage path too long. Using default filenames.\n");
         strcpy(config->habits_path, "habits.json");
         strcpy(config->todos_path, "todos.json");
     }
@@ -140,8 +134,7 @@ int write_file_contents(const char* path, const char* contents, size_t length) {
 
     FILE* file = fopen(path, "wb");
     if (!file) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
-            "Could not open file for writing: %s", path);
+        printf("Error: Could not open file for writing: %s\n", path);
         return -1;
     }
 
@@ -149,8 +142,7 @@ int write_file_contents(const char* path, const char* contents, size_t length) {
     fclose(file);
 
     if (written != length) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
-            "Failed to write entire file: %s", path);
+        printf("Error: Failed to write entire file: %s\n", path);
         return -1;
     }
 
@@ -162,8 +154,7 @@ char* read_file_contents(const char* path, long* file_size) {
 
     FILE* file = fopen(path, "rb");
     if (!file) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, 
-            "Could not open file for reading: %s", path);
+        printf("Warning: Could not open file for reading: %s\n", path);
         return NULL;
     }
 
@@ -176,8 +167,7 @@ char* read_file_contents(const char* path, long* file_size) {
     char* buffer = malloc(*file_size + 1);
     if (!buffer) {
         fclose(file);
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
-            "Failed to allocate memory for file reading");
+        printf("Error: Failed to allocate memory for file reading\n");
         return NULL;
     }
 
@@ -186,8 +176,7 @@ char* read_file_contents(const char* path, long* file_size) {
     fclose(file);
 
     if (read_size != *file_size) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
-            "Failed to read entire file: %s", path);
+        printf("Error: Failed to read entire file: %s\n", path);
         free(buffer);
         return NULL;
     }

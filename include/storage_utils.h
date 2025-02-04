@@ -10,7 +10,6 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <string.h>
-#include <SDL_log.h>
 
 #define MAX_PATH_LENGTH 1024
 #define APP_PACKAGE "io.naox.quest"

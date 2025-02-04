@@ -33,10 +33,10 @@ Modal delete_habit_modal = {
 
 
 #ifndef __EMSCRIPTEN__
-static Uint32 last_click_time = 0;
-static uint32_t last_clicked_habit_id = 0;
-static Uint32 lastNewTabTime = 0;
-const Uint32 NEW_TAB_DEBOUNCE_MS = 250;
+static float last_click_time = 0;
+static float last_clicked_habit_id = 0;
+static float lastNewTabTime = 0;
+const float NEW_TAB_DEBOUNCE_MS = 250;
 #endif
 
 typedef struct {
@@ -90,7 +90,7 @@ static void HandleEditButtonClick(Clay_ElementId elementId, Clay_PointerData poi
             }
         }
         #ifdef CLAY_MOBILE
-        SDL_StartTextInput();
+        rocks_start_text_input();
         #endif
     }
 }
@@ -106,7 +106,7 @@ void HandleHeaderTitleClick(Clay_ElementId elementId, Clay_PointerData pointerIn
     }
 
     #ifndef __EMSCRIPTEN__
-    Uint32 current_time = SDL_GetTicks();
+    float current_time = rocks_get_time(g_rocks);
     
     // Check if this is a double click on the same habit
     if (last_clicked_habit_id == active_habit->id && 
@@ -138,7 +138,7 @@ static void HandleDeleteButtonClick(Clay_ElementId elementId, Clay_PointerData p
             if (habits.habits[i].id == habit_id) {
                 // Close keyboard when opening delete modal
                 #ifdef CLAY_MOBILE
-                SDL_StopTextInput();
+                rocks_stop_text_input();
                 #endif
                 
                 pending_delete_habit_id = habit_id;
@@ -281,7 +281,7 @@ void HandleHabitNameSubmit(const char* text) {
         ClearTextInput(habits.habit_name_input);
 
         #ifndef __EMSCRIPTEN__
-        SDL_StopTextInput();
+        rocks_stop_text_input();
         #endif
     }
 }
@@ -290,7 +290,7 @@ static void HandleConfirmButtonClick(Clay_ElementId elementId, Clay_PointerData 
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         HandleHabitNameSubmit(GetTextInputText(habits.habit_name_input));
         #ifdef CLAY_MOBILE
-        SDL_StopTextInput();
+        rocks_stop_text_input();
         #endif
     }
 }
@@ -300,9 +300,9 @@ void HandleNewTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerI
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         #ifndef __EMSCRIPTEN__
         // Add debounce check
-        Uint32 currentTime = SDL_GetTicks();
+        float currentTime = rocks_get_time(g_rocks);
         if (currentTime - lastNewTabTime < NEW_TAB_DEBOUNCE_MS) {
-            SDL_Log("New tab ignored - too soon (delta: %u ms)", 
+            printf("New tab ignored - too soon (delta: %f ms)", 
                     currentTime - lastNewTabTime);
             return;
         }

@@ -1,12 +1,15 @@
-#define ROCKS_USE_SDL2 1
 #define ROCKS_CLAY_IMPLEMENTATION
-
 #include "rocks.h"
-#include "app.h"
-#include "pages/pages.h"
 #include <stdio.h>
 #include "quest_theme.h"
 
+#include "config.h"
+#include "components/nav.h"
+#include "pages/pages.h"
+
+#ifndef __EMSCRIPTEN__
+#include "utils.h"
+#endif
 
 // Font loading configuration
 typedef struct {
@@ -25,14 +28,13 @@ static const FontConfig FONT_CONFIGS[] = {
     {"fonts/Calistoga-Regular.ttf", 14, FONT_ID_BODY_14},
     {"fonts/Calistoga-Regular.ttf", 18, FONT_ID_BODY_18}
 };
-
 #define FONT_CONFIG_COUNT (sizeof(FONT_CONFIGS) / sizeof(FONT_CONFIGS[0]))
+
 static bool load_fonts(void) {
     printf("DEBUG: Starting to load fonts...\n");
     
     bool success = true;
     uint16_t font_id;
-
     for (size_t i = 0; i < FONT_CONFIG_COUNT; i++) {
         font_id = rocks_load_font(FONT_CONFIGS[i].path, FONT_CONFIGS[i].size, FONT_CONFIGS[i].id);
         if (font_id == UINT16_MAX) {
@@ -44,7 +46,6 @@ static bool load_fonts(void) {
         printf("DEBUG: Successfully loaded font %s (size: %d, id: %u)\n",
                FONT_CONFIGS[i].path, FONT_CONFIGS[i].size, font_id);
     }
-
     if (!success) {
         // Cleanup any fonts that were loaded
         for (uint16_t i = 0; i < FONT_CONFIG_COUNT; i++) {
@@ -52,7 +53,6 @@ static bool load_fonts(void) {
         }
         return false;
     }
-
     printf("DEBUG: Successfully loaded all fonts\n");
     return true;
 }
@@ -78,7 +78,6 @@ static void cleanup_pages(Rocks* rocks) {
 // Update callback for Rocks
 static Clay_RenderCommandArray update(Rocks* rocks, float dt) {
     RocksTheme theme = rocks_get_theme(rocks);
-
     CLAY(CLAY_ID("MainContainer"), 
         CLAY_LAYOUT({
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
@@ -96,11 +95,9 @@ static Clay_RenderCommandArray update(Rocks* rocks, float dt) {
             case PAGE_TIMELINE: RenderTimelinePage(); break;
             case PAGE_ROUTINE: RenderRoutinePage(); break;
         }
-
         // Render navigation menu
         RenderNavigationMenu(rocks);
     }
-
     return Clay_EndLayout();
 }
 
@@ -108,6 +105,13 @@ int main(void) {
     printf("DEBUG: Program starting...\n");
 
     // Configure Rocks
+    RocksConfig config = {
+        .window_width = 800,
+        .window_height = 600,
+        .window_title = "Quest",
+    };
+
+#ifdef ROCKS_USE_SDL2
     RocksSDL2Config sdl_config = {
         .window_flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE,
         .renderer_flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC,
@@ -115,26 +119,33 @@ int main(void) {
         .vsync = true,
         .high_dpi = true
     };
+    config.renderer_config = &sdl_config;
+    printf("DEBUG: SDL2 renderer configured\n");
+#endif
 
-    printf("DEBUG: SDL config initialized\n");
+#ifdef ROCKS_USE_RAYLIB
+    RocksRaylibConfig raylib_config = {
+        .screen_width = 800,
+        .screen_height = 600
+    };
+    config.renderer_config = &raylib_config;
+    printf("DEBUG: Raylib renderer configured\n");
+#endif
+
+#if !defined(ROCKS_USE_SDL2) && !defined(ROCKS_USE_RAYLIB)
+    printf("ERROR: No rendering backend defined. Define either ROCKS_USE_SDL2 or ROCKS_USE_RAYLIB.\n");
+    return 1;
+#endif
 
     // Create the Quest theme
     QuestTheme theme = quest_theme_create();
-
-    RocksConfig config = {
-        .window_width = 800,
-        .window_height = 600,
-        .window_title = "Quest",
-        .renderer_config = &sdl_config,
-        .theme = theme.base  // Pass the base theme to Rocks
-    };
-    printf("DEBUG: Rocks config initialized\n");
+    config.theme = theme.base;  // Pass the base theme to Rocks
 
     // Initialize Rocks
     printf("DEBUG: Initializing Rocks...\n");
     Rocks* rocks = rocks_init(config);
     if (!rocks) {
-        printf("ERROR: Failed to initialize Rocks: %s\n", SDL_GetError());
+        printf("ERROR: Failed to initialize Rocks\n");
         return 1;
     }
     printf("DEBUG: Rocks initialized successfully\n");
@@ -168,7 +179,7 @@ int main(void) {
     cleanup_pages(rocks);
     rocks_cleanup(rocks);
     printf("DEBUG: Cleanup completed\n");
-
     printf("DEBUG: Program ending normally\n");
+
     return 0;
 }
