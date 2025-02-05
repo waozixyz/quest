@@ -94,6 +94,7 @@ void RenderCalendarBox(CalendarBoxProps props) {
 
     int fontSize = (int)(boxSize * 0.25f);
 
+
     CLAY(CLAY_IDI("Box", props.unique_index),
         CLAY_LAYOUT({
             .sizing = { 
@@ -105,12 +106,12 @@ void RenderCalendarBox(CalendarBoxProps props) {
                 .y = CLAY_ALIGN_Y_CENTER 
             }
         }),
-        CLAY_RECTANGLE({ 
+        props.is_today ? CLAY_BORDER_OUTSIDE_RADIUS(2, today_border_color, 8) : 0,  // Border first
+        CLAY_RECTANGLE({ // Rectangle second
             .color = Clay_Hovered() ? hover_color : box_color,
             .cornerRadius = CLAY_CORNER_RADIUS(8),
             .cursorPointer = true
         }),
-        props.is_today ? CLAY_BORDER_OUTSIDE_RADIUS(2, today_border_color, 8) : 0,
         (props.is_past || props.is_today) ? Clay_OnHover(props.on_click, props.unique_index) : 0
     ) {
         CLAY_TEXT(DAY_STRINGS[props.day_number], 
