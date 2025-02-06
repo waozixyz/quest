@@ -30,13 +30,13 @@ static const FontConfig FONT_CONFIGS[] = {
 };
 #define FONT_CONFIG_COUNT (sizeof(FONT_CONFIGS) / sizeof(FONT_CONFIGS[0]))
 
-static bool load_fonts(void) {
+static bool LoadFonts(void) {
     printf("DEBUG: Starting to load fonts...\n");
     
     bool success = true;
     uint16_t font_id;
     for (size_t i = 0; i < FONT_CONFIG_COUNT; i++) {
-        font_id = rocks_load_font(FONT_CONFIGS[i].path, FONT_CONFIGS[i].size, FONT_CONFIGS[i].id);
+        font_id = Rocks_LoadFont(FONT_CONFIGS[i].path, FONT_CONFIGS[i].size, FONT_CONFIGS[i].id);
         if (font_id == UINT16_MAX) {
             printf("ERROR: Failed to load font: %s (size: %d)\n", 
                    FONT_CONFIGS[i].path, FONT_CONFIGS[i].size);
@@ -49,7 +49,7 @@ static bool load_fonts(void) {
     if (!success) {
         // Cleanup any fonts that were loaded
         for (uint16_t i = 0; i < FONT_CONFIG_COUNT; i++) {
-            rocks_unload_font(i);
+            Rocks_UnloadFont(i);
         }
         return false;
     }
@@ -58,7 +58,7 @@ static bool load_fonts(void) {
 }
 
 // Initialize pages
-static void initialize_pages(Rocks* rocks) {
+static void InitializePages(Rocks* rocks) {
     printf("DEBUG: Starting page initialization...\n");
     InitializeHabitsPage(rocks);
     InitializeTodosPage(rocks);
@@ -66,7 +66,7 @@ static void initialize_pages(Rocks* rocks) {
 }
 
 // Cleanup pages
-static void cleanup_pages(Rocks* rocks) {
+static void CleanupPages(Rocks* rocks) {
     printf("DEBUG: Starting cleanup...\n");
     CleanupNavIcons(rocks); 
     CleanupHomePage();
@@ -77,7 +77,7 @@ static void cleanup_pages(Rocks* rocks) {
 
 // Update callback for Rocks
 static Clay_RenderCommandArray update(Rocks* rocks, float dt) {
-    RocksTheme theme = rocks_get_theme(rocks);
+    Rocks_Theme theme = Rocks_GetTheme(rocks);
     CLAY(CLAY_ID("MainContainer"), 
         CLAY_LAYOUT({
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
@@ -105,14 +105,14 @@ int main(void) {
     printf("DEBUG: Program starting...\n");
 
     // Configure Rocks
-    RocksConfig config = {
+    Rocks_Config config = {
         .window_width = 800,
         .window_height = 600,
         .window_title = "Quest",
     };
 
 #ifdef ROCKS_USE_SDL2
-    RocksSDL2Config sdl_config = {
+    Rocks_ConfigSDL2 sdl_config = {
         .window_flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE,
         .renderer_flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC,
         .scale_factor = 1.0f,
@@ -124,7 +124,7 @@ int main(void) {
 #endif
 
 #ifdef ROCKS_USE_RAYLIB
-    RocksRaylibConfig raylib_config = {
+    Rocks_RaylibConfig raylib_config = {
         .screen_width = 800,
         .screen_height = 600
     };
@@ -143,7 +143,7 @@ int main(void) {
 
     // Initialize Rocks
     printf("DEBUG: Initializing Rocks...\n");
-    Rocks* rocks = rocks_init(config);
+    Rocks* rocks = Rocks_Init(config);
     if (!rocks) {
         printf("ERROR: Failed to initialize Rocks\n");
         return 1;
@@ -152,9 +152,9 @@ int main(void) {
 
     // Load fonts
     printf("DEBUG: Starting font loading...\n");
-    if (!load_fonts()) {
+    if (!LoadFonts()) {
         printf("ERROR: Font loading failed\n");
-        rocks_cleanup(rocks);
+        Rocks_Cleanup(rocks);
         return 1;
     }
     printf("DEBUG: Fonts loaded successfully\n");
@@ -166,18 +166,18 @@ int main(void) {
 
     // Initialize pages
     printf("DEBUG: Starting page initialization...\n");
-    initialize_pages(rocks);
+    InitializePages(rocks);
     printf("DEBUG: Pages initialized successfully\n");
 
     // Run the main loop
     printf("DEBUG: Starting main loop...\n");
-    rocks_run(rocks, update);
+    Rocks_Run(rocks, update);
     printf("DEBUG: Main loop ended\n");
 
     // Cleanup
     printf("DEBUG: Starting cleanup...\n");
-    cleanup_pages(rocks);
-    rocks_cleanup(rocks);
+    CleanupPages(rocks);
+    Rocks_Cleanup(rocks);
     printf("DEBUG: Cleanup completed\n");
     printf("DEBUG: Program ending normally\n");
 

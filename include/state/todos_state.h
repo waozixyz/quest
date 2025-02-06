@@ -28,7 +28,7 @@ typedef struct {
     size_t todos_count;
     char active_day[10];
     uint32_t editing_todo_id;  // Add this
-    TextInput* todo_edit_input; // Add this
+    Rocks_TextInput* todo_edit_input; // Add this
 } TodoCollection;
 
 extern const char* DAYS[];

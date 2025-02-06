@@ -3,7 +3,7 @@
 #include "quest_theme.h"
 
 static void RenderQuestDescription() {
-    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
 
     CLAY_TEXT(CLAY_STRING("Quest is a personal life management app focused on habit tracking, task organization, and life visualization tools. Build better habits, organize your tasks, and visualize your life journey all in one place."),
         CLAY_TEXT_CONFIG({
@@ -15,7 +15,7 @@ static void RenderQuestDescription() {
 }
 
 static void RenderSettings() {
-    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
 
     CLAY_TEXT(CLAY_STRING("Settings content coming soon..."),
         CLAY_TEXT_CONFIG({
@@ -27,7 +27,7 @@ static void RenderSettings() {
 }
 
 static void RenderHabitProgress() {
-    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
 
     CLAY(CLAY_ID("StatsContainer"),
         CLAY_LAYOUT({
@@ -65,7 +65,7 @@ float CalculateHabitCompletion(const Habit* habit) {
     return (float)completed / 66.0f;
 }
 static void RenderTodayHabitItem(const Habit* habit) {
-    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
 
     CLAY(CLAY_IDI("TodayHabitItem", habit->id),
         CLAY_LAYOUT({
@@ -96,7 +96,7 @@ static void RenderTodayHabitItem(const Habit* habit) {
 
 
 static void RenderTodayHabits() {
-    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
 
     CLAY(CLAY_ID("TodayHabitsContainer"),
         CLAY_LAYOUT({

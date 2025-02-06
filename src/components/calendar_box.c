@@ -60,7 +60,7 @@ static Clay_Color GenerateFutureColor(Clay_Color color) {
 
 void RenderCalendarBox(CalendarBoxProps props) {    
     // Get theme
-    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
     QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
     
     float screenWidth = (float)windowWidth;

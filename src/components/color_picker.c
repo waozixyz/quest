@@ -27,7 +27,7 @@ static void HandleCurrentColorClick(Clay_ElementId elementId, Clay_PointerData p
 
 // Helper function to render a single color option
 static void RenderColorOption(size_t index) {
-    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
     QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
 
     CLAY(CLAY_IDI("ModalColorOption", index),
@@ -59,7 +59,7 @@ static void RenderColorRow(size_t start_index, size_t end_index) {
 }
 
 static void RenderColorPaletteModal(void) {
-    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
     QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
 
     CLAY(CLAY_ID("ModalColorPalette"),
@@ -97,7 +97,7 @@ static void RenderColorPaletteModal(void) {
 }
 
 void RenderColorPicker(Clay_Color current_color, void (*on_color_change)(Clay_Color), Modal* modal) {
-    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
     QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
 
     g_color_change_callback = on_color_change;

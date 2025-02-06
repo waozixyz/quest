@@ -39,7 +39,7 @@ typedef struct {
     size_t habits_count;
     uint32_t active_habit_id;
     bool is_editing_new_habit;
-    TextInput* habit_name_input;
+    Rocks_TextInput* habit_name_input;
 } HabitCollection;
 
 

@@ -55,11 +55,11 @@ static void* habit_icon_images[3] = {NULL};
 void InitializeHabitIcons(Rocks* rocks) {
     for (int i = 0; i < 3; i++) {
         if (habit_icon_images[i]) {
-            rocks_unload_image(rocks, habit_icon_images[i]);
+            Rocks_UnloadImage(rocks, habit_icon_images[i]);
             habit_icon_images[i] = NULL;
         }
 
-        habit_icon_images[i] = rocks_load_image(rocks, HABIT_ICONS[i].url);
+        habit_icon_images[i] = Rocks_LoadImage(rocks, HABIT_ICONS[i].url);
         if (!habit_icon_images[i]) {
             fprintf(stderr, "Failed to load habit icon %s\n", HABIT_ICONS[i].url);
             continue;
@@ -70,7 +70,7 @@ void InitializeHabitIcons(Rocks* rocks) {
 void CleanupHabitIcons(Rocks* rocks) {
     for (int i = 0; i < 3; i++) {
         if (habit_icon_images[i]) {
-            rocks_unload_image(rocks, habit_icon_images[i]);
+            Rocks_UnloadImage(rocks, habit_icon_images[i]);
             habit_icon_images[i] = NULL;
         }
     }
@@ -86,11 +86,11 @@ static void HandleEditButtonClick(Clay_ElementId elementId, Clay_PointerData poi
         if (habits.habit_name_input) {
             Habit* active_habit = GetActiveHabit(&habits);
             if (active_habit) {
-                SetTextInputText(habits.habit_name_input, active_habit->name);
+                Rocks_SetTextInputText(habits.habit_name_input, active_habit->name);
             }
         }
         #ifdef CLAY_MOBILE
-        rocks_start_text_input();
+        Rocks_StartTextInput();
         #endif
     }
 }
@@ -106,7 +106,7 @@ void HandleHeaderTitleClick(Clay_ElementId elementId, Clay_PointerData pointerIn
     }
 
     #ifndef __EMSCRIPTEN__
-    float current_time = rocks_get_time(g_rocks);
+    float current_time = Rocks_GetTime(GRocks);
     
     // Check if this is a double click on the same habit
     if (last_clicked_habit_id == active_habit->id && 
@@ -138,7 +138,7 @@ static void HandleDeleteButtonClick(Clay_ElementId elementId, Clay_PointerData p
             if (habits.habits[i].id == habit_id) {
                 // Close keyboard when opening delete modal
                 #ifdef CLAY_MOBILE
-                rocks_stop_text_input();
+                Rocks_StopTextInput();
                 #endif
                 
                 pending_delete_habit_id = habit_id;
@@ -166,7 +166,7 @@ static void HandleModalCancel(Clay_ElementId elementId, Clay_PointerData pointer
 }
 
 void RenderDeleteModalContent() {
-    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
    QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
 
     CLAY(CLAY_ID("DeleteModalContent"),
@@ -278,19 +278,19 @@ void HandleHabitNameSubmit(const char* text) {
         }
         habits.is_editing_new_habit = false;
         SaveHabits(&habits);
-        ClearTextInput(habits.habit_name_input);
+        Rocks_ClearTextInput(habits.habit_name_input);
 
         #ifndef __EMSCRIPTEN__
-        rocks_stop_text_input();
+        Rocks_StopTextInput();
         #endif
     }
 }
 
 static void HandleConfirmButtonClick(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
-        HandleHabitNameSubmit(GetTextInputText(habits.habit_name_input));
+        HandleHabitNameSubmit(Rocks_GetTextInputText(habits.habit_name_input));
         #ifdef CLAY_MOBILE
-        rocks_stop_text_input();
+        Rocks_StopTextInput();
         #endif
     }
 }
@@ -300,7 +300,7 @@ void HandleNewTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerI
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         #ifndef __EMSCRIPTEN__
         // Add debounce check
-        float currentTime = rocks_get_time(g_rocks);
+        float currentTime = Rocks_GetTime(GRocks);
         if (currentTime - lastNewTabTime < NEW_TAB_DEBOUNCE_MS) {
             printf("New tab ignored - too soon (delta: %f ms)", 
                     currentTime - lastNewTabTime);
@@ -316,7 +316,7 @@ void HandleNewTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerI
 }
 
 static void RenderHabitTab(const Habit* habit) {
-    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
 
     bool isActive = habits.active_habit_id == habit->id;
     
@@ -350,7 +350,7 @@ static void RenderHabitTab(const Habit* habit) {
     }
 }
 void RenderHabitHeader() {
-    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
     QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
 
     Habit* active_habit = GetActiveHabit(&habits);
@@ -384,7 +384,7 @@ void RenderHabitHeader() {
                 CLAY(CLAY_LAYOUT({
                     .sizing = { CLAY_SIZING_FIXED(200), CLAY_SIZING_FIT(0) }  // Fixed width for input
                 })) {
-                    RenderTextInput(habits.habit_name_input, active_habit->id);
+                    Rocks_RenderTextInput(habits.habit_name_input, active_habit->id);
                 }
 
                 // Action buttons
@@ -459,7 +459,7 @@ void RenderHabitHeader() {
 
 void RenderHabitTabBar() {
 
-    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
     QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
 
 
@@ -525,7 +525,7 @@ void HandleDateChange(time_t new_date) {
 
 void InitializeHabitsPage(Rocks* rocks) {
     LoadHabits(&habits);
-    habits.habit_name_input = CreateTextInput(NULL, HandleHabitNameSubmit);
+    habits.habit_name_input = Rocks_CreateTextInput(NULL, HandleHabitNameSubmit);
 
     Habit* active_habit = GetActiveHabit(&habits);
     if (active_habit) {
@@ -554,25 +554,25 @@ void HandleHabitsPageInput(InputEvent event) {
     
     #ifndef __EMSCRIPTEN__
     if (event.delta_time > 0) {
-        UpdateTextInput(habits.habit_name_input, 0, event.delta_time);
+        Rocks_UpdateTextInput(habits.habit_name_input, 0, event.delta_time);
     }
     #endif
 
     if (event.isTextInput) {
-        UpdateTextInput(habits.habit_name_input, event.text[0], event.delta_time);
+        Rocks_UpdateTextInput(habits.habit_name_input, event.text[0], event.delta_time);
     } else {
-        UpdateTextInput(habits.habit_name_input, event.key, event.delta_time);
+        Rocks_UpdateTextInput(habits.habit_name_input, event.key, event.delta_time);
     }
 }
 void CleanupHabitsPage(Rocks* rocks) {
     if (habits.habit_name_input) {
-        DestroyTextInput(habits.habit_name_input);
+        Rocks_DestroyTextInput(habits.habit_name_input);
         habits.habit_name_input = NULL;
     }
     CleanupHabitIcons(rocks);
 }
 void RenderHabitsPage() {
-    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
     QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
 
     LoadHabits(&habits);

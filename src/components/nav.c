@@ -20,11 +20,11 @@ static void* nav_icon_images[5] = {NULL};
 void InitializeNavIcons(Rocks* rocks) {
     for (int i = 0; i < 5; i++) {
         if (nav_icon_images[i]) {
-            rocks_unload_image(rocks, nav_icon_images[i]);
+            Rocks_UnloadImage(rocks, nav_icon_images[i]);
             nav_icon_images[i] = NULL;
         }
 
-        nav_icon_images[i] = rocks_load_image(rocks, NAV_ICONS[i].url);
+        nav_icon_images[i] = Rocks_LoadImage(rocks, NAV_ICONS[i].url);
         if (!nav_icon_images[i]) {
             fprintf(stderr, "Failed to load nav icon %s\n", NAV_ICONS[i].url);
             continue;
@@ -35,14 +35,14 @@ void InitializeNavIcons(Rocks* rocks) {
 void CleanupNavIcons(Rocks* rocks) {
     for (int i = 0; i < 5; i++) {
         if (nav_icon_images[i]) {
-            rocks_unload_image(rocks, nav_icon_images[i]);
+            Rocks_UnloadImage(rocks, nav_icon_images[i]);
             nav_icon_images[i] = NULL;
         }
     }
 }
 
 void RenderNavItem(Rocks* rocks, const char* text, uint32_t pageId) {
-    RocksTheme base_theme = rocks_get_theme(rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(rocks);
     QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
 
     bool isActive = ACTIVE_PAGE == pageId;
@@ -96,7 +96,7 @@ void RenderNavItem(Rocks* rocks, const char* text, uint32_t pageId) {
 }
 
 void RenderNavigationMenu(Rocks* rocks) {
-    RocksTheme base_theme = rocks_get_theme(rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(rocks);
     QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
     
     bool isXSmallScreen = windowWidth < BREAKPOINT_XSMALL;

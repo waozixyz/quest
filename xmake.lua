@@ -18,9 +18,9 @@ target("main")
     set_languages("c99")
     
     -- Include base paths
-    add_includedirs("include", "../rocks/include", "../rocks/include/renderer", "../rocks/clay")
+    add_includedirs("include", "../rocks/include", "../rocks/include/renderer", "../rocks/include/components", "../rocks/clay")
     add_files("src/**.c")
-    add_files("../rocks/src/*.c")
+    add_files("../rocks/src/*.c", "../rocks/src/components/*.c")
 
     -- Add renderer-specific files based on choice
     if get_config("renderer") == "sdl2" or get_config("renderer") == "sdl3" then

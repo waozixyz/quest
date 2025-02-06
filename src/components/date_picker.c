@@ -68,7 +68,7 @@ static void HandleSaveDate(Clay_ElementId elementId, Clay_PointerData pointerInf
 }
 
 static void RenderDatePickerModal(void) {
-    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
     QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
 
     static char year_str[16];
@@ -236,7 +236,7 @@ static void RenderDatePickerModal(void) {
 }
 
 void RenderDatePicker(time_t current_date, void (*on_date_change)(time_t), Modal* modal) {
-    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
     QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
 
     static char date_str[32] = {0};

@@ -11,7 +11,7 @@ void HandleMinimizeClick(Clay_ElementId elementId, Clay_PointerData pointerInfo,
 }
 
 void RenderCard(const char* title, int card_id, bool* is_minimized, void (*render_content)()) {
-    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
     QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
 
     static const Clay_String MINIMIZE_PLUS = { .length = 1, .chars = "+" };

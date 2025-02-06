@@ -22,7 +22,7 @@ void OpenModal(Modal* modal) {
 }
 
 void RenderModal(Modal* modal, void (*render_content)(void)) {
-    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
 
     if (!modal->is_open) return;
 

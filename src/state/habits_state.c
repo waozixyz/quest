@@ -103,7 +103,7 @@ static void LoadHabitFromJSON(Habit* habit, cJSON* habitObj) {
 }
 
 static void CreateDefaultHabitsJSON(HabitCollection* defaultCollection) {
-   RocksTheme base_theme = rocks_get_theme(g_rocks);
+   Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
 
    Habit* default_habit = &defaultCollection->habits[0];
    strncpy(default_habit->name, "Meditation", MAX_HABIT_NAME - 1);
@@ -217,7 +217,7 @@ void AddNewHabit(HabitCollection* collection) {
        addNewHabitFunction(collection);
        JS_LoadHabits(collection); // Reload the collection after adding
    #else
-       RocksTheme base_theme = rocks_get_theme(g_rocks);
+       Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
 
        Habit* new_habit = &collection->habits[collection->habits_count];
        snprintf(new_habit->name, MAX_HABIT_NAME, "Habit %zu", collection->habits_count + 1);
@@ -246,12 +246,12 @@ void SaveHabits(HabitCollection* collection) {
 }
 
 void LoadHabits(HabitCollection* collection) {
-   RocksTheme base_theme = rocks_get_theme(g_rocks);
+   Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
 
    if (!collection) return;
 
    // Save the text input pointer and edit state before loading
-   TextInput* saved_input = collection->habit_name_input;
+   Rocks_TextInput* saved_input = collection->habit_name_input;
    bool saved_editing_state = collection->is_editing_new_habit;
    uint32_t saved_active_id = collection->active_habit_id;
 
@@ -305,8 +305,8 @@ bool ToggleHabitDay(HabitCollection* collection, uint32_t day_index) {
    if (!collection) return false;
    
    #ifndef __EMSCRIPTEN__
-   // Add debounce check using rocks_get_time
-   float currentTime = rocks_get_time(g_rocks);
+   // Add debounce check using Rocks_GetTime
+   float currentTime = Rocks_GetTime(GRocks);
    if (currentTime - lastCalendarToggleTime < CALENDAR_TOGGLE_DEBOUNCE_MS) {
        printf("Calendar toggle ignored - too soon (delta: %f s)", 
                currentTime - lastCalendarToggleTime);

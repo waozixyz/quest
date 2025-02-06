@@ -23,7 +23,7 @@ typedef struct {
 } QuestThemeExtension;
 
 typedef struct {
-    RocksTheme base;
+    Rocks_Theme base;
     QuestThemeExtension* extension;
 } QuestTheme;
 

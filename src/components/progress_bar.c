@@ -4,7 +4,7 @@
 #include "quest_theme.h"
 
 void RenderProgressBar(float completion, Clay_Color color) {
-    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
 
     CLAY(CLAY_LAYOUT({
         .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIXED(20) }
@@ -29,7 +29,7 @@ void RenderProgressBar(float completion, Clay_Color color) {
 }
 
 void RenderHabitProgressBar(const Habit* habit, float completion) {
-    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
 
     CLAY(CLAY_IDI("HabitProgress", habit->id),
         CLAY_LAYOUT({

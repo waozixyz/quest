@@ -6,7 +6,7 @@
 #include "quest_theme.h"
 
 static TodoCollection todo_collection = {0};
-static TextInput* todo_input = NULL;
+static Rocks_TextInput* todo_input = NULL;
 
 static uint32_t pending_delete_todo_id = 0;
 static char pending_delete_todo_text[MAX_TODO_TEXT] = {0};
@@ -47,22 +47,21 @@ static void* day_symbol_images[7] = {NULL};
 
 
 static void OnTodoInputChanged(const char* text) {}
-
 static void OnTodoInputSubmit(const char* text) {
    if (text[0] != '\0') {
        AddTodo(&todo_collection, text);
-       ClearTextInput(todo_input);
+       Rocks_ClearTextInput(todo_input);
    }
 }
 
 void InitializeTodoIcons(Rocks* rocks) {
     for (int i = 0; i < 3; i++) {
         if (todo_icon_images[i]) {
-            rocks_unload_image(rocks, todo_icon_images[i]);
+            Rocks_UnloadImage(rocks, todo_icon_images[i]);
             todo_icon_images[i] = NULL;
         }
 
-        todo_icon_images[i] = rocks_load_image(rocks, TODO_ICONS[i].url);
+        todo_icon_images[i] = Rocks_LoadImage(rocks, TODO_ICONS[i].url);
         if (!todo_icon_images[i]) {
             fprintf(stderr, "Failed to load todo icon %s\n", TODO_ICONS[i].url);
             continue;
@@ -73,11 +72,11 @@ void InitializeTodoIcons(Rocks* rocks) {
 void InitializeDaySymbols(Rocks* rocks) {
     for (int i = 0; i < 7; i++) {
         if (day_symbol_images[i]) {
-            rocks_unload_image(rocks, day_symbol_images[i]);
+            Rocks_UnloadImage(rocks, day_symbol_images[i]);
             day_symbol_images[i] = NULL;
         }
 
-        day_symbol_images[i] = rocks_load_image(rocks, DAY_SYMBOLS[i].url.chars);
+        day_symbol_images[i] = Rocks_LoadImage(rocks, DAY_SYMBOLS[i].url.chars);
         if (!day_symbol_images[i]) {
             fprintf(stderr, "Failed to load day symbol %s\n", DAY_SYMBOLS[i].url.chars);
             continue;
@@ -98,8 +97,8 @@ void InitializeTodosPage(Rocks* rocks) {
     }
     
     SetActiveDay(&todo_collection, DAYS[day_index]);
-    todo_input = CreateTextInput(OnTodoInputChanged, OnTodoInputSubmit);
-    todo_collection.todo_edit_input = CreateTextInput(NULL, NULL);
+    todo_input = Rocks_CreateTextInput(OnTodoInputChanged, OnTodoInputSubmit);
+    todo_collection.todo_edit_input = Rocks_CreateTextInput(NULL, NULL);
 
     InitializeTodoIcons(rocks);
     InitializeDaySymbols(rocks);
@@ -120,7 +119,7 @@ static void HandleModalCancel(Clay_ElementId elementId, Clay_PointerData pointer
 }
 
 void RenderDeleteTodoModalContent() {
-   RocksTheme base_theme = rocks_get_theme(g_rocks);
+   Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
    QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
 
    CLAY(CLAY_ID("DeleteTodoModalContent"),
@@ -218,7 +217,7 @@ void RenderDeleteTodoModalContent() {
 }
 
 void RenderDeleteTodoModal(void) {
-   RocksTheme base_theme = rocks_get_theme(g_rocks);
+   Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
    QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
 
    if (!delete_todo_modal.is_open) return;
@@ -268,18 +267,18 @@ void RenderDeleteTodoModal(void) {
 void HandleTodosPageInput(InputEvent event) {
    if (!todo_input || !todo_collection.todo_edit_input) return;
    
-   TextInput* active_input = todo_collection.editing_todo_id ? 
+   Rocks_TextInput* active_input = todo_collection.editing_todo_id ? 
                            todo_collection.todo_edit_input : 
                            todo_input;
 
    if (event.delta_time > 0) {
-       UpdateTextInput(active_input, 0, event.delta_time);
+       Rocks_UpdateTextInput(active_input, 0, event.delta_time);
    }
 
    if (event.isTextInput) {
-       UpdateTextInput(active_input, event.text[0], event.delta_time);
+       Rocks_UpdateTextInput(active_input, event.text[0], event.delta_time);
    } else {
-       UpdateTextInput(active_input, event.key, event.delta_time);
+       Rocks_UpdateTextInput(active_input, event.key, event.delta_time);
    }
 }
 
@@ -290,7 +289,7 @@ static void HandleTabInteraction(Clay_ElementId elementId, Clay_PointerData poin
    }
 }
 void RenderTodoTab(const char* day, const DaySymbol* symbol, bool active, int index) {
-    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
     QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
 
     char id_buffer[32];
@@ -326,7 +325,7 @@ void RenderTodoTab(const char* day, const DaySymbol* symbol, bool active, int in
 
 static void HandleSubmitButtonClick(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
-       OnTodoInputSubmit(GetTextInputText(todo_input));
+       OnTodoInputSubmit(Rocks_GetTextInputText(todo_input));
    }
 }
 
@@ -336,7 +335,7 @@ static void HandleEditTodoButtonClick(Clay_ElementId elementId, Clay_PointerData
        
        for (size_t i = 0; i < todo_collection.todos_count; i++) {
            if (todo_collection.todos[i].id == todo_collection.editing_todo_id) {
-               SetTextInputText(todo_collection.todo_edit_input, todo_collection.todos[i].text);
+               Rocks_SetTextInputText(todo_collection.todo_edit_input, todo_collection.todos[i].text);
                break;
            }
        }
@@ -349,7 +348,7 @@ static void HandleEditTodoButtonClick(Clay_ElementId elementId, Clay_PointerData
 
 static void HandleTodoEditConfirm(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
-       const char* new_text = GetTextInputText(todo_collection.todo_edit_input);
+       const char* new_text = Rocks_GetTextInputText(todo_collection.todo_edit_input);
        if (new_text[0] != '\0') {
            for (size_t i = 0; i < todo_collection.todos_count; i++) {
 if (todo_collection.todos[i].id == todo_collection.editing_todo_id) {
@@ -361,7 +360,7 @@ if (todo_collection.todos[i].id == todo_collection.editing_todo_id) {
            SaveTodos(&todo_collection);
        }
        todo_collection.editing_todo_id = 0;
-       ClearTextInput(todo_collection.todo_edit_input);
+       Rocks_ClearTextInput(todo_collection.todo_edit_input);
        
        #ifdef CLAY_MOBILE
        SDL_StopTextInput();
@@ -395,7 +394,7 @@ static void HandleTodoCompleteClick(Clay_ElementId elementId, Clay_PointerData p
    }
 }
 void RenderTodoItem(const Todo* todo, int index) {
-    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
     QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
 
     char id_buffer[32];
@@ -424,7 +423,7 @@ void RenderTodoItem(const Todo* todo, int index) {
                 CLAY(CLAY_LAYOUT({
                     .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) }
                 })) {
-                    RenderTextInput(todo_collection.todo_edit_input, todo->id);
+                    Rocks_RenderTextInput(todo_collection.todo_edit_input, todo->id);
                 }
             } else {
                 Clay_String todo_text = { .chars = todo->text, .length = strlen(todo->text) };
@@ -531,7 +530,7 @@ void RenderTodoItem(const Todo* todo, int index) {
 }
 
 void RenderTodosPage() {
-    RocksTheme base_theme = rocks_get_theme(g_rocks);
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
     QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
 
     CLAY(CLAY_ID("TodosContainer"), 
@@ -576,7 +575,7 @@ void RenderTodosPage() {
                 CLAY(CLAY_LAYOUT({
                     .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) }
                 })) {
-                    RenderTextInput(todo_input, 1);
+                    Rocks_RenderTextInput(todo_input, 1);
                 }
 
                 CLAY(CLAY_ID("SubmitTodoButton"),
@@ -635,7 +634,7 @@ void RenderTodosPage() {
 void CleanupTodoIcons(Rocks* rocks) {
     for (int i = 0; i < 3; i++) {
         if (todo_icon_images[i]) {
-            rocks_unload_image(rocks, todo_icon_images[i]);
+            Rocks_UnloadImage(rocks, todo_icon_images[i]);
             todo_icon_images[i] = NULL;
         }
     }
@@ -644,7 +643,7 @@ void CleanupTodoIcons(Rocks* rocks) {
 void CleanupDaySymbols(Rocks* rocks) {
     for (int i = 0; i < 7; i++) {
         if (day_symbol_images[i]) {
-            rocks_unload_image(rocks, day_symbol_images[i]);
+            Rocks_UnloadImage(rocks, day_symbol_images[i]);
             day_symbol_images[i] = NULL;
         }
     }
@@ -652,11 +651,11 @@ void CleanupDaySymbols(Rocks* rocks) {
 
 void CleanupTodosPage(Rocks* rocks) {
     if (todo_input) {
-        DestroyTextInput(todo_input);
+        Rocks_DestroyTextInput(todo_input);
         todo_input = NULL;
     }
     if (todo_collection.todo_edit_input) {
-        DestroyTextInput(todo_collection.todo_edit_input);
+        Rocks_DestroyTextInput(todo_collection.todo_edit_input);
         todo_collection.todo_edit_input = NULL;
     }
 
