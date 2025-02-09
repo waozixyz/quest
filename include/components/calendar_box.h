@@ -7,18 +7,16 @@
 #include <stdio.h>
 #include <math.h>
 
-// Struct to hold calendar box configuration
 typedef struct {
     int day_number;
+    int unique_index;
+    Clay_Color custom_color;
     bool is_today;
     bool is_past;
-    int unique_index;
     bool is_completed;
-    void (*on_click)(Clay_ElementId, Clay_PointerData, intptr_t);
-    Clay_Color custom_color;
+    void (*on_click)(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData);
 } CalendarBoxProps;
 
-// Function to render a calendar box
 void RenderCalendarBox(CalendarBoxProps props);
 
-#endif // CALENDAR_BOX_H
+#endif

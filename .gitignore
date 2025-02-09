@@ -54,3 +54,6 @@ Thumbs.db
 
 # Generated files
 *.generated.*
+
+
+*.devenv*

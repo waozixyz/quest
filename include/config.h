@@ -7,7 +7,6 @@
 // Window & UI configuration
 extern double windowWidth, windowHeight;
 extern float globalScalingFactor;
-extern uint32_t ACTIVE_PAGE;
 extern uint32_t ACTIVE_RENDERER_INDEX;
 
 // Breakpoints

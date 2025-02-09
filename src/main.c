@@ -11,6 +11,8 @@
 #include "utils.h"
 #endif
 
+PageID ACTIVE_PAGE = PAGE_HOME;
+
 // Font loading configuration
 typedef struct {
     const char* path;
@@ -75,8 +77,8 @@ static void CleanupPages(Rocks* rocks) {
     printf("DEBUG: Cleanup completed\n");
 }
 
-// Update callback for Rocks
 static Clay_RenderCommandArray update(Rocks* rocks, float dt) {
+    printf("Inside update\n");
     Rocks_Theme theme = Rocks_GetTheme(rocks);
     CLAY(CLAY_ID("MainContainer"), 
         CLAY_LAYOUT({
@@ -87,17 +89,25 @@ static Clay_RenderCommandArray update(Rocks* rocks, float dt) {
         }),
         CLAY_RECTANGLE({ .color = theme.background })
     ) {
+        printf("before page\n");
+
         // Render the current page
         switch (ACTIVE_PAGE) {
             case PAGE_HOME: RenderHomePage(); break;
-            case PAGE_HABITS: RenderHabitsPage(); break;
-            case PAGE_TODOS: RenderTodosPage(); break;
+            case PAGE_HABITS: RenderHabitsPage(dt); break;
+            case PAGE_TODOS: RenderTodosPage(dt); break;
             case PAGE_TIMELINE: RenderTimelinePage(); break;
             case PAGE_ROUTINE: RenderRoutinePage(); break;
+            default: 
+                // Handle invalid page or NUM_PAGES
+                printf("WARNING: Invalid page ID encountered\n");
+                break;
         }
-        // Render navigation menu
+        printf("after page\n");
+
         RenderNavigationMenu(rocks);
     }
+
     return Clay_EndLayout();
 }
 
@@ -109,6 +119,7 @@ int main(void) {
         .window_width = 800,
         .window_height = 600,
         .window_title = "Quest",
+        .arena_size = 1024 * 1024 * 64
     };
 
 #ifdef ROCKS_USE_SDL2
@@ -143,6 +154,10 @@ int main(void) {
 
     // Initialize Rocks
     printf("DEBUG: Initializing Rocks...\n");
+
+    const int MAX_ELEMENTS = 16384; 
+    Clay_SetMaxElementCount(MAX_ELEMENTS);
+
     Rocks* rocks = Rocks_Init(config);
     if (!rocks) {
         printf("ERROR: Failed to initialize Rocks\n");

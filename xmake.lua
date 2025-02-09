@@ -125,6 +125,8 @@ target("main")
         add_cflags("-Wall", "-Werror", "-O2")
         add_cflags("-Wno-unused-variable")
         add_cflags("-Wno-missing-braces")
+        add_cflags("-Wno-unused-but-set-variable")
+        add_cflags("-Wno-unneeded-internal-declaration")
 
         if get_config("renderer") == "sdl2" or get_config("renderer") == "sdl3" then
             add_links("SDL2", "SDL2_image", "SDL2_ttf", "SDL2_gfx")

@@ -268,6 +268,11 @@ void RenderDeleteHabitModal(void) {
     RenderModal(&delete_habit_modal, RenderDeleteModalContent); 
 }
 void HandleHabitNameSubmit(const char* text) {
+    if (!text) return;  // Add null check
+    
+    Habit* active_habit = GetActiveHabit(&habits);
+    if (!active_habit) return;
+
     if (text[0] != '\0') {
         for (size_t i = 0; i < habits.habits_count; i++) {
             if (habits.habits[i].id == habits.active_habit_id) {
@@ -278,7 +283,10 @@ void HandleHabitNameSubmit(const char* text) {
         }
         habits.is_editing_new_habit = false;
         SaveHabits(&habits);
-        Rocks_ClearTextInput(habits.habit_name_input);
+
+        if (habits.habit_name_input) {
+            Rocks_ClearTextInput(habits.habit_name_input);
+        }
 
         #ifndef __EMSCRIPTEN__
         Rocks_StopTextInput();
@@ -356,6 +364,9 @@ void RenderHabitHeader() {
     Habit* active_habit = GetActiveHabit(&habits);
     if (!active_habit) return;
 
+    printf("Rendering header, is_editing: %d\n", habits.is_editing_new_habit);
+
+
     bool isEditing = habits.is_editing_new_habit;
 
     CLAY(CLAY_ID("HabitHeader"),
@@ -374,6 +385,8 @@ void RenderHabitHeader() {
         })
     ) {
         if (isEditing) {
+            printf("Rendering text input %p\n", (void*)habits.habit_name_input);
+
             CLAY(CLAY_LAYOUT({
                 .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) },
                 .childGap = 8,
@@ -523,9 +536,22 @@ void HandleDateChange(time_t new_date) {
     }
 }
 
+
+
 void InitializeHabitsPage(Rocks* rocks) {
+    if (!rocks) return;
+    printf("Initializing habits page\n");
+    
+    // Clean up existing
+    if (habits.habit_name_input) {
+        Rocks_DestroyTextInput(habits.habit_name_input); 
+        habits.habit_name_input = NULL;
+    }
+    
     LoadHabits(&habits);
+    printf("Creating text input\n");
     habits.habit_name_input = Rocks_CreateTextInput(NULL, HandleHabitNameSubmit);
+    printf("Text input: %p\n", (void*)habits.habit_name_input);
 
     Habit* active_habit = GetActiveHabit(&habits);
     if (active_habit) {
@@ -547,31 +573,18 @@ void HandleColorChange(Clay_Color new_color) {
     UpdateHabitColor(&habits, new_color);
 }
 
-void HandleHabitsPageInput(InputEvent event) {
-    if (!habits.habit_name_input) return;
-    
-    if (!habits.is_editing_new_habit) return;
-    
-    #ifndef __EMSCRIPTEN__
-    if (event.delta_time > 0) {
-        Rocks_UpdateTextInput(habits.habit_name_input, 0, event.delta_time);
-    }
-    #endif
-
-    if (event.isTextInput) {
-        Rocks_UpdateTextInput(habits.habit_name_input, event.text[0], event.delta_time);
-    } else {
-        Rocks_UpdateTextInput(habits.habit_name_input, event.key, event.delta_time);
-    }
-}
 void CleanupHabitsPage(Rocks* rocks) {
+    printf("Cleaning up habits page\n");
     if (habits.habit_name_input) {
+        printf("Destroying text input\n");
         Rocks_DestroyTextInput(habits.habit_name_input);
         habits.habit_name_input = NULL;
     }
     CleanupHabitIcons(rocks);
+    memset(&habits, 0, sizeof(habits));
 }
-void RenderHabitsPage() {
+
+void RenderHabitsPage(float dt) {
     Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
     QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
 
@@ -579,6 +592,17 @@ void RenderHabitsPage() {
     Habit* active_habit = GetActiveHabit(&habits);
     if (!active_habit) return;
 
+    printf("--- Frame Start ---\n");
+    printf("habit_name_input: %p\n", (void*)habits.habit_name_input);
+    printf("is_editing_new_habit: %d\n", habits.is_editing_new_habit);
+
+    // Add text input update debug
+    if (habits.habit_name_input && habits.is_editing_new_habit) {
+        printf("Updating text input dt: %f\n", dt);
+        Rocks_UpdateTextInputFromRocksInput(habits.habit_name_input, GRocks->input, dt);
+    }
+
+    
     time_t now;
     time(&now);
 
@@ -608,10 +632,14 @@ void RenderHabitsPage() {
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
         })
     ) {
-        RenderHabitTabBar();
         
+
         RenderHabitHeader();
+        printf("After header\n");
         
+        RenderHabitTabBar();
+        printf("After tab bar\n");
+            
         CLAY(CLAY_ID("ColorAndDatePickerContainer"),
             CLAY_LAYOUT({
                 .sizing = { 
@@ -631,6 +659,8 @@ void RenderHabitsPage() {
             RenderDatePicker(active_habit->start_date, HandleDateChange, &date_picker_modal);  // Use active habit's start_date
             RenderDeleteHabitModal();
         }
+        printf("After Color and Date picker bar\n");
+
 
         CLAY(CLAY_ID("DayLabels"), 
             CLAY_LAYOUT({
@@ -672,6 +702,7 @@ void RenderHabitsPage() {
                     }           
             }
         }
+        printf("After day labes\n");
 
         CLAY(CLAY_ID("CalendarScrollContainer"),
             CLAY_LAYOUT({
@@ -746,8 +777,12 @@ void RenderHabitsPage() {
                             unique_index++;
                         }
                     }
+                    printf("Row %d\n", row);
                 }
+                printf("After Calendar grid\n");
+
             }
+
         }
     }
 }

@@ -97,6 +97,7 @@ void InitializeTodosPage(Rocks* rocks) {
     }
     
     SetActiveDay(&todo_collection, DAYS[day_index]);
+    
     todo_input = Rocks_CreateTextInput(OnTodoInputChanged, OnTodoInputSubmit);
     todo_collection.todo_edit_input = Rocks_CreateTextInput(NULL, NULL);
 
@@ -264,23 +265,6 @@ void RenderDeleteTodoModal(void) {
    }
 }
 
-void HandleTodosPageInput(InputEvent event) {
-   if (!todo_input || !todo_collection.todo_edit_input) return;
-   
-   Rocks_TextInput* active_input = todo_collection.editing_todo_id ? 
-                           todo_collection.todo_edit_input : 
-                           todo_input;
-
-   if (event.delta_time > 0) {
-       Rocks_UpdateTextInput(active_input, 0, event.delta_time);
-   }
-
-   if (event.isTextInput) {
-       Rocks_UpdateTextInput(active_input, event.text[0], event.delta_time);
-   } else {
-       Rocks_UpdateTextInput(active_input, event.key, event.delta_time);
-   }
-}
 
 static void HandleTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
@@ -529,10 +513,19 @@ void RenderTodoItem(const Todo* todo, int index) {
     }
 }
 
-void RenderTodosPage() {
+
+void RenderTodosPage(float dt) {
     Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
     QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
+ 
 
+    if (todo_input) {
+        Rocks_UpdateTextInputFromRocksInput(todo_input, GRocks->input, dt);
+    }
+    if (todo_collection.todo_edit_input && todo_collection.editing_todo_id) {
+        Rocks_UpdateTextInputFromRocksInput(todo_collection.todo_edit_input, GRocks->input, dt);
+    }
+        
     CLAY(CLAY_ID("TodosContainer"), 
         CLAY_LAYOUT({ 
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },

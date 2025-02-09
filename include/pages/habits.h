@@ -29,7 +29,7 @@ void HandleHabitsPageInput(InputEvent event);
 void ToggleHabitStateForDay(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData);
 
 // Main page render function
-void RenderHabitsPage(void);
+void RenderHabitsPage(float dt);
 
 // External state
 extern HabitCollection habits;

@@ -10,7 +10,7 @@
 #include <string.h>
 
 void InitializeTodosPage(Rocks* rocks);
-void RenderTodosPage(void);
+void RenderTodosPage(float dt);
 void CleanupTodosPage(Rocks* rocks);
 void HandleTodosPageInput(InputEvent event);
 

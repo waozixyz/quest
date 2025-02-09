@@ -1,6 +1,7 @@
 #include "components/nav.h"
 #include "rocks.h"
 #include "quest_theme.h"
+#include "pages/pages.h"
 
 typedef struct {
     const char* url;
