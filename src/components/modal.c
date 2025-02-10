@@ -1,5 +1,4 @@
 #include "components/modal.h"
-
 #include "rocks.h"
 #include "quest_theme.h"
 
@@ -13,6 +12,7 @@ static void HandleBackdropClick(Clay_ElementId elementId, Clay_PointerData point
         #endif
     }
 }
+
 void OpenModal(Modal* modal) {
     modal->is_open = true;
     
@@ -27,44 +27,50 @@ void RenderModal(Modal* modal, void (*render_content)(void)) {
     if (!modal->is_open) return;
 
     // Backdrop
-    CLAY(CLAY_ID("ModalBackdrop"),
-        CLAY_FLOATING({
-            .parentId = Clay__HashString(CLAY_STRING("Clay__RootContainer"), 0, 0).id,
-            .attachment = { 
+    CLAY({
+        .id = CLAY_ID("ModalBackdrop"),
+        .layout = {
+            .sizing = {
+                .width = CLAY_SIZING_FIXED(2000),
+                .height = CLAY_SIZING_FIXED(2000)
+            }
+        },
+        .floating = {
+            .parentId = Clay_GetElementId(CLAY_STRING("Clay__RootContainer")).id,
+            .attachPoints = {
                 .element = CLAY_ATTACH_POINT_CENTER_CENTER,
-                .parent = CLAY_ATTACH_POINT_CENTER_CENTER 
+                .parent = CLAY_ATTACH_POINT_CENTER_CENTER
             },
-            .zIndex = 1000
-        }),
-        CLAY_LAYOUT({
-            .sizing = { CLAY_SIZING_FIXED(2000), CLAY_SIZING_FIXED(2000) }
-        }),
-        CLAY_RECTANGLE({ .color = {0, 0, 0, 128} }),
-        Clay_OnHover(HandleBackdropClick, (intptr_t)modal)
-    );
+            .zIndex = 1000,
+            .attachTo = CLAY_ATTACH_TO_ELEMENT_WITH_ID
+        },
+        .backgroundColor = { 0, 0, 0, 128 }
+    }) {
+        Clay_OnHover(HandleBackdropClick, (intptr_t)modal);
+    }
 
     // Modal Content
-    CLAY(CLAY_ID("ModalContent"),
-        CLAY_FLOATING({
-            .parentId = Clay__HashString(CLAY_STRING("Clay__RootContainer"), 0, 0).id,
-            .attachment = { 
+    CLAY({
+        .id = CLAY_ID("ModalContent"),
+        .layout = {
+            .sizing = {
+                .width = CLAY_SIZING_FIXED(modal->width),
+                .height = CLAY_SIZING_FIXED(modal->height)
+            },
+            .padding = CLAY_PADDING_ALL(20)
+        },
+        .floating = {
+            .parentId = Clay_GetElementId(CLAY_STRING("Clay__RootContainer")).id,
+            .attachPoints = {
                 .element = CLAY_ATTACH_POINT_CENTER_CENTER,
-                .parent = CLAY_ATTACH_POINT_CENTER_CENTER 
+                .parent = CLAY_ATTACH_POINT_CENTER_CENTER
             },
-            .zIndex = 1001
-        }),
-        CLAY_LAYOUT({
-            .sizing = { 
-                CLAY_SIZING_FIXED(modal->width),
-                CLAY_SIZING_FIXED(modal->height)
-            },
-            .padding = { 20, 20, 20, 20 }
-        }),
-        CLAY_RECTANGLE({ 
-            .color = base_theme.background_hover,
-            .cornerRadius = CLAY_CORNER_RADIUS(8)
-        })
-    ) {
+            .zIndex = 1001,
+            .attachTo = CLAY_ATTACH_TO_ELEMENT_WITH_ID
+        },
+        .backgroundColor = base_theme.background_hover,
+        .cornerRadius = CLAY_CORNER_RADIUS(8)
+    }) {
         if (render_content) {
             render_content();
         }

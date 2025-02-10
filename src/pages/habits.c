@@ -1,16 +1,11 @@
 #include "pages/habits.h"
-
 #include "components/calendar_box.h"
 #include "components/color_picker.h"
 #include "components/date_picker.h"
-
 #include "config.h"
-
 #include "utils.h"
-
 #include "rocks.h"
 #include "quest_theme.h"
-
 
 HabitCollection habits = {0};
 Modal color_picker_modal = {
@@ -30,7 +25,6 @@ Modal delete_habit_modal = {
     .width = 300,  
     .height = 300 
 };
-
 
 #ifndef __EMSCRIPTEN__
 static float last_click_time = 0;
@@ -130,7 +124,6 @@ void HandleHeaderTitleClick(Clay_ElementId elementId, Clay_PointerData pointerIn
     #endif
 }
 
-
 static void HandleDeleteButtonClick(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         uint32_t habit_id = (uint32_t)userData;
@@ -165,108 +158,12 @@ static void HandleModalCancel(Clay_ElementId elementId, Clay_PointerData pointer
     }
 }
 
-void RenderDeleteModalContent() {
-    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
-   QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
-
-    CLAY(CLAY_ID("DeleteModalContent"),
-        CLAY_LAYOUT({
-            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
-            .childGap = 24,
-            .layoutDirection = CLAY_TOP_TO_BOTTOM
-        })
-    ) {
-        CLAY_TEXT(CLAY_STRING("Delete Habit"), 
-            CLAY_TEXT_CONFIG({
-                .fontSize = 24,
-                .fontId = FONT_ID_BODY_24,
-                .textColor = base_theme.text
-            })
-        );
-
-        CLAY_TEXT(CLAY_STRING("Are you sure you want to delete:"),
-            CLAY_TEXT_CONFIG({
-                .fontSize = 16,
-                .fontId = FONT_ID_BODY_16,
-                .textColor = base_theme.text
-            })
-        );
-
-        CLAY(CLAY_LAYOUT({
-            .padding = { 16, 16, 16, 16 },
-            .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
-        }),
-        CLAY_RECTANGLE({
-            .color = base_theme.background,
-            .cornerRadius = CLAY_CORNER_RADIUS(4)
-        })) {
-            Clay_String habit_name = {
-                .length = strlen(pending_delete_habit_name),
-                .chars = pending_delete_habit_name
-            };
-            CLAY_TEXT(habit_name,
-                CLAY_TEXT_CONFIG({
-                    .fontSize = 18,
-                    .fontId = FONT_ID_BODY_16,
-                    .textColor = base_theme.text
-                })
-            );
-        }
-
-        CLAY(CLAY_LAYOUT({
-            .layoutDirection = CLAY_LEFT_TO_RIGHT,
-            .childGap = 8,
-            .childAlignment = { .x = CLAY_ALIGN_X_RIGHT }
-        })) {
-            CLAY(CLAY_ID("CancelButton"),
-                CLAY_LAYOUT({
-                    .padding = { 8, 8, 8, 8 },
-                    .sizing = { CLAY_SIZING_FIT(0), CLAY_SIZING_FIT(0) }
-                }),
-                CLAY_RECTANGLE({
-                    .color = base_theme.background,
-                    .cornerRadius = CLAY_CORNER_RADIUS(4),
-                    .cursorPointer = true
-                }),
-                Clay_OnHover(HandleModalCancel, 0)
-            ) {
-                CLAY_TEXT(CLAY_STRING("Cancel"),
-                    CLAY_TEXT_CONFIG({
-                        .fontSize = 16,
-                        .fontId = FONT_ID_BODY_16,
-                        .textColor = base_theme.text
-                    })
-                );
-            }
-
-            CLAY(CLAY_ID("ConfirmButton"),
-                CLAY_LAYOUT({
-                    .padding = { 8, 8, 8, 8 },
-                    .sizing = { CLAY_SIZING_FIT(0), CLAY_SIZING_FIT(0) }
-                }),
-                CLAY_RECTANGLE({
-                    .color = theme->danger,
-                    .cornerRadius = CLAY_CORNER_RADIUS(4),
-                    .cursorPointer = true
-                }),
-                Clay_OnHover(HandleModalConfirm, 0)
-            ) {
-                CLAY_TEXT(CLAY_STRING("Delete"),
-                    CLAY_TEXT_CONFIG({
-                        .fontSize = 16,
-                        .fontId = FONT_ID_BODY_16,
-                        .textColor = base_theme.text
-                    })
-                );
-            }
-        }
-    }
-}
 
 void RenderDeleteHabitModal(void) {
     if (!delete_habit_modal.is_open) return;
     RenderModal(&delete_habit_modal, RenderDeleteModalContent); 
 }
+
 void HandleHabitNameSubmit(const char* text) {
     if (!text) return;  // Add null check
     
@@ -303,7 +200,6 @@ static void HandleConfirmButtonClick(Clay_ElementId elementId, Clay_PointerData 
     }
 }
 
-
 void HandleNewTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         #ifndef __EMSCRIPTEN__
@@ -323,28 +219,152 @@ void HandleNewTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerI
     }
 }
 
-static void RenderHabitTab(const Habit* habit) {
-    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
+void HandleTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        uint32_t habit_id = (uint32_t)userData;
+        habits.is_editing_new_habit = false;
+        habits.active_habit_id = habit_id;
+        SaveHabits(&habits);
+    }
+}
 
+void HandleDateChange(time_t new_date) {
+    Habit* active_habit = GetActiveHabit(&habits);
+    if (active_habit) {
+        active_habit->start_date = new_date;
+        SaveHabits(&habits);
+    }
+}
+
+void ToggleHabitStateForDay(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        uint32_t day_index = (uint32_t)userData;
+        ToggleHabitDay(&habits, day_index);
+        SaveHabits(&habits);
+    }
+}
+
+void HandleColorChange(Clay_Color new_color) {
+    UpdateHabitColor(&habits, new_color);
+}
+
+void RenderDeleteModalContent() {
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
+    QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
+
+    CLAY({
+        .id = CLAY_ID("DeleteModalContent"),
+        .layout = {
+            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
+            .childGap = 24,
+            .layoutDirection = CLAY_TOP_TO_BOTTOM
+        }
+    }) {
+        CLAY_TEXT(CLAY_STRING("Delete Habit"), 
+            CLAY_TEXT_CONFIG({
+                .fontSize = 24,
+                .fontId = FONT_ID_BODY_24,
+                .textColor = base_theme.text
+            })
+        );
+
+        CLAY_TEXT(CLAY_STRING("Are you sure you want to delete:"),
+            CLAY_TEXT_CONFIG({
+                .fontSize = 16,
+                .fontId = FONT_ID_BODY_16,
+                .textColor = base_theme.text
+            })
+        );
+
+        CLAY({
+            .layout = {
+                .padding = CLAY_PADDING_ALL(16),
+                .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
+            },
+            .backgroundColor = base_theme.background,
+            .cornerRadius = CLAY_CORNER_RADIUS(4)
+        }) {
+            Clay_String habit_name = {
+                .length = strlen(pending_delete_habit_name),
+                .chars = pending_delete_habit_name
+            };
+            CLAY_TEXT(habit_name,
+                CLAY_TEXT_CONFIG({
+                    .fontSize = 18,
+                    .fontId = FONT_ID_BODY_16,
+                    .textColor = base_theme.text
+                })
+            );
+        }
+
+        CLAY({
+            .layout = {
+                .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                .childGap = 8,
+                .childAlignment = { .x = CLAY_ALIGN_X_RIGHT }
+            }
+        }) {
+            CLAY({
+                .id = CLAY_ID("CancelButton"),
+                .layout = {
+                    .padding = CLAY_PADDING_ALL(8),
+                    .sizing = { CLAY_SIZING_FIT(0), CLAY_SIZING_FIT(0) }
+                },
+                .backgroundColor = base_theme.background,
+                .cornerRadius = CLAY_CORNER_RADIUS(4)
+            }) {
+                Clay_OnHover(HandleModalCancel, 0);
+                CLAY_TEXT(CLAY_STRING("Cancel"),
+                    CLAY_TEXT_CONFIG({
+                        .fontSize = 16,
+                        .fontId = FONT_ID_BODY_16,
+                        .textColor = base_theme.text
+                    })
+                );
+            }
+
+            CLAY({
+                .id = CLAY_ID("ConfirmButton"),
+                .layout = {
+                    .padding = CLAY_PADDING_ALL(8),
+                    .sizing = { CLAY_SIZING_FIT(0), CLAY_SIZING_FIT(0) }
+                },
+                .backgroundColor = theme->danger,
+                .cornerRadius = CLAY_CORNER_RADIUS(4)
+            }) {
+                Clay_OnHover(HandleModalConfirm, 0);
+                CLAY_TEXT(CLAY_STRING("Delete"),
+                    CLAY_TEXT_CONFIG({
+                        .fontSize = 16,
+                        .fontId = FONT_ID_BODY_16,
+                        .textColor = base_theme.text
+                    })
+                );
+            }
+        }
+    }
+}
+
+void RenderHabitTab(const Habit* habit) {
+    Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
     bool isActive = habits.active_habit_id == habit->id;
     
-    CLAY(CLAY_IDI("HabitTab", habit->id),
-        CLAY_LAYOUT({
-            .padding = { 16, 16, 16, 16 },
+    CLAY({
+        .id = CLAY_IDI("HabitTab", habit->id),
+        .layout = {
+            .padding = CLAY_PADDING_ALL(16),
             .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
             .sizing = { 
-                CLAY_SIZING_FIT(0),
-                CLAY_SIZING_FIXED(32) 
+                .width = CLAY_SIZING_FIT(0),
+                .height = CLAY_SIZING_FIXED(32)
             }
-        }),
-        CLAY_RECTANGLE({
-            .color = isActive ? base_theme.primary :
-                     (Clay_Hovered() ? base_theme.primary_hover : base_theme.background),
-            .cornerRadius = CLAY_CORNER_RADIUS(5),
-            .cursorPointer = true
-        }),
-        Clay_OnHover(HandleTabInteraction, habit->id)
-    ) {
+        },
+        .backgroundColor = isActive ? base_theme.primary : 
+                          (Clay_Hovered() ? base_theme.primary_hover : base_theme.background),
+        .cornerRadius = CLAY_CORNER_RADIUS(5)
+    }) {
+        Clay_OnHover(HandleTabInteraction, habit->id);
+        
         Clay_String habit_str = {
             .length = strlen(habit->name),
             .chars = habit->name
@@ -357,6 +377,7 @@ static void RenderHabitTab(const Habit* habit) {
         }));
     }
 }
+
 void RenderHabitHeader() {
     Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
     QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
@@ -364,98 +385,128 @@ void RenderHabitHeader() {
     Habit* active_habit = GetActiveHabit(&habits);
     if (!active_habit) return;
 
-    printf("Rendering header, is_editing: %d\n", habits.is_editing_new_habit);
-
-
     bool isEditing = habits.is_editing_new_habit;
 
-    CLAY(CLAY_ID("HabitHeader"),
-        CLAY_LAYOUT({
-            .padding = { 16, 16, 16, 16 },
+    CLAY({
+        .id = CLAY_ID("HabitHeader"),
+        .layout = {
+            .padding = CLAY_PADDING_ALL(16),
             .childGap = 16,
             .layoutDirection = CLAY_LEFT_TO_RIGHT,
             .childAlignment = { 
-                .x = CLAY_ALIGN_X_CENTER,  // Center horizontally
+                .x = CLAY_ALIGN_X_CENTER,
                 .y = CLAY_ALIGN_Y_CENTER 
             },
-            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) }
-        }),
-        CLAY_RECTANGLE({
-            .color = base_theme.background
-        })
-    ) {
+            .sizing = {
+                .width = CLAY_SIZING_GROW(),
+                .height = CLAY_SIZING_FIT(0)
+            }
+        },
+        .backgroundColor = base_theme.background
+    }) {
         if (isEditing) {
-            printf("Rendering text input %p\n", (void*)habits.habit_name_input);
-
-            CLAY(CLAY_LAYOUT({
-                .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) },
-                .childGap = 8,
-                .layoutDirection = CLAY_LEFT_TO_RIGHT,
-                .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
-            })) {
-                // Text input
-                CLAY(CLAY_LAYOUT({
-                    .sizing = { CLAY_SIZING_FIXED(200), CLAY_SIZING_FIT(0) }  // Fixed width for input
-                })) {
+            CLAY({
+                .layout = {
+                    .sizing = {
+                        .width = CLAY_SIZING_GROW(),
+                        .height = CLAY_SIZING_FIT(0)
+                    },
+                    .childGap = 8,
+                    .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
+                }
+            }) {
+                CLAY({
+                    .layout = {
+                        .sizing = {
+                            .width = CLAY_SIZING_FIXED(200),
+                            .height = CLAY_SIZING_FIT(0)
+                        }
+                    }
+                }) {
                     Rocks_RenderTextInput(habits.habit_name_input, active_habit->id);
                 }
 
-                // Action buttons
-                CLAY(CLAY_LAYOUT({
-                    .childGap = 8,
-                    .layoutDirection = CLAY_LEFT_TO_RIGHT
-                })) {
-                    // Delete button
-                    CLAY(CLAY_ID("DeleteButton"),
-                        CLAY_LAYOUT({
-                            .sizing = { CLAY_SIZING_FIXED(32), CLAY_SIZING_FIXED(32) },
-                            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }  // Add center alignment
-                        }),
-                        CLAY_RECTANGLE({
-                            .color = Clay_Hovered() ? theme->danger : base_theme.background,
-                            .cornerRadius = CLAY_CORNER_RADIUS(4),
-                            .cursorPointer = true
-                        }),
-                        Clay_OnHover(HandleDeleteButtonClick, active_habit->id)
-                    ) {
-                        CLAY(CLAY_LAYOUT({
-                            .sizing = { CLAY_SIZING_FIXED(24), CLAY_SIZING_FIXED(24) }
-                        }),
-                        CLAY_IMAGE({
-                            .sourceDimensions = HABIT_ICONS[2].dimensions,
-                            .imageData = habit_icon_images[2]
-                        })) {}
+                CLAY({
+                    .layout = {
+                        .childGap = 8,
+                        .layoutDirection = CLAY_LEFT_TO_RIGHT
                     }
-                    // Confirm button
-                    CLAY(CLAY_ID("ConfirmButton"),
-                        CLAY_LAYOUT({
-                            .sizing = { CLAY_SIZING_FIXED(32), CLAY_SIZING_FIXED(32) },
-                            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }  // Add center alignment
-                        }),
-                        CLAY_RECTANGLE({
-                            .color = Clay_Hovered() ? theme->success : base_theme.secondary,
-                            .cornerRadius = CLAY_CORNER_RADIUS(4),
-                            .cursorPointer = true
-                        }),
-                        Clay_OnHover(HandleConfirmButtonClick, 0)
-                    ) {
-                        CLAY(CLAY_LAYOUT({
-                            .sizing = { CLAY_SIZING_FIXED(24), CLAY_SIZING_FIXED(24) }
-                        }),
-                        CLAY_IMAGE({
-                            .sourceDimensions = HABIT_ICONS[0].dimensions,
-                            .imageData = habit_icon_images[0]
-                        })) {}
+                }) {
+                    CLAY({
+                        .id = CLAY_ID("DeleteButton"),
+                        .layout = {
+                            .sizing = {
+                                .width = CLAY_SIZING_FIXED(32),
+                                .height = CLAY_SIZING_FIXED(32)
+                            },
+                            .childAlignment = {
+                                .x = CLAY_ALIGN_X_CENTER,
+                                .y = CLAY_ALIGN_Y_CENTER
+                            }
+                        },
+                        .backgroundColor = Clay_Hovered() ? theme->danger : base_theme.background,
+                        .cornerRadius = CLAY_CORNER_RADIUS(4)
+                    }) {
+                        Clay_OnHover(HandleDeleteButtonClick, active_habit->id);
+                        
+                        CLAY({
+                            .layout = {
+                                .sizing = {
+                                    .width = CLAY_SIZING_FIXED(24),
+                                    .height = CLAY_SIZING_FIXED(24)
+                                }
+                            },
+                            .image = {
+                                .sourceDimensions = HABIT_ICONS[2].dimensions,
+                                .imageData = habit_icon_images[2]
+                            }
+                        }) {}
+                    }
+
+                    CLAY({
+                        .id = CLAY_ID("ConfirmButton"),
+                        .layout = {
+                            .sizing = {
+                                .width = CLAY_SIZING_FIXED(32),
+                                .height = CLAY_SIZING_FIXED(32)
+                            },
+                            .childAlignment = {
+                                .x = CLAY_ALIGN_X_CENTER,
+                                .y = CLAY_ALIGN_Y_CENTER
+                            }
+                        },
+                        .backgroundColor = Clay_Hovered() ? theme->success : base_theme.secondary,
+                        .cornerRadius = CLAY_CORNER_RADIUS(4)
+                    }) {
+                        Clay_OnHover(HandleConfirmButtonClick, 0);
+                        
+                        CLAY({
+                            .layout = {
+                                .sizing = {
+                                    .width = CLAY_SIZING_FIXED(24),
+                                    .height = CLAY_SIZING_FIXED(24)
+                                }
+                            },
+                            .image = {
+                                .sourceDimensions = HABIT_ICONS[0].dimensions,
+                                .imageData = habit_icon_images[0]
+                            }
+                        }) {}
                     }
                 }
             }
         } else {
-            // Title with double-click handler
-            CLAY(CLAY_LAYOUT({
-                .sizing = { CLAY_SIZING_FIT(0), CLAY_SIZING_FIT(0) }
-            }),
-            Clay_OnHover(HandleHeaderTitleClick, 0)
-            ) {
+            CLAY({
+                .layout = {
+                    .sizing = {
+                        .width = CLAY_SIZING_FIT(0),
+                        .height = CLAY_SIZING_FIT(0)
+                    }
+                }
+            }) {
+                Clay_OnHover(HandleHeaderTitleClick, 0);
+                
                 Clay_String active_name = {
                     .length = strlen(active_habit->name),
                     .chars = active_habit->name
@@ -471,43 +522,47 @@ void RenderHabitHeader() {
 }
 
 void RenderHabitTabBar() {
-
     Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
     QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
 
-
-    CLAY(CLAY_ID("HabitTabsContainer"),
-        CLAY_LAYOUT({
-            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIXED(62) },
+    CLAY({
+        .id = CLAY_ID("HabitTabsContainer"),
+        .layout = {
+            .sizing = {
+                .width = CLAY_SIZING_GROW(),
+                .height = CLAY_SIZING_FIXED(62)
+            },
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
-        }),
-        CLAY_RECTANGLE({ 
-            .color = base_theme.secondary
-         })
-    ) {
-        CLAY(CLAY_ID("HabitTabs"),
-            CLAY_LAYOUT({
-                .sizing = { CLAY_SIZING_FIT(), CLAY_SIZING_GROW() },
+        },
+        .backgroundColor = base_theme.secondary
+    }) {
+        CLAY({
+            .id = CLAY_ID("HabitTabs"),
+            .layout = {
+                .sizing = {
+                    .width = CLAY_SIZING_FIT(),
+                    .height = CLAY_SIZING_GROW()
+                },
                 .childGap = 8,
-                .padding = { 16, 16, 16, 16 },
+                .padding = CLAY_PADDING_ALL(16),
                 .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
                 .layoutDirection = CLAY_LEFT_TO_RIGHT
-            }),
-            CLAY_SCROLL({ .horizontal = true })
-        ) {
+            },
+            .scroll = { .horizontal = true }
+        }) {
             for (size_t i = 0; i < habits.habits_count; i++) {
                 RenderHabitTab(&habits.habits[i]);
             }
 
-            CLAY(CLAY_ID("NewHabitTab"),
-                CLAY_LAYOUT({ .padding = { 16, 16 } }),
-                CLAY_RECTANGLE({
-                    .color = Clay_Hovered() ? base_theme.primary_hover : base_theme.background,
-                    .cornerRadius = CLAY_CORNER_RADIUS(5),
-                    .cursorPointer = true
-                }),
-                Clay_OnHover(HandleNewTabInteraction, 0)
-            ) {
+            CLAY({
+                .id = CLAY_ID("NewHabitTab"),
+                .layout = {
+                    .padding = CLAY_PADDING_ALL(16)
+                },
+                .backgroundColor = Clay_Hovered() ? base_theme.primary_hover : base_theme.background,
+                .cornerRadius = CLAY_CORNER_RADIUS(5)
+            }) {
+                Clay_OnHover(HandleNewTabInteraction, 0);
                 CLAY_TEXT(CLAY_STRING("+"), CLAY_TEXT_CONFIG({
                     .fontSize = 24,
                     .fontId = FONT_ID_BODY_24,
@@ -517,26 +572,6 @@ void RenderHabitTabBar() {
         }
     }
 }
-
-void HandleTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
-    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
-        uint32_t habit_id = (uint32_t)userData;
-        habits.is_editing_new_habit = false;
-        habits.active_habit_id = habit_id;
-        SaveHabits(&habits);
-    }
-}
-
-
-void HandleDateChange(time_t new_date) {
-    Habit* active_habit = GetActiveHabit(&habits);
-    if (active_habit) {
-        active_habit->start_date = new_date;
-        SaveHabits(&habits);
-    }
-}
-
-
 
 void InitializeHabitsPage(Rocks* rocks) {
     if (!rocks) return;
@@ -561,18 +596,6 @@ void InitializeHabitsPage(Rocks* rocks) {
     InitializeHabitIcons(rocks);
 }
 
-void ToggleHabitStateForDay(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
-    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
-        uint32_t day_index = (uint32_t)userData;
-        ToggleHabitDay(&habits, day_index);
-        SaveHabits(&habits);
-    }
-}
-
-void HandleColorChange(Clay_Color new_color) {
-    UpdateHabitColor(&habits, new_color);
-}
-
 void CleanupHabitsPage(Rocks* rocks) {
     printf("Cleaning up habits page\n");
     if (habits.habit_name_input) {
@@ -592,20 +615,12 @@ void RenderHabitsPage(float dt) {
     Habit* active_habit = GetActiveHabit(&habits);
     if (!active_habit) return;
 
-    printf("--- Frame Start ---\n");
-    printf("habit_name_input: %p\n", (void*)habits.habit_name_input);
-    printf("is_editing_new_habit: %d\n", habits.is_editing_new_habit);
-
-    // Add text input update debug
     if (habits.habit_name_input && habits.is_editing_new_habit) {
-        printf("Updating text input dt: %f\n", dt);
         Rocks_UpdateTextInputFromRocksInput(habits.habit_name_input, GRocks->input, dt);
     }
-
     
     time_t now;
     time(&now);
-
 
     struct tm today_midnight = *localtime(&now);
     today_midnight.tm_hour = 0;
@@ -613,8 +628,6 @@ void RenderHabitsPage(float dt) {
     today_midnight.tm_sec = 0;
     time_t today_timestamp = mktime(&today_midnight);
 
-
-    // Use the active habit's start_date
     struct tm *start_tm = localtime(&active_habit->start_date);
     struct tm start_date = *start_tm;
 
@@ -625,51 +638,53 @@ void RenderHabitsPage(float dt) {
 
     static const char *day_labels[] = {"S", "M", "T", "W", "T", "F", "S"};
 
-    CLAY(CLAY_ID("HabitsContainer"),
-        CLAY_LAYOUT({
-            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
+    CLAY({
+        .id = CLAY_ID("HabitsContainer"),
+        .layout = {
+            .sizing = {
+                .width = CLAY_SIZING_GROW(),
+                .height = CLAY_SIZING_GROW()
+            },
             .layoutDirection = CLAY_TOP_TO_BOTTOM,
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
-        })
-    ) {
-        
-
+        }
+    }) {
         RenderHabitHeader();
-        printf("After header\n");
-        
         RenderHabitTabBar();
-        printf("After tab bar\n");
             
-        CLAY(CLAY_ID("ColorAndDatePickerContainer"),
-            CLAY_LAYOUT({
+        CLAY({
+            .id = CLAY_ID("ColorAndDatePickerContainer"),
+            .layout = {
                 .sizing = { 
-                    windowWidth > BREAKPOINT_MEDIUM + 40 ? CLAY_SIZING_FIXED(BREAKPOINT_MEDIUM + 40) : CLAY_SIZING_GROW(),
-                    CLAY_SIZING_FIT(0) 
+                    .width = windowWidth > BREAKPOINT_MEDIUM + 40 ? CLAY_SIZING_FIXED(BREAKPOINT_MEDIUM + 40) : CLAY_SIZING_GROW(),
+                    .height = CLAY_SIZING_FIT(0) 
                 },
                 .childGap = 0,
                 .layoutDirection = CLAY_LEFT_TO_RIGHT,
                 .padding = { 8, 8, 0, 0 },
                 .childAlignment = { 
-                    .x = CLAY_ALIGN_X_CENTER,  // Center the container
+                    .x = CLAY_ALIGN_X_CENTER,
                     .y = CLAY_ALIGN_Y_CENTER 
                 }
-            })
-        ) {
+            }
+        }) {
             RenderColorPicker(active_habit->color, HandleColorChange, &color_picker_modal);
-            RenderDatePicker(active_habit->start_date, HandleDateChange, &date_picker_modal);  // Use active habit's start_date
+            RenderDatePicker(active_habit->start_date, HandleDateChange, &date_picker_modal);
             RenderDeleteHabitModal();
         }
-        printf("After Color and Date picker bar\n");
 
-
-        CLAY(CLAY_ID("DayLabels"), 
-            CLAY_LAYOUT({
-                .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) },
+        CLAY({
+            .id = CLAY_ID("DayLabels"),
+            .layout = {
+                .sizing = {
+                    .width = CLAY_SIZING_GROW(),
+                    .height = CLAY_SIZING_FIT(0)
+                },
                 .padding = { 0, 0, 8, 8 },
                 .childGap = 8,
-                .childAlignment = { .x = CLAY_ALIGN_X_CENTER}
-            })
-        ) {
+                .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
+            }
+        }) {
             float screenWidth = (float)windowWidth;
             const float MAX_LABEL_WIDTH = 90.0f;
             const float MIN_LABEL_WIDTH = 32.0f;
@@ -686,39 +701,48 @@ void RenderHabitsPage(float dt) {
             for (int i = 0; i < 7; i++) {
                 int label_index = (start_date.tm_wday + i) % 7;
 
-                CLAY(CLAY_IDI("DayLabel", i),
-                    CLAY_LAYOUT({
+                CLAY({
+                    .id = CLAY_IDI("DayLabel", i),
+                    .layout = {
                         .sizing = { 
-                            CLAY_SIZING_FIXED(labelWidth), 
-                            CLAY_SIZING_FIT(0) 
+                            .width = CLAY_SIZING_FIXED(labelWidth),
+                            .height = CLAY_SIZING_FIT(0)
                         },
                         .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
-                    })) { 
-                        Clay_String day_str = {
-                            .length = strlen(day_labels[label_index]),
-                            .chars = day_labels[label_index]
-                        };
-                        CLAY_TEXT(day_str, day_label_config); 
-                    }           
+                    }
+                }) {
+                    Clay_String day_str = {
+                        .length = strlen(day_labels[label_index]),
+                        .chars = day_labels[label_index]
+                    };
+                    CLAY_TEXT(day_str, day_label_config);
+                }
             }
         }
-        printf("After day labes\n");
 
-        CLAY(CLAY_ID("CalendarScrollContainer"),
-            CLAY_LAYOUT({
-                .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) },
-                .childAlignment = { .x = CLAY_ALIGN_X_CENTER}
-            }),
-            CLAY_SCROLL({ .vertical = true })
-        ) {
-            CLAY(CLAY_ID("CalendarGrid"),
-                CLAY_LAYOUT({
-                    .sizing = { CLAY_SIZING_FIT(0), CLAY_SIZING_FIT(0) },
+        CLAY({
+            .id = CLAY_ID("CalendarScrollContainer"),
+            .layout = {
+                .sizing = {
+                    .width = CLAY_SIZING_GROW(),
+                    .height = CLAY_SIZING_FIT(0)
+                },
+                .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
+            },
+            .scroll = { .vertical = true }
+        }) {
+            CLAY({
+                .id = CLAY_ID("CalendarGrid"),
+                .layout = {
+                    .sizing = {
+                        .width = CLAY_SIZING_FIT(0),
+                        .height = CLAY_SIZING_FIT(0)
+                    },
                     .childGap = 32,
                     .layoutDirection = CLAY_TOP_TO_BOTTOM,
-                    .padding = { 16, 16, 16, 16 }
-                })
-            ) {
+                    .padding = CLAY_PADDING_ALL(16)
+                }
+            }) {
                 struct tm end_date = start_date;
                 end_date.tm_mday += 66;
                 mktime(&end_date);
@@ -740,13 +764,17 @@ void RenderHabitsPage(float dt) {
                 int unique_index = 0;
 
                 for (int row = 0; row < total_weeks; row++) {
-                    CLAY(CLAY_IDI("WeekRow", row),
-                        CLAY_LAYOUT({
-                            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT(0) },
+                    CLAY({
+                        .id = CLAY_IDI("WeekRow", row),
+                        .layout = {
+                            .sizing = {
+                                .width = CLAY_SIZING_GROW(),
+                                .height = CLAY_SIZING_FIT(0)
+                            },
                             .childGap = 10,
                             .layoutDirection = CLAY_LEFT_TO_RIGHT
-                        })
-                    ) {
+                        }
+                    }) {
                         for (int col = 0; col < 7; col++) {
                             time_t current_timestamp = mktime(&current);
                             bool is_today = (current_timestamp == today_timestamp);
@@ -777,12 +805,8 @@ void RenderHabitsPage(float dt) {
                             unique_index++;
                         }
                     }
-                    printf("Row %d\n", row);
                 }
-                printf("After Calendar grid\n");
-
             }
-
         }
     }
 }

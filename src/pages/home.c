@@ -29,13 +29,17 @@ static void RenderSettings() {
 static void RenderHabitProgress() {
     Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
 
-    CLAY(CLAY_ID("StatsContainer"),
-        CLAY_LAYOUT({
-            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT() },
+    CLAY({
+        .id = CLAY_ID("StatsContainer"),
+        .layout = {
+            .sizing = {
+                .width = CLAY_SIZING_GROW(),
+                .height = CLAY_SIZING_FIT()
+            },
             .childGap = 12,
             .layoutDirection = CLAY_TOP_TO_BOTTOM
-        })
-    ) {
+        }
+    }) {
         for (size_t i = 0; i < habits.habits_count; i++) {
             float completion = CalculateHabitCompletion(&habits.habits[i]);
             RenderHabitProgressBar(&habits.habits[i], completion);
@@ -64,22 +68,25 @@ float CalculateHabitCompletion(const Habit* habit) {
     }
     return (float)completed / 66.0f;
 }
+
 static void RenderTodayHabitItem(const Habit* habit) {
     Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
 
-    CLAY(CLAY_IDI("TodayHabitItem", habit->id),
-        CLAY_LAYOUT({
-            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT() },
-            .padding = { 8, 8, 8, 8 },
+    CLAY({
+        .id = CLAY_IDI("TodayHabitItem", habit->id),
+        .layout = {
+            .sizing = {
+                .width = CLAY_SIZING_GROW(),
+                .height = CLAY_SIZING_FIT()
+            },
+            .padding = CLAY_PADDING_ALL(8),
             .childGap = 8,
             .layoutDirection = CLAY_LEFT_TO_RIGHT,
             .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
-        }),
-        CLAY_RECTANGLE({
-            .color = base_theme.secondary,
-            .cornerRadius = CLAY_CORNER_RADIUS(4)
-        })
-    ) {
+        },
+        .backgroundColor = base_theme.secondary,
+        .cornerRadius = CLAY_CORNER_RADIUS(4)
+    }) {
         Clay_String habit_name = {
             .length = strlen(habit->name),
             .chars = habit->name
@@ -94,17 +101,20 @@ static void RenderTodayHabitItem(const Habit* habit) {
     }
 }
 
-
 static void RenderTodayHabits() {
     Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
 
-    CLAY(CLAY_ID("TodayHabitsContainer"),
-        CLAY_LAYOUT({
-            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIT() },
+    CLAY({
+        .id = CLAY_ID("TodayHabitsContainer"),
+        .layout = {
+            .sizing = {
+                .width = CLAY_SIZING_GROW(),
+                .height = CLAY_SIZING_FIT()
+            },
             .childGap = 12,
             .layoutDirection = CLAY_TOP_TO_BOTTOM
-        })
-    ) {
+        }
+    }) {
         bool has_incomplete_habits = false;
         time_t now = time(NULL);
         
@@ -133,40 +143,49 @@ void RenderHomePage() {
     static bool progress_minimized = true;
     static bool settings_minimized = true;
     
-    // Outer container for full width/height centering
-    CLAY(CLAY_ID("HomeOuterContainer"),
-        CLAY_LAYOUT({ 
-            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
+    CLAY({
+        .id = CLAY_ID("HomeOuterContainer"),
+        .layout = { 
+            .sizing = {
+                .width = CLAY_SIZING_GROW(),
+                .height = CLAY_SIZING_GROW()
+            },
             .layoutDirection = CLAY_TOP_TO_BOTTOM,
-            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }
-        })
-    ) {
-        // Inner scroll container with fixed width for content
-        CLAY(CLAY_ID("HomeScrollContainer"), 
-            CLAY_LAYOUT({ 
+            .childAlignment = {
+                .x = CLAY_ALIGN_X_CENTER,
+                .y = CLAY_ALIGN_Y_CENTER
+            }
+        }
+    }) {
+        CLAY({
+            .id = CLAY_ID("HomeScrollContainer"),
+            .layout = { 
                 .sizing = {
-                    windowWidth < BREAKPOINT_MEDIUM ? 
+                    .width = windowWidth < BREAKPOINT_MEDIUM ? 
                         CLAY_SIZING_GROW() : 
                         CLAY_SIZING_FIXED(BREAKPOINT_MEDIUM),
-                    CLAY_SIZING_GROW()
+                    .height = CLAY_SIZING_GROW()
                 },
-                .padding = { 32, 32, 32, 32 },
+                .padding = CLAY_PADDING_ALL(32),
                 .childGap = 16,
                 .layoutDirection = CLAY_TOP_TO_BOTTOM,
                 .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
-            }),
-            CLAY_SCROLL({ .vertical = true })
-        ) {
-            // Add horizontal padding to create margins
-            CLAY(CLAY_ID("ContentContainer"),
-                CLAY_LAYOUT({
-                    .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
-                    .padding = { 16, 0, 16, 0 },  // Left and right padding
+            },
+            .scroll = { .vertical = true }
+        }) {
+            CLAY({
+                .id = CLAY_ID("ContentContainer"),
+                .layout = {
+                    .sizing = {
+                        .width = CLAY_SIZING_GROW(),
+                        .height = CLAY_SIZING_GROW()
+                    },
+                    .padding = { 16, 0, 16, 0 },
                     .childGap = 16,
                     .layoutDirection = CLAY_TOP_TO_BOTTOM,
                     .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
-                })
-            ) {
+                }
+            }) {
                 RenderCard("Quest", 1, &quest_minimized, RenderQuestDescription);
                 RenderCard("Today's Habits", 2, &today_habits_minimized, RenderTodayHabits);  
                 RenderCard("Habit Progress", 3, &progress_minimized, RenderHabitProgress);

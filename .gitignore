@@ -48,9 +48,10 @@ Thumbs.db
 *.aab
 
 # Logs and databases
-*.log
+*.log**
 *.sqlite
 *.db
+vgcore**
 
 # Generated files
 *.generated.*

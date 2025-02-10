@@ -1,7 +1,7 @@
 #include "components/nav.h"
 #include "rocks.h"
 #include "quest_theme.h"
-#include "pages/pages.h"
+#include "config.h"
 
 typedef struct {
     const char* url;
@@ -57,41 +57,48 @@ void RenderNavItem(Rocks* rocks, const char* text, uint32_t pageId) {
     uint32_t fontId = isMediumScreen ? FONT_ID_BODY_18 : FONT_ID_BODY_14;
     float childGap = isMediumScreen ? 8.0f : 4.0f;
 
-    Clay_TextElementConfig *text_config = CLAY_TEXT_CONFIG({ 
-        .fontSize = fontSize,
-        .fontId = fontId,
-        .textColor = isActive ? theme->nav_text_active : theme->nav_text,
-        .disablePointerEvents = true 
-    });
-    
-    CLAY(CLAY_IDI("Nav", pageId), 
-        CLAY_LAYOUT({ 
-            .padding = {padding, padding},
+    CLAY({
+        .id = CLAY_IDI("Nav", pageId),
+        .layout = {
+            .padding = CLAY_PADDING_ALL(padding),
             .childGap = childGap,
-            .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER },
-            .sizing = { CLAY_SIZING_FIXED(buttonWidth), CLAY_SIZING_FIXED(60) }
-        }), 
-        CLAY_RECTANGLE({ 
-            .color = isActive ? theme->nav_item_active : theme->nav_item_background,
-            .cornerRadius = CLAY_CORNER_RADIUS(8),
-            .cursorPointer = true
-        }),
-        Clay_OnHover(HandleNavInteraction, pageId)
-    ) {
-        CLAY(CLAY_LAYOUT({ 
-            .sizing = { 
-                CLAY_SIZING_FIXED(32),
-                CLAY_SIZING_FIXED(32)
+            .childAlignment = {
+                .x = CLAY_ALIGN_X_CENTER,
+                .y = CLAY_ALIGN_Y_CENTER
+            },
+            .sizing = {
+                .width = CLAY_SIZING_FIXED(buttonWidth),
+                .height = CLAY_SIZING_FIXED(60)
             }
-        }),
-        CLAY_IMAGE({ 
-            .sourceDimensions = NAV_ICONS[pageId].dimensions,
-            .imageData = nav_icon_images[pageId]
-        })) {}
+        },
+        .backgroundColor = isActive ? theme->nav_item_active : theme->nav_item_background,
+        .cornerRadius = CLAY_CORNER_RADIUS(8)
+    }) {
+        Clay_OnHover(HandleNavInteraction, pageId);
+
+        CLAY({
+            .layout = {
+                .sizing = {
+                    .width = CLAY_SIZING_FIXED(32),
+                    .height = CLAY_SIZING_FIXED(32)
+                }
+            },
+            .image = {
+                .sourceDimensions = NAV_ICONS[pageId].dimensions,
+                .imageData = nav_icon_images[pageId]
+            }
+        }) {}
 
         if (isMediumScreen) {
-            Clay_String nav_text = { .chars = text, .length = strlen(text) };
-            CLAY_TEXT(nav_text, text_config);
+            Clay_String nav_text = {
+                .chars = text,
+                .length = strlen(text)
+            };
+            CLAY_TEXT(nav_text, CLAY_TEXT_CONFIG({
+                .fontSize = fontSize,
+                .fontId = fontId,
+                .textColor = isActive ? theme->nav_text_active : theme->nav_text
+            }));
         }
     }
 }
@@ -102,23 +109,26 @@ void RenderNavigationMenu(Rocks* rocks) {
     
     bool isXSmallScreen = windowWidth < BREAKPOINT_XSMALL;
 
-    CLAY(CLAY_ID("BottomNavigation"), 
-        CLAY_LAYOUT({ 
-            .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_FIXED(isXSmallScreen ? 60.0f : 80.0f) },
+    CLAY({
+        .id = CLAY_ID("BottomNavigation"),
+        .layout = {
+            .sizing = {
+                .width = CLAY_SIZING_GROW(),
+                .height = CLAY_SIZING_FIXED(isXSmallScreen ? 60.0f : 80.0f)
+            },
             .childGap = 0,
-            .padding = { isXSmallScreen ? 4.0f : 8.0f, isXSmallScreen ? 4.0f : 8.0f },
-            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER },
+            .padding = {
+                isXSmallScreen ? 4.0f : 8.0f,
+                isXSmallScreen ? 4.0f : 8.0f
+            },
+            .childAlignment = {
+                .x = CLAY_ALIGN_X_CENTER,
+                .y = CLAY_ALIGN_Y_CENTER
+            },
             .layoutDirection = CLAY_LEFT_TO_RIGHT
-        }),
-        CLAY_RECTANGLE({ 
-            .color = theme->nav_background,
-            .shadowEnabled = true,
-            .shadowColor = theme->nav_shadow,
-            .shadowOffset = {0, 2},
-            .shadowBlurRadius = 8,
-            .shadowSpread = 0
-        })
-    ) {
+        },
+        .backgroundColor = theme->nav_background
+    }) {
         RenderNavItem(rocks, "Habits", 1);
         RenderNavItem(rocks, "Todos", 2);
         RenderNavItem(rocks, "Home", 0);

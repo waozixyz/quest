@@ -1,6 +1,6 @@
 // config.c
 #include "config.h"
-#include "pages/pages.h"
+
 // Configuration variables
 double windowWidth = 400, windowHeight = 768;
 float globalScalingFactor = 1.0f;

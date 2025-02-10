@@ -66,7 +66,6 @@ static void HandleSaveDate(Clay_ElementId elementId, Clay_PointerData pointerInf
         g_modal->is_open = false;
     }
 }
-
 static void RenderDatePickerModal(void) {
     Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
     QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
@@ -75,7 +74,7 @@ static void RenderDatePickerModal(void) {
     static char month_str[32];
     static char day_str[16];
     
-    // Year string conversion
+    // Convert year
     {
         int year = 1900 + g_editing_date.tm_year;
         int index = 0;
@@ -94,7 +93,7 @@ static void RenderDatePickerModal(void) {
         year_str[index] = '\0';
     }
     
-    // Month string
+    // Convert month
     {
         int month_index = g_editing_date.tm_mon;
         if (month_index < 0) month_index = 0;
@@ -109,7 +108,7 @@ static void RenderDatePickerModal(void) {
         month_str[i] = '\0';
     }
     
-    // Day string conversion
+    // Convert day
     {
         int day = g_editing_date.tm_mday;
         int index = 0;
@@ -128,15 +127,15 @@ static void RenderDatePickerModal(void) {
         day_str[index] = '\0';
     }
 
-    CLAY(CLAY_ID("DatePickerModal"),
-        CLAY_LAYOUT({
+    CLAY({
+        .id = CLAY_ID("DatePickerModal"),
+        .layout = {
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
             .childGap = 20,
             .layoutDirection = CLAY_TOP_TO_BOTTOM,
-            .padding = { 20, 20, 20, 20 }
-        })
-    ) {
-        // Title
+            .padding = CLAY_PADDING_ALL(20)
+        }
+    }) {
         CLAY_TEXT(CLAY_STRING("Select Date"), 
             CLAY_TEXT_CONFIG({
                 .fontSize = 24,
@@ -144,92 +143,196 @@ static void RenderDatePickerModal(void) {
             })
         );
 
-        // Year
-        CLAY(CLAY_LAYOUT({
-            .childGap = 10,
-            .layoutDirection = CLAY_LEFT_TO_RIGHT
-        })) {
-            CLAY_TEXT(CLAY_STRING("Year:"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
-            
-            CLAY(CLAY_LAYOUT({ .padding = { 10, 10, 5, 5 }}),
-                CLAY_RECTANGLE({ .color = base_theme.secondary }),
-                Clay_OnHover(HandleYearChange, -1)
-            ) {
-                CLAY_TEXT(CLAY_STRING("-"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
+        // Year selector
+        CLAY({
+            .layout = {
+                .childGap = 10,
+                .layoutDirection = CLAY_LEFT_TO_RIGHT
             }
+        }) {
+            CLAY_TEXT(CLAY_STRING("Year:"), 
+                CLAY_TEXT_CONFIG({
+                    .fontSize = 18,
+                    .textColor = base_theme.text
+                })
+            );
+            
+            CLAY({
+                .layout = {
+                    .padding = CLAY_PADDING_ALL(10)
+                },
+                .backgroundColor = base_theme.secondary
+            }) {
+                Clay_OnHover(HandleYearChange, -1);
+                CLAY_TEXT(CLAY_STRING("-"), 
+                    CLAY_TEXT_CONFIG({
+                        .fontSize = 18,
+                        .textColor = base_theme.text
+                    })
+                );
+            }
+            Clay_String yearString = {
+                .chars = year_str,
+                .length = strlen(year_str)
+            };
 
-            Clay_String year_obj = { .chars = year_str, .length = strlen(year_str) };
-            CLAY_TEXT(year_obj, CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
+            CLAY_TEXT(yearString, 
+                CLAY_TEXT_CONFIG({
+                    .fontSize = 18,
+                    .textColor = base_theme.text
+                })
+            );
 
-            CLAY(CLAY_LAYOUT({ .padding = { 10, 10, 5, 5 }}),
-                CLAY_RECTANGLE({ .color = base_theme.secondary }),
-                Clay_OnHover(HandleYearChange, 1)
-            ) {
-                CLAY_TEXT(CLAY_STRING("+"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
+            CLAY({
+                .layout = {
+                    .padding = CLAY_PADDING_ALL(10)
+                },
+                .backgroundColor = base_theme.secondary
+            }) {
+                Clay_OnHover(HandleYearChange, 1);
+                CLAY_TEXT(CLAY_STRING("+"), 
+                    CLAY_TEXT_CONFIG({
+                        .fontSize = 18,
+                        .textColor = base_theme.text
+                    })
+                );
             }
         }
 
-        // Month
-        CLAY(CLAY_LAYOUT({
-            .childGap = 10,
-            .layoutDirection = CLAY_LEFT_TO_RIGHT
-        })) {
-            CLAY_TEXT(CLAY_STRING("Month:"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
+        // Month selector
+        CLAY({
+            .layout = {
+                .childGap = 10,
+                .layoutDirection = CLAY_LEFT_TO_RIGHT
+            }
+        }) {
+            CLAY_TEXT(CLAY_STRING("Month:"), 
+                CLAY_TEXT_CONFIG({
+                    .fontSize = 18,
+                    .textColor = base_theme.text
+                })
+            );
             
-            CLAY(CLAY_LAYOUT({ .padding = { 10, 10, 5, 5 }}),
-                CLAY_RECTANGLE({ .color = base_theme.secondary }),
-                Clay_OnHover(HandleMonthChange, -1)
-            ) {
-                CLAY_TEXT(CLAY_STRING("-"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
+            CLAY({
+                .layout = {
+                    .padding = CLAY_PADDING_ALL(10)
+                },
+                .backgroundColor = base_theme.secondary
+            }) {
+                Clay_OnHover(HandleMonthChange, -1);
+                CLAY_TEXT(CLAY_STRING("-"), 
+                    CLAY_TEXT_CONFIG({
+                        .fontSize = 18,
+                        .textColor = base_theme.text
+                    })
+                );
             }
 
-            Clay_String month_obj = { .chars = month_str, .length = strlen(month_str) };
-            CLAY_TEXT(month_obj, CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
+            Clay_String monthString = {
+                .chars = month_str,
+                .length = strlen(month_str)
+            };
 
-            CLAY(CLAY_LAYOUT({ .padding = { 10, 10, 5, 5 }}),
-                CLAY_RECTANGLE({ .color = base_theme.secondary }),
-                Clay_OnHover(HandleMonthChange, 1)
-            ) {
-                CLAY_TEXT(CLAY_STRING("+"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
+            CLAY_TEXT(monthString,
+                CLAY_TEXT_CONFIG({
+                    .fontSize = 18,
+                    .textColor = base_theme.text
+                })
+            );
+
+            CLAY({
+                .layout = {
+                    .padding = CLAY_PADDING_ALL(10)
+                },
+                .backgroundColor = base_theme.secondary
+            }) {
+                Clay_OnHover(HandleMonthChange, 1);
+                CLAY_TEXT(CLAY_STRING("+"), 
+                    CLAY_TEXT_CONFIG({
+                        .fontSize = 18,
+                        .textColor = base_theme.text
+                    })
+                );
             }
         }
 
-        // Day
-        CLAY(CLAY_LAYOUT({
-            .childGap = 10,
-            .layoutDirection = CLAY_LEFT_TO_RIGHT
-        })) {
-            CLAY_TEXT(CLAY_STRING("Day:"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
+        // Day selector
+        CLAY({
+            .layout = {
+                .childGap = 10,
+                .layoutDirection = CLAY_LEFT_TO_RIGHT
+            }
+        }) {
+            CLAY_TEXT(CLAY_STRING("Day:"), 
+                CLAY_TEXT_CONFIG({
+                    .fontSize = 18,
+                    .textColor = base_theme.text
+                })
+            );
             
-            CLAY(CLAY_LAYOUT({ .padding = { 10, 10, 5, 5 }}),
-                CLAY_RECTANGLE({ .color = base_theme.secondary }),
-                Clay_OnHover(HandleDayChange, -1)
-            ) {
-                CLAY_TEXT(CLAY_STRING("-"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
+            CLAY({
+                .layout = {
+                    .padding = CLAY_PADDING_ALL(10)
+                },
+                .backgroundColor = base_theme.secondary
+            }) {
+                Clay_OnHover(HandleDayChange, -1);
+                CLAY_TEXT(CLAY_STRING("-"), 
+                    CLAY_TEXT_CONFIG({
+                        .fontSize = 18,
+                        .textColor = base_theme.text
+                    })
+                );
             }
 
-            Clay_String day_obj = { .chars = day_str, .length = strlen(day_str) };
-            CLAY_TEXT(day_obj, CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
+            Clay_String dayString = {
+                .chars = day_str,
+                .length = strlen(day_str)
+            };
 
-            CLAY(CLAY_LAYOUT({ .padding = { 10, 10, 5, 5 }}),
-                CLAY_RECTANGLE({ .color = base_theme.secondary }),
-                Clay_OnHover(HandleDayChange, 1)
-            ) {
-                CLAY_TEXT(CLAY_STRING("+"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
+            CLAY_TEXT(dayString,
+                CLAY_TEXT_CONFIG({
+                    .fontSize = 18,
+                    .textColor = base_theme.text
+                })
+            );
+
+            CLAY({
+                .layout = {
+                    .padding = CLAY_PADDING_ALL(10)
+                },
+                .backgroundColor = base_theme.secondary
+            }) {
+                Clay_OnHover(HandleDayChange, 1);
+                CLAY_TEXT(CLAY_STRING("+"), 
+                    CLAY_TEXT_CONFIG({
+                        .fontSize = 18,
+                        .textColor = base_theme.text
+                    })
+                );
             }
         }
 
-        // Save Button
-        CLAY(CLAY_LAYOUT({ .padding = { 0, 0, 10, 10 }})) {
-            CLAY(CLAY_LAYOUT({ .padding = { 20, 20, 10, 10 }}),
-                CLAY_RECTANGLE({
-                    .color = base_theme.primary,
-                    .cursorPointer = true,
-                    .cornerRadius = CLAY_CORNER_RADIUS(8)
-                }),
-                Clay_OnHover(HandleSaveDate, 0)
-            ) {
-                CLAY_TEXT(CLAY_STRING("Save"), CLAY_TEXT_CONFIG({ .fontSize = 18, .textColor = base_theme.text }));
+        // Save button
+        CLAY({
+            .layout = {
+                .padding = CLAY_PADDING_ALL(10)
+            }
+        }) {
+            CLAY({
+                .layout = {
+                    .padding = CLAY_PADDING_ALL(20)
+                },
+                .backgroundColor = base_theme.primary,
+                .cornerRadius = CLAY_CORNER_RADIUS(8)
+            }) {
+                Clay_OnHover(HandleSaveDate, 0);
+                CLAY_TEXT(CLAY_STRING("Save"), 
+                    CLAY_TEXT_CONFIG({
+                        .fontSize = 18,
+                        .textColor = base_theme.text
+                    })
+                );
             }
         }
     }
@@ -253,23 +356,37 @@ void RenderDatePicker(time_t current_date, void (*on_date_change)(time_t), Modal
         strcpy(date_str, "Invalid Date");
     }
 
-    CLAY(CLAY_ID("DatePickerContainer"),
-        CLAY_LAYOUT({
-            .sizing = { CLAY_SIZING_FIT(), CLAY_SIZING_FIT() },
-            .padding = { 16, 16, 16, 16 }
-        })
-    ) {
-        CLAY(CLAY_ID("DateDisplay"),
-            CLAY_LAYOUT({ .padding = { 10, 10, 5, 5 }}),
-            CLAY_RECTANGLE({
-                .color = base_theme.secondary,
-                .cursorPointer = true,
-                .cornerRadius = CLAY_CORNER_RADIUS(8)
-            }),
-            Clay_OnHover(HandleDateClick, (intptr_t)modal)
-        ) {
-            Clay_String date_obj = { .chars = date_str, .length = strlen(date_str) };
-            CLAY_TEXT(date_obj, CLAY_TEXT_CONFIG({ .fontSize = 16, .textColor = base_theme.text }));
+    Clay_String dateString = {
+        .chars = date_str,
+        .length = strlen(date_str)
+    };
+
+    CLAY({
+        .id = CLAY_ID("DatePickerContainer"),
+        .layout = {
+            .sizing = {
+                .width = CLAY_SIZING_FIT(),
+                .height = CLAY_SIZING_FIT()
+            },
+            .padding = CLAY_PADDING_ALL(16)
+        }
+    }) {
+        CLAY({
+            .id = CLAY_ID("DateDisplay"),
+            .layout = {
+                .padding = CLAY_PADDING_ALL(10)
+            },
+            .backgroundColor = base_theme.secondary,
+            .cornerRadius = CLAY_CORNER_RADIUS(8)
+        }) {
+            
+            Clay_OnHover(HandleDateClick, (intptr_t)modal);
+            CLAY_TEXT(dateString,
+                CLAY_TEXT_CONFIG({
+                    .fontSize = 16,
+                    .textColor = base_theme.text
+                })
+            );
         }
     }
 

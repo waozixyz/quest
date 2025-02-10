@@ -5,7 +5,13 @@
 
 #include "config.h"
 #include "components/nav.h"
-#include "pages/pages.h"
+
+#include "pages/home.h"    
+#include "pages/habits.h"  
+#include "pages/todos.h" 
+#include "pages/timeline.h"
+#include "pages/routine.h" 
+
 
 #ifndef __EMSCRIPTEN__
 #include "utils.h"
@@ -78,18 +84,17 @@ static void CleanupPages(Rocks* rocks) {
 }
 
 static Clay_RenderCommandArray update(Rocks* rocks, float dt) {
-    printf("Inside update\n");
     Rocks_Theme theme = Rocks_GetTheme(rocks);
-    CLAY(CLAY_ID("MainContainer"), 
-        CLAY_LAYOUT({
+    CLAY({
+        .id = CLAY_ID("MainContainer"),
+        .layout = {
             .sizing = { CLAY_SIZING_GROW(), CLAY_SIZING_GROW() },
             .childAlignment = { CLAY_ALIGN_X_CENTER, CLAY_ALIGN_Y_CENTER },
             .layoutDirection = CLAY_TOP_TO_BOTTOM,
             .childGap = 20
-        }),
-        CLAY_RECTANGLE({ .color = theme.background })
-    ) {
-        printf("before page\n");
+        },
+        .backgroundColor = theme.background
+    }) {
 
         // Render the current page
         switch (ACTIVE_PAGE) {
@@ -103,8 +108,6 @@ static Clay_RenderCommandArray update(Rocks* rocks, float dt) {
                 printf("WARNING: Invalid page ID encountered\n");
                 break;
         }
-        printf("after page\n");
-
         RenderNavigationMenu(rocks);
     }
 
@@ -114,7 +117,9 @@ static Clay_RenderCommandArray update(Rocks* rocks, float dt) {
 int main(void) {
     printf("DEBUG: Program starting...\n");
 
-    // Configure Rocks
+    // Create the Quest theme and configure Rocks
+    QuestTheme theme;
+    
     Rocks_Config config = {
         .window_width = 800,
         .window_height = 600,
@@ -148,8 +153,8 @@ int main(void) {
     return 1;
 #endif
 
-    // Create the Quest theme
-    QuestTheme theme = quest_theme_create();
+    // Create and assign theme
+    theme = quest_theme_create();
     config.theme = theme.base;  // Pass the base theme to Rocks
 
     // Initialize Rocks
@@ -161,6 +166,7 @@ int main(void) {
     Rocks* rocks = Rocks_Init(config);
     if (!rocks) {
         printf("ERROR: Failed to initialize Rocks\n");
+        quest_theme_destroy(&theme);  // Clean up theme if Rocks init fails
         return 1;
     }
     printf("DEBUG: Rocks initialized successfully\n");
@@ -169,6 +175,7 @@ int main(void) {
     printf("DEBUG: Starting font loading...\n");
     if (!LoadFonts()) {
         printf("ERROR: Font loading failed\n");
+        quest_theme_destroy(&theme);  // Clean up theme
         Rocks_Cleanup(rocks);
         return 1;
     }
@@ -192,6 +199,7 @@ int main(void) {
     // Cleanup
     printf("DEBUG: Starting cleanup...\n");
     CleanupPages(rocks);
+    quest_theme_destroy(&theme);  // Clean up theme
     Rocks_Cleanup(rocks);
     printf("DEBUG: Cleanup completed\n");
     printf("DEBUG: Program ending normally\n");
