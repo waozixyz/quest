@@ -91,31 +91,36 @@ void determine_storage_directory(StorageConfig* config) {
     }
 
 #else
-    // Desktop platforms with XDG compliance
+    // Desktop platforms - prefer Documents folder
     const char* home_dir = getenv("HOME");
-    const char* xdg_data_home = getenv("XDG_DATA_HOME");
-
     char full_path[MAX_PATH_LENGTH];
 
-    if (xdg_data_home) {
-        // Use XDG_DATA_HOME if set
-        snprintf(full_path, sizeof(full_path), "%s/quest", xdg_data_home);
-    } else if (home_dir) {
-        // Fallback to ~/.local/share/quest if XDG_DATA_HOME is not set
-        snprintf(full_path, sizeof(full_path), "%s/.local/share/quest", home_dir);
+    if (home_dir) {
+        // Try Documents/quest first
+        snprintf(full_path, sizeof(full_path), "%s/Documents/quest", home_dir);
+        
+        if (ensure_directory_exists(full_path) == 0) {
+            strlcpy(config->root_dir, full_path, MAX_PATH_LENGTH);
+        } else {
+            // Fallback to XDG paths
+            const char* xdg_data_home = getenv("XDG_DATA_HOME");
+            
+            if (xdg_data_home) {
+                snprintf(full_path, sizeof(full_path), "%s/quest", xdg_data_home);
+            } else {
+                snprintf(full_path, sizeof(full_path), "%s/.local/share/quest", home_dir);
+            }
+
+            if (ensure_directory_exists(full_path) == 0) {
+                strlcpy(config->root_dir, full_path, MAX_PATH_LENGTH);
+            } else {
+                printf("Warning: Failed to create quest directory. Falling back to current directory.\n");
+                strcpy(config->root_dir, ".");
+            }
+        }
     } else {
         // Absolute last resort: current directory
-        printf("Warning: Could not determine home or XDG_DATA_HOME directory. Using current directory.\n");
-        strcpy(config->root_dir, ".");
-        return;
-    }
-
-    // Ensure the directory exists
-    if (ensure_directory_exists(full_path) == 0) {
-        strlcpy(config->root_dir, full_path, MAX_PATH_LENGTH);
-    } else {
-        // Fallback to current directory if directory creation fails
-        printf("Warning: Failed to create quest directory. Falling back to current directory.\n");
+        printf("Warning: Could not determine home directory. Using current directory.\n");
         strcpy(config->root_dir, ".");
     }
 #endif

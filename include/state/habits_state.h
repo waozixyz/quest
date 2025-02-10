@@ -14,14 +14,17 @@
 #define MAX_CALENDAR_DAYS 1000
 #define MAX_HABITS 10
 #define MAX_HABIT_NAME 32
-
-// Represents a single day's completion status for a habit
 typedef struct {
     time_t date;      // Unix timestamp
     uint32_t day_index; // Index in the calendar grid
     bool completed;
     uint8_t padding[3]; // For alignment
 } HabitDay;
+
+typedef struct {
+    uint32_t row_index;
+    bool is_collapsed;
+} CollapsedRow;
 
 // A single habit with its calendar data
 typedef struct {
@@ -40,6 +43,9 @@ typedef struct {
     uint32_t active_habit_id;
     bool is_editing_new_habit;
     Rocks_TextInput* habit_name_input;
+    CollapsedRow collapsed_rows[MAX_CALENDAR_DAYS];
+    size_t collapsed_rows_count;
+    int weeks_to_display;
 } HabitCollection;
 
 

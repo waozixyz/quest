@@ -41,13 +41,14 @@ typedef struct {
 static HabitIcon HABIT_ICONS[] = {
     {.url = "images/icons/check.png", .dimensions = {24, 24}},
     {.url = "images/icons/edit.png", .dimensions = {24, 24}},
-    {.url = "images/icons/trash.png", .dimensions = {24, 24}}
+    {.url = "images/icons/trash.png", .dimensions = {24, 24}},
+    {.url = "images/icons/eye-closed.png", .dimensions = {24, 24}} 
 };
 
-static void* habit_icon_images[3] = {NULL};
+static void* habit_icon_images[4] = {NULL};
 
 void InitializeHabitIcons(Rocks* rocks) {
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
         if (habit_icon_images[i]) {
             Rocks_UnloadImage(rocks, habit_icon_images[i]);
             habit_icon_images[i] = NULL;
@@ -62,7 +63,7 @@ void InitializeHabitIcons(Rocks* rocks) {
 }
 
 void CleanupHabitIcons(Rocks* rocks) {
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
         if (habit_icon_images[i]) {
             Rocks_UnloadImage(rocks, habit_icon_images[i]);
             habit_icon_images[i] = NULL;
@@ -87,6 +88,42 @@ static void HandleEditButtonClick(Clay_ElementId elementId, Clay_PointerData poi
         Rocks_StartTextInput();
         #endif
     }
+}
+
+void HandleRowCollapseToggle(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state != CLAY_POINTER_DATA_PRESSED_THIS_FRAME) return;
+
+    uint32_t row_index = (uint32_t)userData;
+    bool found = false;
+
+    // Check if row is already collapsed
+    for (size_t i = 0; i < habits.collapsed_rows_count; i++) {
+        if (habits.collapsed_rows[i].row_index == row_index) {
+            // Remove from collapsed list (expand)
+            for (size_t j = i; j < habits.collapsed_rows_count - 1; j++) {
+                habits.collapsed_rows[j] = habits.collapsed_rows[j + 1];
+            }
+            habits.collapsed_rows_count--;
+            found = true;
+            break;
+        }
+    }
+
+    // If not found, add to collapsed list
+    if (!found && habits.collapsed_rows_count < MAX_CALENDAR_DAYS) {
+        habits.collapsed_rows[habits.collapsed_rows_count].row_index = row_index;
+        habits.collapsed_rows[habits.collapsed_rows_count].is_collapsed = true;
+        habits.collapsed_rows_count++;
+    }
+
+    SaveHabits(&habits);
+}
+
+void HandleAddWeekRow(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state != CLAY_POINTER_DATA_PRESSED_THIS_FRAME) return;
+    
+    habits.weeks_to_display++; 
+    SaveHabits(&habits);
 }
 
 void HandleHeaderTitleClick(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
@@ -199,23 +236,21 @@ static void HandleConfirmButtonClick(Clay_ElementId elementId, Clay_PointerData 
         #endif
     }
 }
-
 void HandleNewTabInteraction(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
-        #ifndef __EMSCRIPTEN__
-        // Add debounce check
-        float currentTime = Rocks_GetTime(GRocks);
-        if (currentTime - lastNewTabTime < NEW_TAB_DEBOUNCE_MS) {
-            printf("New tab ignored - too soon (delta: %f ms)", 
-                    currentTime - lastNewTabTime);
-            return;
-        }
-        lastNewTabTime = currentTime;
-        #endif
-
+        printf("Adding new habit...\n"); // Debug print
+        
         AddNewHabit(&habits);
         habits.is_editing_new_habit = true;
         habits.active_habit_id = habits.habits[habits.habits_count - 1].id;
+        
+        if (habits.habit_name_input) {
+            Rocks_SetTextInputText(habits.habit_name_input, "");
+            printf("Set text input to empty\n"); // Debug print
+        }
+        
+        SaveHabits(&habits);
+        printf("New habit added and saved. Count: %zu\n", habits.habits_count); // Debug print
     }
 }
 
@@ -377,7 +412,6 @@ void RenderHabitTab(const Habit* habit) {
         }));
     }
 }
-
 void RenderHabitHeader() {
     Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
     QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
@@ -433,6 +467,7 @@ void RenderHabitHeader() {
                         .layoutDirection = CLAY_LEFT_TO_RIGHT
                     }
                 }) {
+                    // Delete button
                     CLAY({
                         .id = CLAY_ID("DeleteButton"),
                         .layout = {
@@ -464,6 +499,7 @@ void RenderHabitHeader() {
                         }) {}
                     }
 
+                    // Confirm button
                     CLAY({
                         .id = CLAY_ID("ConfirmButton"),
                         .layout = {
@@ -497,16 +533,22 @@ void RenderHabitHeader() {
                 }
             }
         } else {
+            // Title and edit button side by side
             CLAY({
                 .layout = {
                     .sizing = {
-                        .width = CLAY_SIZING_FIT(0),
+                        .width = CLAY_SIZING_GROW(),
                         .height = CLAY_SIZING_FIT(0)
+                    },
+                    .childGap = 8,
+                    .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                    .childAlignment = { 
+                        .x = CLAY_ALIGN_X_CENTER,
+                        .y = CLAY_ALIGN_Y_CENTER
                     }
                 }
             }) {
-                Clay_OnHover(HandleHeaderTitleClick, 0);
-                
+                // Title
                 Clay_String active_name = {
                     .length = strlen(active_habit->name),
                     .chars = active_habit->name
@@ -516,11 +558,42 @@ void RenderHabitHeader() {
                     .fontId = FONT_ID_BODY_24,
                     .textColor = base_theme.text
                 }));
+
+                // Edit button
+                CLAY({
+                    .id = CLAY_ID("EditButton"),
+                    .layout = {
+                        .sizing = {
+                            .width = CLAY_SIZING_FIXED(32),
+                            .height = CLAY_SIZING_FIXED(32)
+                        },
+                        .childAlignment = {
+                            .x = CLAY_ALIGN_X_CENTER,
+                            .y = CLAY_ALIGN_Y_CENTER
+                        }
+                    },
+                    .backgroundColor = Clay_Hovered() ? base_theme.primary_hover : base_theme.background,
+                    .cornerRadius = CLAY_CORNER_RADIUS(4)
+                }) {
+                    Clay_OnHover(HandleEditButtonClick, 0);
+                    
+                    CLAY({
+                        .layout = {
+                            .sizing = {
+                                .width = CLAY_SIZING_FIXED(24),
+                                .height = CLAY_SIZING_FIXED(24)
+                            }
+                        },
+                        .image = {
+                            .sourceDimensions = HABIT_ICONS[1].dimensions,
+                            .imageData = habit_icon_images[1]
+                        }
+                    }) {}
+                }
             }
         }
     }
 }
-
 void RenderHabitTabBar() {
     Rocks_Theme base_theme = Rocks_GetTheme(GRocks);
     QuestThemeExtension* theme = (QuestThemeExtension*)base_theme.extension;
@@ -545,7 +618,10 @@ void RenderHabitTabBar() {
                 },
                 .childGap = 8,
                 .padding = CLAY_PADDING_ALL(16),
-                .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
+                .childAlignment = { 
+                    .x = CLAY_ALIGN_X_CENTER,
+                    .y = CLAY_ALIGN_Y_CENTER 
+                },
                 .layoutDirection = CLAY_LEFT_TO_RIGHT
             },
             .scroll = { .horizontal = true }
@@ -554,10 +630,18 @@ void RenderHabitTabBar() {
                 RenderHabitTab(&habits.habits[i]);
             }
 
+            // New tab button
             CLAY({
                 .id = CLAY_ID("NewHabitTab"),
                 .layout = {
-                    .padding = CLAY_PADDING_ALL(16)
+                    .sizing = { 
+                        .width = CLAY_SIZING_FIXED(32),
+                        .height = CLAY_SIZING_FIXED(32)
+                    },
+                    .childAlignment = {
+                        .x = CLAY_ALIGN_X_CENTER,
+                        .y = CLAY_ALIGN_Y_CENTER
+                    }
                 },
                 .backgroundColor = Clay_Hovered() ? base_theme.primary_hover : base_theme.background,
                 .cornerRadius = CLAY_CORNER_RADIUS(5)
@@ -631,9 +715,14 @@ void RenderHabitsPage(float dt) {
     struct tm *start_tm = localtime(&active_habit->start_date);
     struct tm start_date = *start_tm;
 
-    const int WEEKS_TO_DISPLAY = 10;
+    // Initialize weeks_to_display if it's 0
+    if (habits.weeks_to_display == 0) {
+        habits.weeks_to_display = 10; 
+    }
+
+
     struct tm end_date = start_date;
-    end_date.tm_mday += (WEEKS_TO_DISPLAY * 7) - 1;
+    end_date.tm_mday += (habits.weeks_to_display * 7) - 1;  
     mktime(&end_date);
 
     static const char *day_labels[] = {"S", "M", "T", "W", "T", "F", "S"};
@@ -649,8 +738,8 @@ void RenderHabitsPage(float dt) {
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
         }
     }) {
-        RenderHabitHeader();
         RenderHabitTabBar();
+        RenderHabitHeader();
             
         CLAY({
             .id = CLAY_ID("ColorAndDatePickerContainer"),
@@ -763,49 +852,172 @@ void RenderHabitsPage(float dt) {
 
                 int unique_index = 0;
 
+                // Find today's row for initial scroll position
+                int today_row = -1;
+                struct tm today = *localtime(&now);
                 for (int row = 0; row < total_weeks; row++) {
+                    struct tm week_start = start_date;
+                    week_start.tm_mday += (row * 7);
+                    mktime(&week_start);
+                    
+                    if (week_start.tm_year == today.tm_year && 
+                        week_start.tm_mon == today.tm_mon &&
+                        abs(week_start.tm_mday - today.tm_mday) < 7) {
+                        today_row = row;
+                        break;
+                    }
+                }
+
+                for (int row = 0; row < total_weeks; row++) {
+                    bool is_collapsed = false;
+                    for (size_t i = 0; i < habits.collapsed_rows_count; i++) {
+                        if (habits.collapsed_rows[i].row_index == row) {
+                            is_collapsed = true;
+                            break;
+                        }
+                    }
+
+                    if (is_collapsed) {
+                        // When collapsing, skip 7 days
+                        current.tm_mday += 7;
+                        unique_index += 7;
+                        mktime(&current);  // Important: normalize the date after adding days
+
+                        // Render collapsed row
+                        CLAY({
+                            .id = CLAY_IDI("WeekRowCollapsed", row),
+                            .layout = {
+                                .sizing = {
+                                    .width = CLAY_SIZING_GROW(),
+                                    .height = CLAY_SIZING_FIXED(4)
+                                },
+                                .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
+                            },
+                            .backgroundColor = base_theme.secondary,
+                            .cornerRadius = CLAY_CORNER_RADIUS(2)
+                        }) {
+                            Clay_OnHover(HandleRowCollapseToggle, row);
+                        }
+        
+                    } else {
+                        // Existing week row rendering
+                        CLAY({
+                            .id = CLAY_IDI("WeekRow", row),
+                            .layout = {
+                                .sizing = {
+                                    .width = CLAY_SIZING_GROW(),
+                                    .height = CLAY_SIZING_FIT(0)
+                                },
+                                .childGap = 10,
+                                .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                                .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
+                            }
+                        }) {
+                            // Add collapse button
+                            CLAY({
+                                .id = CLAY_IDI("CollapseButton", row),
+                                .layout = {
+                                    .sizing = {
+                                        .width = CLAY_SIZING_FIXED(24),
+                                        .height = CLAY_SIZING_FIXED(24)
+                                    }
+                                },
+                                .backgroundColor = Clay_Hovered() ? base_theme.primary_hover : base_theme.background,
+                                .cornerRadius = CLAY_CORNER_RADIUS(4)
+                            }) {
+                                Clay_OnHover(HandleRowCollapseToggle, row);
+                                CLAY({
+                                    .layout = {
+                                        .sizing = {
+                                            .width = CLAY_SIZING_FIXED(16),
+                                            .height = CLAY_SIZING_FIXED(16)
+                                        }
+                                    },
+                                    .image = {
+                                        .sourceDimensions = HABIT_ICONS[3].dimensions,
+                                        .imageData = habit_icon_images[3]
+                                    }
+                                }) {}
+                            }
+                        
+                            for (int col = 0; col < 7; col++) {
+                                time_t current_timestamp = mktime(&current);
+                                bool is_today = (current_timestamp == today_timestamp);
+                                bool is_past = (current_timestamp < today_timestamp);
+
+                                bool is_completed = false;
+                                for (size_t i = 0; i < active_habit->days_count; i++) {
+                                    if (active_habit->calendar_days[i].day_index == unique_index &&
+                                        active_habit->calendar_days[i].completed) {
+                                        is_completed = true;
+                                        break;
+                                    }
+                                }
+
+                                CalendarBoxProps props = {
+                                    .day_number = current.tm_mday,
+                                    .is_today = is_today,
+                                    .is_past = is_past,
+                                    .unique_index = unique_index,
+                                    .is_completed = is_completed,
+                                    .on_click = ToggleHabitStateForDay,
+                                    .custom_color = active_habit->color
+                                };
+
+                                RenderCalendarBox(props);
+
+                                current.tm_mday++;
+                                unique_index++;
+                            }
+                        }
+                    }
+                    if (row == today_row) {
+                        CLAY({
+                            .id = CLAY_ID("TodayRowMarker"),
+                            .floating = {
+                                .attachTo = CLAY_ATTACH_TO_PARENT,
+                                .attachPoints = {
+                                    .element = CLAY_ATTACH_POINT_CENTER_CENTER,
+                                    .parent = CLAY_ATTACH_POINT_CENTER_CENTER
+                                }
+                            }
+                        }) {}
+                    }
+                }
+                
+                    // Add week row controls at bottom
                     CLAY({
-                        .id = CLAY_IDI("WeekRow", row),
+                        .id = CLAY_ID("WeekControls"),
                         .layout = {
                             .sizing = {
                                 .width = CLAY_SIZING_GROW(),
                                 .height = CLAY_SIZING_FIT(0)
                             },
-                            .childGap = 10,
-                            .layoutDirection = CLAY_LEFT_TO_RIGHT
+                            .childGap = 8,
+                            .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                            .childAlignment = { .x = CLAY_ALIGN_X_CENTER }
                         }
                     }) {
-                        for (int col = 0; col < 7; col++) {
-                            time_t current_timestamp = mktime(&current);
-                            bool is_today = (current_timestamp == today_timestamp);
-                            bool is_past = (current_timestamp < today_timestamp);
-
-                            bool is_completed = false;
-                            for (size_t i = 0; i < active_habit->days_count; i++) {
-                                if (active_habit->calendar_days[i].day_index == unique_index &&
-                                    active_habit->calendar_days[i].completed) {
-                                    is_completed = true;
-                                    break;
-                                }
-                            }
-
-                            CalendarBoxProps props = {
-                                .day_number = current.tm_mday,
-                                .is_today = is_today,
-                                .is_past = is_past,
-                                .unique_index = unique_index,
-                                .is_completed = is_completed,
-                                .on_click = ToggleHabitStateForDay,
-                                .custom_color = active_habit->color
-                            };
-
-                            RenderCalendarBox(props);
-
-                            current.tm_mday++;
-                            unique_index++;
+                        CLAY({
+                            .id = CLAY_ID("AddWeekButton"),
+                            .layout = {
+                                .sizing = {
+                                    .width = CLAY_SIZING_FIT(0),
+                                    .height = CLAY_SIZING_FIT(0)
+                                },
+                                .padding = CLAY_PADDING_ALL(8)
+                            },
+                            .backgroundColor = Clay_Hovered() ? base_theme.primary_hover : base_theme.background,
+                            .cornerRadius = CLAY_CORNER_RADIUS(4)
+                        }) {
+                            Clay_OnHover(HandleAddWeekRow, 0);
+                            CLAY_TEXT(CLAY_STRING("Add Week"), CLAY_TEXT_CONFIG({
+                                .fontSize = 16,
+                                .fontId = FONT_ID_BODY_16,
+                                .textColor = base_theme.text
+                            }));
                         }
                     }
-                }
             }
         }
     }

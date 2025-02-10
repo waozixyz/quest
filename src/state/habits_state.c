@@ -20,8 +20,7 @@ EM_JS(void, addNewHabitFunction, (HabitCollection* collection), {});
 #include "../../vendor/cJSON/cJSON.h"
 #include <stdlib.h>
 #include <time.h>
-
-static cJSON* HabitToJSON(const Habit* habit) {
+static cJSON* HabitToJSON(const Habit* habit, const HabitCollection* collection) {
    cJSON* habitObj = cJSON_CreateObject();
    cJSON_AddNumberToObject(habitObj, "id", habit->id);
    cJSON_AddStringToObject(habitObj, "name", habit->name);
@@ -33,7 +32,8 @@ static cJSON* HabitToJSON(const Habit* habit) {
    cJSON_AddNumberToObject(color, "a", habit->color.a);
    cJSON_AddItemToObject(habitObj, "color", color);
 
-   cJSON_AddNumberToObject(habitObj, "start_date", (double)habit->start_date);  // Add start_date
+   cJSON_AddNumberToObject(habitObj, "start_date", (double)habit->start_date);  
+   cJSON_AddNumberToObject(habitObj, "weeks_to_display", collection->weeks_to_display);
 
    cJSON* days = cJSON_CreateArray();
    for (size_t i = 0; i < habit->days_count; i++) {
@@ -45,9 +45,16 @@ static cJSON* HabitToJSON(const Habit* habit) {
    }
    cJSON_AddItemToObject(habitObj, "calendar_days", days);
 
-   return habitObj;
-}
+    cJSON* collapsed = cJSON_CreateArray();
+    for (size_t i = 0; i < collection->collapsed_rows_count; i++) {
+        cJSON* row = cJSON_CreateObject();
+        cJSON_AddNumberToObject(row, "index", collection->collapsed_rows[i].row_index);
+        cJSON_AddItemToArray(collapsed, row);
+    }
+    cJSON_AddItemToObject(habitObj, "collapsed_rows", collapsed);
 
+    return habitObj;
+}
 static void SaveHabitsJSON(const HabitCollection* collection) {
    if (!collection) return;
 
@@ -59,7 +66,7 @@ static void SaveHabitsJSON(const HabitCollection* collection) {
    
    cJSON* habits = cJSON_CreateArray();
    for (size_t i = 0; i < collection->habits_count; i++) {
-       cJSON* habit = HabitToJSON(&collection->habits[i]);
+       cJSON* habit = HabitToJSON(&collection->habits[i], collection);
        cJSON_AddItemToArray(habits, habit);
    }
    cJSON_AddItemToObject(root, "habits", habits);
@@ -70,8 +77,7 @@ static void SaveHabitsJSON(const HabitCollection* collection) {
    free(jsonStr);
    cJSON_Delete(root);
 }
-
-static void LoadHabitFromJSON(Habit* habit, cJSON* habitObj) {
+static void LoadHabitFromJSON(Habit* habit, cJSON* habitObj, HabitCollection* collection) {
    habit->id = cJSON_GetObjectItem(habitObj, "id")->valueint;
    strncpy(habit->name, cJSON_GetObjectItem(habitObj, "name")->valuestring, MAX_HABIT_NAME - 1);
    
@@ -88,7 +94,14 @@ static void LoadHabitFromJSON(Habit* habit, cJSON* habitObj) {
    } else {
        habit->start_date = time(NULL);
    }
-
+    
+    cJSON* weeks = cJSON_GetObjectItem(habitObj, "weeks_to_display");
+    if (weeks) {
+        collection->weeks_to_display = weeks->valueint;
+    } else {
+        collection->weeks_to_display = 10;  // Default value
+    }
+    
    cJSON* days = cJSON_GetObjectItem(habitObj, "calendar_days");
    habit->days_count = 0;
    cJSON* day;
@@ -99,7 +112,20 @@ static void LoadHabitFromJSON(Habit* habit, cJSON* habitObj) {
        habitDay->date = cJSON_GetObjectItem(day, "date")->valueint;
        habitDay->day_index = cJSON_GetObjectItem(day, "day_index")->valueint;
        habitDay->completed = cJSON_IsTrue(cJSON_GetObjectItem(day, "completed"));
-   }
+    }
+    
+    cJSON* collapsed = cJSON_GetObjectItem(habitObj, "collapsed_rows");
+    collection->collapsed_rows_count = 0;
+    if (collapsed) {
+        cJSON* row;
+        cJSON_ArrayForEach(row, collapsed) {
+            if (collection->collapsed_rows_count >= MAX_CALENDAR_DAYS) break;
+            collection->collapsed_rows[collection->collapsed_rows_count].row_index = 
+                cJSON_GetObjectItem(row, "index")->valueint;
+            collection->collapsed_rows[collection->collapsed_rows_count].is_collapsed = true;
+            collection->collapsed_rows_count++;
+        }
+    }
 }
 
 static void CreateDefaultHabitsJSON(HabitCollection* defaultCollection) {
@@ -158,7 +184,7 @@ static void LoadHabitsJSON(HabitCollection* collection) {
    cJSON* habit;
    cJSON_ArrayForEach(habit, habits) {
        if (collection->habits_count >= MAX_HABITS) break;
-       LoadHabitFromJSON(&collection->habits[collection->habits_count++], habit);
+       LoadHabitFromJSON(&collection->habits[collection->habits_count++], habit, collection);
    }
 
    cJSON_Delete(root);
@@ -209,6 +235,7 @@ void DeleteHabit(HabitCollection* collection, uint32_t habit_id) {
        SaveHabits(collection);
    #endif
 }
+
 
 void AddNewHabit(HabitCollection* collection) {
    if (!collection || collection->habits_count >= MAX_HABITS) return;
