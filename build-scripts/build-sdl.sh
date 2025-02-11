@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Ensure build directory exists
 mkdir -p build/clay
 
@@ -13,7 +15,6 @@ INCLUDE_FLAGS="-I./include \
   -I./include/components \
   -I./include/state \
   -I../rocks/include \
-  -I../rocks/include/renderer \
   -I../rocks/include/components \
   -I../rocks/clay \
   -I./vendor/cJSON"
@@ -26,50 +27,74 @@ COMMON_FLAGS="-Wall -Werror -O2 \
   -DROCKS_USE_SDL2 \
   -DCLAY_DESKTOP"
 
-# 1. src/**.c - all .c files in src and subdirectories
-for file in src/*.c src/*/*.c src/*/*/*.c; do
+# First build rocks as a static library
+echo "Building rocks library..."
+
+# Compile rocks main source files
+for file in ../rocks/src/*.c; do
   if [ -f "$file" ]; then
     echo "Compiling $file..."
-    ccache gcc -c $file -o build/$(basename $file .c).o \
+    gcc -c $file -o build/clay/$(basename $file .c).o \
       $SDL_FLAGS \
-      $INCLUDE_FLAGS \
-      $COMMON_FLAGS
+      -I../rocks/include \
+      -I../rocks/clay \
+      -DROCKS_USE_SDL2 \
+      -D_CRT_SECURE_NO_WARNINGS
   fi
 done
 
-# 2. ../rocks/src/*.c and ../rocks/src/components/*.c
-for file in ../rocks/src/*.c ../rocks/src/components/*.c; do
+# Compile rocks components
+for file in ../rocks/src/components/*.c; do
   if [ -f "$file" ]; then
     echo "Compiling $file..."
-    ccache gcc -c $file -o build/$(basename $file .c).o \
+    gcc -c $file -o build/clay/$(basename $file .c).o \
       $SDL_FLAGS \
-      $INCLUDE_FLAGS \
-      $COMMON_FLAGS
+      -I../rocks/include \
+      -I../rocks/clay \
+      -DROCKS_USE_SDL2 \
+      -D_CRT_SECURE_NO_WARNINGS
   fi
 done
 
-# 3. SDL2 renderer files
+# Compile SDL renderer files
 for file in ../rocks/src/renderer/sdl2_*.c; do
   if [ -f "$file" ]; then
     echo "Compiling $file..."
-    ccache gcc -c $file -o build/$(basename $file .c).o \
+    gcc -c $file -o build/clay/$(basename $file .c).o \
+      $SDL_FLAGS \
+      -I../rocks/include \
+      -I../rocks/clay \
+      -DROCKS_USE_SDL2 \
+      -D_CRT_SECURE_NO_WARNINGS
+  fi
+done
+
+# Create rocks static library
+echo "Creating rocks static library..."
+ar rcs build/clay/librocks.a build/clay/*.o
+
+# Now build Quest source files
+for file in src/*.c src/*/*.c src/*/*/*.c; do
+  if [ -f "$file" ]; then
+    echo "Compiling $file..."
+    gcc -c $file -o build/clay/$(basename $file .c).o \
       $SDL_FLAGS \
       $INCLUDE_FLAGS \
       $COMMON_FLAGS
   fi
 done
 
-# 4. cJSON
+# Compile cJSON
 if [ -f "vendor/cJSON/cJSON.c" ]; then
   echo "Compiling cJSON..."
-  ccache gcc -c vendor/cJSON/cJSON.c -o build/cJSON.o \
+  gcc -c vendor/cJSON/cJSON.c -o build/clay/cJSON.o \
     $INCLUDE_FLAGS \
     $COMMON_FLAGS
 fi
 
 # Link everything together
 echo "Linking..."
-gcc build/*.o -o build/clay/quest \
+gcc build/clay/*.o build/clay/librocks.a -o build/clay/quest \
   $SDL_FLAGS $SDL_LIBS \
   -lm -ldl -lpthread
 

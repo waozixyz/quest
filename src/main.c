@@ -83,8 +83,11 @@ static void CleanupPages(Rocks* rocks) {
     printf("DEBUG: Cleanup completed\n");
 }
 
+
 static Clay_RenderCommandArray update(Rocks* rocks, float dt) {
     Rocks_Theme theme = Rocks_GetTheme(rocks);
+
+    Clay_BeginLayout();
     CLAY({
         .id = CLAY_ID("MainContainer"),
         .layout = {
@@ -110,7 +113,6 @@ static Clay_RenderCommandArray update(Rocks* rocks, float dt) {
         }
         RenderNavigationMenu(rocks);
     }
-
     return Clay_EndLayout();
 }
 
